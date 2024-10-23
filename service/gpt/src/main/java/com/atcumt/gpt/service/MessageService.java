@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import reactor.core.publisher.Flux;
 
 public interface MessageService extends IService<Message> {
-    MessageVO processChat(MessageDTO messageDTO);
+    MessageVO processChatStuff(MessageDTO messageDTO);
 
-    Flux<MessageVO> processChatStream(MessageDTO messageDTO);
+    Flux<MessageVO> processChatStreamFlux(MessageDTO messageDTO);
 }

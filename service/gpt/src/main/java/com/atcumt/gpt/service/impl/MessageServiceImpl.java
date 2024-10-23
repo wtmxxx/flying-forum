@@ -49,7 +49,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public MessageVO processChat(MessageDTO messageDTO) {
+    public MessageVO processChatStuff(MessageDTO messageDTO) {
         // 记录插入时间，比当前时间早1秒
         LocalDateTime insertTime = LocalDateTime.now().minusSeconds(1);
         // 将MessageDTO对象转换为Message实体
@@ -119,7 +119,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Flux<MessageVO> processChatStream(MessageDTO messageDTO) {
+    public Flux<MessageVO> processChatStreamFlux(MessageDTO messageDTO) {
         // 记录插入时间，比当前时间早1秒
         LocalDateTime insertTime = LocalDateTime.now().minusSeconds(1);
         // 将MessageDTO转换为Message实体
@@ -189,4 +189,5 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
                 .retrieve()
                 .bodyToFlux(Message.class);  // 使用Flux接收流式输出，将其转换为Message对象
     }
+
 }

@@ -8,9 +8,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface ConversationService extends IService<Conversation> {
     ConversationVO newChat(ConversationDTO conversationDTO);
 
-    String getTitle(Long conversationId);
+    String getTitle(String conversationId);
 
-    void setTitle(Long conversationId, String title);
+    void setTitle(String conversationId, String title);
 
-    void deleteConversation(Long conversationId);
+    void deleteConversation(String conversationId);
 }

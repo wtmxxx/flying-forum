@@ -24,7 +24,7 @@ public class GptController {
 //            @Parameter(name = "content", description = "消息内容", required = true)
 //    })
 //    public Flux<Result<MessageVO>> sendMessageStream(@RequestBody MessageDTO messageDTO) {
-//        return messageService.processChatStream(messageDTO)
+//        return messageService.processChatStreamFlux(messageDTO)
 //                .map(Result::success);  // 返回流式结果
 //    }
 }

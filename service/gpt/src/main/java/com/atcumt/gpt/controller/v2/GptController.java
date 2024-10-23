@@ -27,7 +27,7 @@ public class GptController {
     private final MessageService messageService;
     private final Gson gson;
 
-    @PostMapping("/send")
+    @PostMapping("/send/stuff")
     @Operation(summary = "发送消息给GPT")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),
@@ -36,18 +36,29 @@ public class GptController {
     public Result<MessageVO> sendMessage(@RequestBody MessageDTO messageDTO) {
         log.info("发送消息, conversationId: {}", messageDTO.getConversationId());
 
-        MessageVO responseMessage = messageService.processChat(messageDTO);
+        MessageVO responseMessage = messageService.processChatStuff(messageDTO);
         return Result.success(responseMessage);
     }
 
-    @PostMapping("/send/stream")
-    @Operation(summary = "发送消息给GPT(流式输出)")
+    @PostMapping("/send/stream/flux")
+    @Operation(summary = "发送消息给GPT(流式输出, Flux)")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),
             @Parameter(name = "content", description = "消息内容", required = true)
     })
-    public Flux<Result<MessageVO>> sendMessageStream(@RequestBody MessageDTO messageDTO) {
-        return messageService.processChatStream(messageDTO)
+    public Flux<Result<MessageVO>> sendMessageStreamFlux(@RequestBody MessageDTO messageDTO) {
+        return messageService.processChatStreamFlux(messageDTO)
+                .map(Result::success);  // 返回流式结果
+    }
+
+    @PostMapping("/send/stream/ws")
+    @Operation(summary = "发送消息给GPT(流式输出, WebSocket)")
+    @Parameters({
+            @Parameter(name = "conversationId", description = "对话ID", required = true),
+            @Parameter(name = "content", description = "消息内容", required = true)
+    })
+    public Flux<Result<MessageVO>> sendMessageStreamWs(@RequestBody MessageDTO messageDTO) {
+        return messageService.processChatStreamFlux(messageDTO)
                 .map(Result::success);  // 返回流式结果
     }
 
@@ -68,7 +79,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true)
     })
-    public Result<Map<String, String>> newConversation(Long conversationId) {
+    public Result<Map<String, String>> newConversation(String conversationId) {
         log.info("获取标题, conversationId: {}", conversationId);
 
         String title = conversationService.getTitle(conversationId);
@@ -81,7 +92,7 @@ public class GptController {
             @Parameter(name = "conversationId", description = "对话ID", required = true),
             @Parameter(name = "title", description = "title内容", required = true)
     })
-    public Result<Object> newConversation(Long conversationId, String title) {
+    public Result<Object> newConversation(String conversationId, String title) {
         log.info("修改标题, conversationId: {}", conversationId);
 
         conversationService.setTitle(conversationId, title);
@@ -94,7 +105,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),
     })
-    public Result<Object> deleteConversation(Long conversationId) {
+    public Result<Object> deleteConversation(String conversationId) {
         log.info("删除对话, conversationId: {}", conversationId);
 
         conversationService.deleteConversation(conversationId);

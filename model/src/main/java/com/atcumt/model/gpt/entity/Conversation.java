@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conversation {
-    private Long id;
-    private Long userId;
+    private String id;
+    private String userId;
     private String title;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

@@ -50,7 +50,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     }
 
     @Override
-    public String getTitle(Long conversationId) {
+    public String getTitle(String conversationId) {
         Conversation conversation = conversationMapper.selectById(conversationId);
         ConversationGptDTO conversationGptDTO = BeanUtil.toBean(conversation, ConversationGptDTO.class);
         String title = conversation.getTitle();
@@ -87,7 +87,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     }
 
     @Override
-    public void setTitle(Long conversationId, String title) {
+    public void setTitle(String conversationId, String title) {
         // 定义正则表达式
         String regex = "[\\u4e00-\\u9fa5a-zA-Z\\s：:-—]+";
         // 编译正则表达式
@@ -110,7 +110,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteConversation(Long conversationId) {
+    public void deleteConversation(String conversationId) {
         conversationMapper.deleteById(conversationId);
         messageMapper.delete(new LambdaUpdateWrapper<Message>()
                 .eq(Message::getConversationId, conversationId));

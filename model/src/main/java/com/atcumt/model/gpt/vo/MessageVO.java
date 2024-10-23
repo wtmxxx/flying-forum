@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MessageVO {
-    private Long id;
-    private Long conversationId;
+    private String id;
+    private String conversationId;
     private String role;
     private String content;
     private LocalDateTime createTime;

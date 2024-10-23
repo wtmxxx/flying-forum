@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TitleVO {
-    private Long conversationId;
+    private String conversationId;
     private String title;
 }

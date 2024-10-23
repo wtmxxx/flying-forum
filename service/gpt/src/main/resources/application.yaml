@@ -20,7 +20,7 @@ mybatis-plus:
   global-config:
     db-config:
       update-strategy: not_null
-      id-type: ASSIGN_ID
+      id-type: ASSIGN_UUID
   mapper-locations: classpath:/mapper/**.xml
 logging:
   level:

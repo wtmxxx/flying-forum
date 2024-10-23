@@ -14,8 +14,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ConversationVO {
-    private Long id;
-    private Long userId;
+    private String id;
+    private String userId;
     private String title;
     private List<Message> messages;
     private LocalDateTime createTime;

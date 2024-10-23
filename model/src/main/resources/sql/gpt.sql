@@ -7,9 +7,9 @@ CREATE SCHEMA IF NOT EXISTS gpt;
 USE gpt;
 CREATE TABLE IF NOT EXISTS conversation
 (
-    id          BIGINT                             NOT NULL COMMENT '对话ID，由MP雪花算法生成'
+    id      VARCHAR(36) NOT NULL COMMENT '对话ID，由UUID算法生成'
         PRIMARY KEY,
-    user_id     BIGINT                             NOT NULL COMMENT '用户ID',
+    user_id VARCHAR(36) NOT NULL COMMENT '用户ID',
     title       VARCHAR(255)                       NULL COMMENT '对话标题',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '对话创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '对话更新时间',
@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS conversation
 USE gpt;
 CREATE TABLE IF NOT EXISTS message
 (
-    id              BIGINT                                                          NOT NULL PRIMARY KEY COMMENT '使用雪花算法生成的唯一ID',
-    conversation_id BIGINT                                                          NOT NULL COMMENT '会话ID，标识消息所属的会话',
+    id              VARCHAR(36) NOT NULL PRIMARY KEY COMMENT '使用UUID算法生成',
+    conversation_id VARCHAR(36) NOT NULL COMMENT '会话ID，标识消息所属的会话',
     role            VARCHAR(50)                                                     NOT NULL COMMENT '消息发送者的角色，例如用户或系统',
     content         TEXT                                                            NOT NULL COMMENT '消息的文本内容',
     citations       JSON                                                            NULL COMMENT '引用的内容，保存为JSON格式，可能为空',
