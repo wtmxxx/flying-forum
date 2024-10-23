@@ -1,0 +1,14 @@
+cumt-gpt:
+  db:
+    host: 192.168.200.130
+    pw: 1005
+  knife4j:
+    basic:
+      username: root
+      password: 1005
+  gpt:
+    uri: http://localhost
+    port: 5000
+  milvus:
+    uri: http://192.168.200.130
+    port: 19530

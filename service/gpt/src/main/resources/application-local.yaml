@@ -1,0 +1,14 @@
+cumt-gpt:
+  db:
+    host: localhost # 修改为你自己的虚拟机IP地址
+    pw: 1005 # 修改为docker中的MySQL密码
+  knife4j:
+    basic:
+      username: root
+      password: 1005
+  gpt:
+    uri: http://localhost
+    port: 5000
+  milvus:
+    uri: http://192.168.200.130
+    port: 19530

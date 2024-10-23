@@ -1,0 +1,8 @@
+cumt-gpt:
+  db:
+    host: mysql
+    pw: 1005
+  knife4j:
+    basic:
+      username: root
+      password: 1005

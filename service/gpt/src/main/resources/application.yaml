@@ -1,0 +1,68 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gpt-service
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:mysql://${cumt-gpt.db.host}:3306/gpt?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: ${cumt-gpt.db.pw}
+  mvc:
+    async:
+      request-timeout: 60000  # 60000 毫秒，即 60 秒
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    db-config:
+      update-strategy: not_null
+      id-type: ASSIGN_ID
+  mapper-locations: classpath:/mapper/**.xml
+logging:
+  level:
+    com.atcumt: debug
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: "logs/${spring.application.name}"
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+    enable-version: true
+    enable-reload-cache-parameter: false
+    enable-after-script: true
+    enable-filter-multipart-api-method-type: POST
+    enable-filter-multipart-apis: false
+    enable-request-cache: true
+    enable-host: false
+    enable-host-text: 192.168.0.193:8000
+    enable-home-custom: false
+    home-custom-path: classpath:markdown/home.md
+    enable-search: true
+    enable-footer: true
+    enable-footer-custom: true
+    footer-custom-content: Apache License 2.0 | Copyright  2024-[中国矿业大学翔工作室](https://kxz.atcumt.com)
+    enable-dynamic-parameter: true
+    enable-debug: true
+    enable-open-api: true
+    enable-group: true
+  cors: false
+  production: false
+  basic:
+    enable: false
+    username: ${cumt-gpt.knife4j.basic.username}
+    password: ${cumt-gpt.knife4j.basic.password}
+gpt:
+  uri: ${cumt-gpt.gpt.url}
+  port: ${cumt-gpt.gpt.port}
+milvus:
+  uri: ${cumt-gpt.milvus.url}
+  port: ${cumt-gpt.milvus.port}

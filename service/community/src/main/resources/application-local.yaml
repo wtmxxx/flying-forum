@@ -1,0 +1,8 @@
+cumt-gpt:
+  db:
+    host: 192.168.105.105 # 修改为你自己的虚拟机IP地址
+    pw: 1005 # 修改为docker中的MySQL密码
+  knife4j:
+    basic:
+      username: root
+      password: 1005
