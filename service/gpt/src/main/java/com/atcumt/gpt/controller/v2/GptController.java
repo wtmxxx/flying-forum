@@ -41,23 +41,12 @@ public class GptController {
     }
 
     @PostMapping("/send/stream/flux")
-    @Operation(summary = "发送消息给GPT(流式输出, Flux)")
+    @Operation(summary = "发送消息给GPT(Flux流式输出)")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),
             @Parameter(name = "content", description = "消息内容", required = true)
     })
     public Flux<Result<MessageVO>> sendMessageStreamFlux(@RequestBody MessageDTO messageDTO) {
-        return messageService.processChatStreamFlux(messageDTO)
-                .map(Result::success);  // 返回流式结果
-    }
-
-    @PostMapping("/send/stream/ws")
-    @Operation(summary = "发送消息给GPT(流式输出, WebSocket)")
-    @Parameters({
-            @Parameter(name = "conversationId", description = "对话ID", required = true),
-            @Parameter(name = "content", description = "消息内容", required = true)
-    })
-    public Flux<Result<MessageVO>> sendMessageStreamWs(@RequestBody MessageDTO messageDTO) {
         return messageService.processChatStreamFlux(messageDTO)
                 .map(Result::success);  // 返回流式结果
     }
@@ -113,10 +102,4 @@ public class GptController {
         return Result.success();
     }
 
-//    @PostMapping("/testReply")
-//    public String testReply(@RequestBody ConversationGptDTO conversationGptDTO) {
-//        System.out.println(conversationGptDTO);
-//        System.out.println(JSONUtil.toJsonStr(conversationGptDTO));
-//        return "你好，我是ChatGPT";
-//    }
 }

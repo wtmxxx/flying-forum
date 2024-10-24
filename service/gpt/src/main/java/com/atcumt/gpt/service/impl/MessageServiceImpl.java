@@ -13,7 +13,6 @@ import com.atcumt.model.gpt.entity.Message;
 import com.atcumt.model.gpt.vo.MessageVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +26,7 @@ import reactor.core.publisher.Flux;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -41,10 +41,10 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     private final WebClient webClient;
 
     // GPT服务的URI（从应用程序配置中加载）
-    @Value("${cumt-gpt.gpt.uri}")
+    @Value("${cumt-forum.gpt.uri}")
     private String gptUri;
     // GPT服务的端口（从应用程序配置中加载）
-    @Value("${cumt-gpt.gpt.port}")
+    @Value("${cumt-forum.gpt.port}")
     private String gptPort;
 
     @Override
@@ -109,8 +109,12 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
             messageMapper.insert(userMessage);
             messageMapper.insert(gptReply);
 
+            // 添加上一个消息的ID(用户提问ID)
+            MessageVO messageVO = BeanUtil.copyProperties(gptReply, MessageVO.class);
+            messageVO.setLastMessageId(userMessage.getId());
+
             // 将GPT的回复封装为VO对象并返回
-            return BeanUtil.copyProperties(gptReply, MessageVO.class);
+            return BeanUtil.copyProperties(messageVO, MessageVO.class);
         } else {
             // 如果GPT服务调用失败，抛出异常
             throw new RuntimeException("GPT服务调用失败(Message)，状态码：" + responseMessage.getStatusCode());
@@ -150,7 +154,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
         // 接收Python流式输出并拼接到字符串中
         StringBuilder gptResponseContent = new StringBuilder();
-        Long snowflakeId = IdWorker.getId(); // 使用雪花算法生成唯一ID
+        String uuid = UUID.randomUUID().toString(); // 使用UUID算法生成唯一ID
         return this.streamChatData(conversationGptDTO)
                 .doOnNext(chunk -> gptResponseContent.append(chunk.getContent()))  // 拼接所有块的内容
                 .doOnComplete(() -> {
@@ -159,7 +163,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
                     Message gptReply = Message
                             .builder()
-                            .id(snowflakeId)
+                            .id(uuid)
                             .role(MessageRole.AI)
                             .conversationId(messageDTO.getConversationId())
                             .content(gptResponseContent.toString())  // 完整拼接后的内容
@@ -171,7 +175,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
                 .map(chunk -> {
                     // 返回每个流式块给前端
                     MessageVO messageVO = new MessageVO();
-                    messageVO.setId(snowflakeId);
+                    messageVO.setId(uuid);
+                    messageVO.setLastMessageId(userMessage.getId());
                     messageVO.setContent(chunk.getContent());
                     messageVO.setConversationId(messageDTO.getConversationId());
                     messageVO.setRole("ai");
