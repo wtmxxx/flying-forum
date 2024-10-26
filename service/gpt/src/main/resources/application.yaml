@@ -16,6 +16,7 @@ spring:
       port: ${cumt-forum.redis.port}
       password: ${cumt-forum.redis.password}   # Redis服务器密码（可选）
       timeout: ${cumt-forum.redis.timeout}  # 连接超时，单位为毫秒
+      database: ${cumt-forum.redis.database}
   mvc:
     async:
       request-timeout: 60000  # 60000 毫秒，即 60 秒

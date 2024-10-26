@@ -30,7 +30,7 @@ public class WebSocketGptServer extends TextWebSocketHandler {
         // 连接建立时的逻辑
         log.info("和{}客户端建立连接", session.getId());
 //        this.session = session;
-        webSocketGptClient.connect(session);
+//        webSocketGptClient.connect(session);
     }
 
     @Override
@@ -45,13 +45,14 @@ public class WebSocketGptServer extends TextWebSocketHandler {
 
         // TODO 处理消息到数据库
 
-        webSocketGptClient.sendMessage(content);
+        webSocketGptClient.connect(session, conversationId);
+        webSocketGptClient.sendMessage(content, conversationId);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, @NonNull CloseStatus status) throws Exception {
         // 连接关闭时的逻辑
         System.out.println("Connection closed: " + session.getId());
-        webSocketGptClient.disconnect();
+        webSocketGptClient.disconnect(session);
     }
 }
