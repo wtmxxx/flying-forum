@@ -1,4 +1,4 @@
-package com.atcumt.gpt.exception;
+package com.atcumt.gpt.handler;
 
 import com.atcumt.model.common.Result;
 import com.atcumt.model.common.ResultCode;
