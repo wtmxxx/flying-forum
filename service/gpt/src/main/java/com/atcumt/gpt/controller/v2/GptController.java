@@ -29,7 +29,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "userId", description = "用户ID", required = true)
     })
-    public Result<ConversationVO> newConversation(@RequestBody ConversationDTO conversationDTO) {
+    public Result<ConversationVO> getTitle(@RequestBody ConversationDTO conversationDTO) {
         log.info("新建对话, userId: {}", conversationDTO.getUserId());
 
         ConversationVO conversationVO = conversationService.newChat(conversationDTO);
@@ -41,7 +41,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true)
     })
-    public Result<Map<String, String>> newConversation(String conversationId) {
+    public Result<Map<String, String>> getTitle(String conversationId) {
         log.info("获取标题, conversationId: {}", conversationId);
 
         String title = conversationService.getTitle(conversationId);
@@ -54,7 +54,7 @@ public class GptController {
             @Parameter(name = "conversationId", description = "对话ID", required = true),
             @Parameter(name = "title", description = "title内容", required = true)
     })
-    public Result<Object> newConversation(String conversationId, String title) {
+    public Result<Object> setTitle(String conversationId, String title) {
         log.info("修改标题, conversationId: {}", conversationId);
 
         conversationService.setTitle(conversationId, title);
