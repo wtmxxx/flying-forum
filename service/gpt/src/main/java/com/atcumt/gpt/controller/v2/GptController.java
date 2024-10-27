@@ -4,9 +4,7 @@ import com.atcumt.gpt.service.ConversationService;
 import com.atcumt.gpt.service.MessageService;
 import com.atcumt.model.common.Result;
 import com.atcumt.model.gpt.dto.ConversationDTO;
-import com.atcumt.model.gpt.dto.MessageDTO;
 import com.atcumt.model.gpt.vo.ConversationVO;
-import com.atcumt.model.gpt.vo.MessageVO;
 import com.google.gson.Gson;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,7 +12,6 @@ import io.swagger.v3.oas.annotations.Parameters;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
@@ -26,30 +23,6 @@ public class GptController {
     private final ConversationService conversationService;
     private final MessageService messageService;
     private final Gson gson;
-
-    @PostMapping("/send/stuff")
-    @Operation(summary = "发送消息给GPT")
-    @Parameters({
-            @Parameter(name = "conversationId", description = "对话ID", required = true),
-            @Parameter(name = "content", description = "消息内容", required = true)
-    })
-    public Result<MessageVO> sendMessage(@RequestBody MessageDTO messageDTO) {
-        log.info("发送消息, conversationId: {}", messageDTO.getConversationId());
-
-        MessageVO responseMessage = messageService.processChatStuff(messageDTO);
-        return Result.success(responseMessage);
-    }
-
-    @PostMapping("/send/stream/flux")
-    @Operation(summary = "发送消息给GPT(Flux流式输出)")
-    @Parameters({
-            @Parameter(name = "conversationId", description = "对话ID", required = true),
-            @Parameter(name = "content", description = "消息内容", required = true)
-    })
-    public Flux<Result<MessageVO>> sendMessageStreamFlux(@RequestBody MessageDTO messageDTO) {
-        return messageService.processChatStreamFlux(messageDTO)
-                .map(Result::success);  // 返回流式结果
-    }
 
     @PostMapping("/new_chat")
     @Operation(summary = "新建对话")

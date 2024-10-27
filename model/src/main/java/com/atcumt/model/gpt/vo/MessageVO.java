@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MessageVO {
-    private String id;
+    //    private String id;
     private String conversationId;
     private String lastMessageId;
     private String role;

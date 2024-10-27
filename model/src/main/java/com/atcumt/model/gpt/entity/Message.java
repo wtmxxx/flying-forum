@@ -16,6 +16,7 @@ public class Message {
     private String conversationId;
     private String role;
     private String content;
+    private String citations;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }
