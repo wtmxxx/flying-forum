@@ -86,11 +86,12 @@ public class WebSocketGptServer extends TextWebSocketHandler {
                 .eq(Conversation::getId, conversationId)
                 .set(Conversation::getUpdateTime, LocalDateTime.now());
         conversationMapper.update(conversationUpdateWrapper);
-        messageMapper.insert(userMessage);  // 插入用户消息
+        if (content != null && !content.isEmpty()) messageMapper.insert(userMessage);  // 插入用户消息
 
         session.getAttributes().put("userMessageId", userMessage.getId());
 
-        redisTemplate.opsForValue().set("gptWebSocket:" + conversationId, content);
+        redisTemplate.opsForValue().set("gptWebSocket:" + conversationId, content == null ? "" : content);
+
         redisTemplate.expire("gptWebSocket:" + conversationId, 2, TimeUnit.HOURS);
 
         webSocketGptClient.connect(session, conversationId);

@@ -132,7 +132,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(@NonNull WebSocketSession gptSession, @NonNull TextMessage message) throws IOException {
-        System.out.println("Received: " + message.getPayload());
+//        System.out.println("Received: " + message.getPayload());
         // 获取ConversationId
         String conversationId = getConversationId(gptSession);
 //        WebSocketSession userSession = (WebSocketSession) redisTemplate.opsForHash().get("gptWebSocket:" + conversationId, WebSocketType.USER);
@@ -167,7 +167,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
                         )
                 )));
             } else if (messageType.equals(WebSocketType.CITATIONS)) {
-                String citations = JSONUtil.parseObj(message.getPayload()).get(WebSocketType.CITATIONS).toString();
+                Object citations = JSONUtil.parseObj(message.getPayload()).get(WebSocketType.CITATIONS);
 
                 String uuid = UUID.randomUUID().toString(); // 使用UUID算法生成唯一ID
 
@@ -177,7 +177,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
                         .role(MessageRole.AI)
                         .conversationId(conversationId)
                         .content(conversationCache.toString())  // 完整拼接后的内容
-                        .citations(citations)
+                        .citations(citations.toString())
                         .createTime(LocalDateTime.now())
                         .updateTime(LocalDateTime.now())
                         .build();
