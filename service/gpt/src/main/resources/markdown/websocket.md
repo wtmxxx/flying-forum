@@ -23,7 +23,6 @@
     "type": "content",
     "data": {
       "conversationId": "UUID",
-      "lastMessageId": "UUID",
       "role": "ai",
       "content": "",
       "createTime": 1730001005000,
@@ -42,6 +41,7 @@
   "data": {
     "type": "citations",
     "messageId": "UUID",
+    "lastMessageId": "UUID",
     "data": [
       {
         "url": "https://www.wotemo.com",

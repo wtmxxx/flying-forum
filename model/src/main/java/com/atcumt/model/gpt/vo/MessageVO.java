@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class MessageVO {
     //    private String id;
     private String conversationId;
-    private String lastMessageId;
+    //    private String lastMessageId;
     private String role;
     private String content;
     private LocalDateTime createTime;

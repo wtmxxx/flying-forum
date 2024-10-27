@@ -13,7 +13,6 @@ import com.atcumt.model.gpt.vo.ConversationVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -33,7 +32,6 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     private final RestTemplate restTemplate;
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
-    private final Gson gson;
 
     @Override
     public ConversationVO newChat(ConversationDTO conversationDTO) {

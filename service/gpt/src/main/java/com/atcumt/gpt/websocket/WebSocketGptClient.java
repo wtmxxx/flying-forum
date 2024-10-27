@@ -152,7 +152,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
 
                 // 返回每个流式块给前端
 //                messageVO.setId(uuid);
-                messageVO.setLastMessageId(userSession.getAttributes().get("userMessageId").toString());
+//                messageVO.setLastMessageId(userSession.getAttributes().get("userMessageId").toString());
                 messageVO.setContent(JSONUtil.parseObj(message.getPayload()).get(WebSocketType.CONTENT).toString());
                 messageVO.setConversationId(conversationId);
                 messageVO.setRole(MessageRole.AI);
@@ -189,6 +189,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
                                 Map.of(
                                         WebSocketType.MESSAGE_TYPE, WebSocketType.CITATIONS,
                                         WebSocketType.MESSAGE_ID, uuid,
+                                        WebSocketType.LAST_MESSAGE_ID, userSession.getAttributes().get("userMessageId").toString(),
                                         WebSocketType.DATA, citations
                                 )
                         )
