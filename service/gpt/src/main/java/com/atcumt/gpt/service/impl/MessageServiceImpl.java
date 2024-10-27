@@ -179,7 +179,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
                     messageVO.setLastMessageId(userMessage.getId());
                     messageVO.setContent(chunk.getContent());
                     messageVO.setConversationId(messageDTO.getConversationId());
-                    messageVO.setRole("ai");
+                    messageVO.setRole(MessageRole.AI);
                     messageVO.setCreateTime(LocalDateTime.now());
                     messageVO.setUpdateTime(LocalDateTime.now());
                     return messageVO;
