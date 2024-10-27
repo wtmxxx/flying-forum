@@ -5,7 +5,6 @@ import com.atcumt.gpt.service.MessageService;
 import com.atcumt.model.common.Result;
 import com.atcumt.model.gpt.dto.ConversationDTO;
 import com.atcumt.model.gpt.vo.ConversationVO;
-import com.google.gson.Gson;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -22,7 +21,6 @@ import java.util.Map;
 public class GptController {
     private final ConversationService conversationService;
     private final MessageService messageService;
-    private final Gson gson;
 
     @PostMapping("/new_chat")
     @Operation(summary = "新建对话")

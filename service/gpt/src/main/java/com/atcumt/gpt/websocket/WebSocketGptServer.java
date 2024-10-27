@@ -47,7 +47,7 @@ public class WebSocketGptServer extends TextWebSocketHandler {
 //    private WebSocketSession session;
 
     @Override
-    public void afterConnectionEstablished(@NonNull WebSocketSession session) throws Exception {
+    public void afterConnectionEstablished(@NonNull WebSocketSession session) {
         // 连接建立时的逻辑
         log.info("和{}客户端建立连接", session.getId());
 //        this.session = session;
@@ -56,7 +56,7 @@ public class WebSocketGptServer extends TextWebSocketHandler {
 
     @Override
     @Transactional
-    protected void handleTextMessage(@NonNull WebSocketSession session, @NonNull TextMessage message) throws Exception {
+    protected void handleTextMessage(@NonNull WebSocketSession session, @NonNull TextMessage message) {
         // 处理文本消息
         log.info("收到来自{}客户端的信息:{}", session.getId(), message);
 
