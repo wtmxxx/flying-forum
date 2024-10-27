@@ -8,6 +8,7 @@ import com.atcumt.model.gpt.vo.ConversationVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 @RestController("gptControllerV2")
 @RequestMapping("/api/gpt/v2")
+@Tag(name = "GPT", description = "GPT相关接口")
 @RequiredArgsConstructor
 @Slf4j
 public class GptController {

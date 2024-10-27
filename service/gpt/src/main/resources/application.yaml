@@ -36,8 +36,26 @@ logging:
     dateformat: HH:mm:ss:SSS
   file:
     path: "logs/${spring.application.name}"
+springdoc:
+  group-configs:
+    - group: 'all'
+      paths-to-match: '/**'
+      packages-to-scan:
+        - com.atcumt
+    - group: 'gpt'
+      paths-to-match: '/**'
+      packages-to-scan:
+        - com.atcumt.gpt
+    - group: 'community'
+      paths-to-match: '/**'
+      packages-to-scan:
+        - com.atcumt.community
 knife4j:
   enable: true
+  documents:
+    - group: gpt
+      name: 流式输出规范
+      locations: classpath:markdown/websocket.md
   setting:
     language: zh-CN
     enable-swagger-models: true
