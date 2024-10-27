@@ -6,16 +6,10 @@ spring:
   profiles:
     active: local
   datasource:
-    url: jdbc:mysql://${cumt-forum.db.host}:3306/gpt?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${cumt-gpt.db.host}:3306/gpt?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: ${cumt-forum.db.pw}
-  data:
-    redis:
-      host: ${cumt-forum.redis.host}
-      port: ${cumt-forum.redis.port}
-      password: ${cumt-forum.redis.password}   # Redis服务器密码（可选）
-      timeout: ${cumt-forum.redis.timeout}  # 连接超时，单位为毫秒
+    password: ${cumt-gpt.db.pw}
   mvc:
     async:
       request-timeout: 60000  # 60000 毫秒，即 60 秒
@@ -64,11 +58,11 @@ knife4j:
   production: false
   basic:
     enable: false
-    username: ${cumt-forum.knife4j.basic.username}
-    password: ${cumt-forum.knife4j.basic.password}
+    username: ${cumt-gpt.knife4j.basic.username}
+    password: ${cumt-gpt.knife4j.basic.password}
 gpt:
-  uri: ${cumt-forum.gpt.uri}
-  port: ${cumt-forum.gpt.port}
+  uri: ${cumt-gpt.gpt.url}
+  port: ${cumt-gpt.gpt.port}
 milvus:
-  uri: ${cumt-forum.milvus.uri}
-  port: ${cumt-forum.milvus.port}
+  uri: ${cumt-gpt.milvus.url}
+  port: ${cumt-gpt.milvus.port}

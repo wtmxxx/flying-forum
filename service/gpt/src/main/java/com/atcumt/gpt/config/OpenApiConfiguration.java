@@ -12,10 +12,10 @@ public class OpenApiConfiguration {
     @Bean
     public OpenAPI springShopOpenAPI() {
         return new OpenAPI()
-                .info(new Info().title("矿大论坛")
-                        .description("矿大论坛 API文档")
+                .info(new Info().title("矿大GPT")
+                        .description("矿大GPT API文档")
                         .contact(
-                                new Contact().name("Wotemo").email("wotemo@qq.com")
+                                new Contact().name("孙浩冉").email("sunhaoran@cumt.edu.cn")
                         )
                         .version("v0.0.1")
                         .license(new License().name("Apache 2.0").url("https://kxz.atcumt.com")))
