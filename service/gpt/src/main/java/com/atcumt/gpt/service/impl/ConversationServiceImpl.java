@@ -10,8 +10,10 @@ import com.atcumt.model.gpt.dto.ConversationGptDTO;
 import com.atcumt.model.gpt.entity.Conversation;
 import com.atcumt.model.gpt.entity.Message;
 import com.atcumt.model.gpt.vo.ConversationVO;
+import com.atcumt.model.gpt.vo.MessagePageVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -114,6 +116,21 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
                 .eq(Message::getConversationId, conversationId));
     }
 
+    @Override
+    public ConversationVO getConversation(String conversationId) {
+        Conversation conversation = conversationMapper.selectById(conversationId);
+        List<Message> messages = messageMapper.selectList(
+                Wrappers.<Message>lambdaQuery()
+                        .eq(Message::getConversationId, conversationId)
+                        .orderByAsc(Message::getUpdateTime)
+        );
+        List<MessagePageVO> messagePageVOs = BeanUtil.copyToList(messages, MessagePageVO.class);
+
+        ConversationVO conversationVO = BeanUtil.toBean(conversation, ConversationVO.class);
+        conversationVO.setMessages(messagePageVOs);
+
+        return conversationVO;
+    }
 
 }
 

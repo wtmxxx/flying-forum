@@ -36,6 +36,18 @@ public class GptController {
         return Result.success(conversationVO);
     }
 
+    @GetMapping("/c/{conversationId}")
+    @Operation(summary = "获取对话")
+    @Parameters({
+            @Parameter(name = "conversationId", description = "对话ID", required = true)
+    })
+    public Result<ConversationVO> getConversation(@PathVariable String conversationId) {
+        log.info("获取对话, conversationId: {}", conversationId);
+
+        ConversationVO conversationVO = conversationService.getConversation(conversationId);
+        return Result.success(conversationVO);
+    }
+
     @DeleteMapping("/delete_messages")
     @Operation(
             summary = "删除消息及其后续消息",

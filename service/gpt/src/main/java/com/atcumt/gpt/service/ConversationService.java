@@ -13,4 +13,6 @@ public interface ConversationService extends IService<Conversation> {
     void setTitle(String conversationId, String title);
 
     void deleteConversation(String conversationId);
+
+    ConversationVO getConversation(String conversationId);
 }
