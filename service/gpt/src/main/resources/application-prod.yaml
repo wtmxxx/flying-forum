@@ -1,6 +1,8 @@
 cumt-forum:
   db:
     host: mysql
+    schema: gpt
+    username: root
     pw: 1005
   redis:
     host: redis
@@ -12,9 +14,13 @@ cumt-forum:
     basic:
       username: root
       password: 1005
+  seata:
+    nacos:
+      server-addr: nacos:8848
   gpt:
-    uri: gpt
-    port: 5000
-  milvus:
-    uri: milvus-standalone
-    port: 19530
+    ws:
+      host: ws://gpt
+      port: 5000
+    http:
+      host: gpt
+      port: 5000

@@ -2,14 +2,24 @@ server:
   port: 8080
 spring:
   application:
-    name: community-service
+    name: gpt-service
   profiles:
-    active: dev
+    active: local
   datasource:
-    url: jdbc:mysql://${cumt-gpt.db.host}:3306/community?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${cumt-forum.db.host}:3306/gpt?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: ${cumt-gpt.db.pw}
+    password: ${cumt-forum.db.pw}
+  data:
+    redis:
+      host: ${cumt-forum.redis.host}
+      port: ${cumt-forum.redis.port}
+      password: ${cumt-forum.redis.password}   # Redis服务器密码（可选）
+      timeout: ${cumt-forum.redis.timeout}  # 连接超时，单位为毫秒
+      database: ${cumt-forum.redis.database}
+  mvc:
+    async:
+      request-timeout: 60000  # 60000 毫秒，即 60 秒
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -17,7 +27,7 @@ mybatis-plus:
   global-config:
     db-config:
       update-strategy: not_null
-      id-type: ASSIGN_ID
+      id-type: ASSIGN_UUID
   mapper-locations: classpath:/mapper/**.xml
 logging:
   level:
@@ -26,8 +36,26 @@ logging:
     dateformat: HH:mm:ss:SSS
   file:
     path: "logs/${spring.application.name}"
+springdoc:
+  group-configs:
+    - group: 'all'
+      paths-to-match: '/**'
+      packages-to-scan:
+        - com.atcumt
+    - group: 'gpt'
+      paths-to-match: '/**'
+      packages-to-scan:
+        - com.atcumt.gpt
+    - group: 'community'
+      paths-to-match: '/**'
+      packages-to-scan:
+        - com.atcumt.community
 knife4j:
   enable: true
+  documents:
+    - group: gpt
+      name: 流式输出规范
+      locations: classpath:markdown/websocket.md
   setting:
     language: zh-CN
     enable-swagger-models: true
@@ -55,5 +83,11 @@ knife4j:
   production: false
   basic:
     enable: false
-    username: ${cumt-gpt.knife4j.basic.username}
-    password: ${cumt-gpt.knife4j.basic.password}
+    username: ${cumt-forum.knife4j.basic.username}
+    password: ${cumt-forum.knife4j.basic.password}
+gpt:
+  uri: ${cumt-forum.gpt.uri}
+  port: ${cumt-forum.gpt.port}
+milvus:
+  uri: ${cumt-forum.milvus.uri}
+  port: ${cumt-forum.milvus.port}

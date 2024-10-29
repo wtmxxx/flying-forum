@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: gpt-service
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      server-addr: 192.168.200.130:8848
+      discovery:
+        server-addr: 192.168.200.130:8848
+        username: nacos
+        password: nacos
+      #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
+      config:
+        server-addr: 192.168.200.130:8848
+        username: nacos
+        password: nacos
+        #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
+        file-extension: yaml
+        shared-configs:
+          - data-id: shared-swagger.yaml
+          - data-id: shared-db.yaml
+          - data-id: shared-log.yaml
+          - data-id: shared-mp.yaml
+          - data-id: shared-spring.yaml
+          - data-id: shared-gpt.yaml
+          - data-id: shared-seata.yaml

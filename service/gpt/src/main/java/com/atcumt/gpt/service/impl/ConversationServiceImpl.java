@@ -16,6 +16,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,8 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     private final RestTemplate restTemplate;
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
+    @Value("${gpt.http.uri}:${gpt.http.port}")
+    private String uri;
 
     @Override
     public ConversationVO newChat(ConversationDTO conversationDTO) {
@@ -66,7 +69,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
             ResponseEntity<JSONObject> responseTitle = null;
             try {
                 responseTitle = restTemplate
-                        .postForEntity("http://localhost:5000/gpt/get_title", conversationGptDTO, JSONObject.class);
+                        .postForEntity(uri + "/gpt/get_title", conversationGptDTO, JSONObject.class);
                 // 检查GPT响应的状态码是否成功
                 if (responseTitle.getStatusCode().is2xxSuccessful()) {
                     title = responseTitle.getBody().get("title", String.class);

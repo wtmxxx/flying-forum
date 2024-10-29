@@ -1,0 +1,91 @@
+version: "3.8"
+services:
+  # MySQL Service
+  mysql:
+    image: mysql
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1005
+      TZ: Asia/Shanghai
+    volumes:
+      - ./cumt-forum/mysql/data:/var/lib/mysql
+      - ./cumt-forum/mysql/conf:/etc/mysql/conf.d
+      - ./cumt-forum/mysql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: always
+    networks:
+      - cumt-forum
+
+  # Redis Service
+  redis:
+    image: redis
+    container_name: redis
+    volumes:
+      - ./cumt-forum/redis/data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - cumt-forum
+    restart: always
+
+  # Nacos Service
+  nacos:
+    image: nacos/nacos-server
+    container_name: nacos
+    env_file:
+      - ./cumt-forum/nacos/env/nacos.env
+    volumes:
+      - ./cumt-forum/nacos/logs:/home/nacos/logs
+      - ./cumt-forum/nacos/conf/application.properties:/home/nacos/conf/application.properties
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+    networks:
+      - cumt-forum
+
+  # Seata Service
+  seata:
+    image: seataio/seata-server
+    container_name: seata
+    environment:
+      SEATA_IP: 192.168.200.130
+    volumes:
+      - ./cumt-forum/seata:/seata-server/resources
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    privileged: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+    networks:
+      - cumt-forum
+
+  # Sentinel Service
+  sentinel:
+    image: openjdk:8-jre-slim
+    container_name: sentinel
+    command: [ "java", "-Dserver.port=8090", "-Dcsp.sentinel.dashboard.server=localhost:8090", "-Dproject.name=sentinel-dashboard", "-Dsentinel.dashboard.auth.username=root", "-Dsentinel.dashboard.auth.password=1005", "-jar", "/sentinel/sentinel-dashboard.jar" ]
+    volumes:
+      - ./cumt-forum/sentinel/logs:/sentinel/logs
+      - ./cumt-forum/sentinel/sentinel-dashboard.jar:/sentinel/sentinel-dashboard.jar
+    ports:
+      - "8090:8090"
+    restart: always
+    networks:
+      - cumt-forum
+
+networks:
+  cumt-forum:
+    name: cumt-forum

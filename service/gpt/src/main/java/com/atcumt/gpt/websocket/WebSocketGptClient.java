@@ -42,7 +42,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
     private final RedisTemplate<String, String> redisTemplate;
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
-    @Value("${gpt.uri}:${gpt.port}")
+    @Value("${gpt.ws.host}:${gpt.ws.port}")
     private String uri;
     // 缓存每个会话的Session
     private Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();

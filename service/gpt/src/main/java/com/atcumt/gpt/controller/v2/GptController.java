@@ -24,7 +24,7 @@ public class GptController {
     private final ConversationService conversationService;
     private final MessageService messageService;
 
-    @PostMapping("/new_chat")
+    @PostMapping("/c")
     @Operation(summary = "新建对话")
     @Parameters({
             @Parameter(name = "userId", description = "用户ID", required = true)
@@ -48,7 +48,7 @@ public class GptController {
         return Result.success(conversationVO);
     }
 
-    @DeleteMapping("/delete_messages")
+    @DeleteMapping("/messages")
     @Operation(
             summary = "删除消息及其后续消息",
             description = "删除此ID及之后的所有消息，之后请再次使用WebSocket发送新消息请求"
@@ -64,7 +64,7 @@ public class GptController {
         return Result.success();
     }
 
-    @GetMapping("/get_title")
+    @GetMapping("/title")
     @Operation(summary = "获取标题")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true)
@@ -76,7 +76,7 @@ public class GptController {
         return Result.success(Map.of("title", title));
     }
 
-    @PatchMapping("/set_title")
+    @PatchMapping("/title")
     @Operation(summary = "修改标题")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),
@@ -90,7 +90,7 @@ public class GptController {
         return Result.success();
     }
 
-    @DeleteMapping("/delete_conversation")
+    @DeleteMapping("/c")
     @Operation(summary = "删除对话")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),

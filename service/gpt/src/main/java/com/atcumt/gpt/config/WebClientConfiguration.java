@@ -7,9 +7,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfiguration {
-    @Value("${cumt-forum.gpt.uri}")
+    @Value("${gpt.http.host}")
     private String gptUri;
-    @Value("${cumt-forum.gpt.port}")
+    @Value("${gpt.http.port}")
     private String gptPort;
 
     @Bean

@@ -1,0 +1,39 @@
+#springdoc:
+# group-configs:
+#   - group: 'all'
+#     paths-to-match: '/**'
+#     packages-to-scan:
+#       - com.atcumt
+
+knife4j:
+  enable: true
+  documents:
+  setting:
+    language: zh-CN
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+    enable-version: true
+    enable-reload-cache-parameter: false
+    enable-after-script: true
+    enable-filter-multipart-api-method-type: POST
+    enable-filter-multipart-apis: false
+    enable-request-cache: true
+    enable-host: false
+    enable-host-text: localhost:8000
+    enable-home-custom: false
+    home-custom-path: classpath:markdown/home.md
+    enable-search: true
+    enable-footer: true
+    enable-footer-custom: true
+    footer-custom-content: Apache License 2.0 | Copyright  2024-[中国矿业大学翔工作室](https://kxz.atcumt.com)
+    enable-dynamic-parameter: true
+    enable-debug: true
+    enable-open-api: true
+    enable-group: true
+  cors: false
+  production: false
+  basic:
+    enable: false
+    username: ${cumt-forum.knife4j.basic.username}
+    password: ${cumt-forum.knife4j.basic.password}

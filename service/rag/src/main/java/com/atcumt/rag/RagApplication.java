@@ -1,13 +1,13 @@
-package com.atcumt.feign;
+package com.atcumt.rag;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class FeignApplication {
+public class RagApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(FeignApplication.class, args);
+        SpringApplication.run(RagApplication.class, args);
     }
 
 }
