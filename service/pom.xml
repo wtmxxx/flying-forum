@@ -90,7 +90,11 @@
             <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
             <version>${seata.version}</version>
         </dependency>
-
+        <!--OK http 的依赖 -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-okhttp</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -34,3 +34,8 @@ metadata:
     desc: GPT的共享配置
     group: DEFAULT_GROUP
     type: yaml
+  - appName: ''
+    dataId: shared-feign.yaml
+    desc: Feign的共享配置
+    group: DEFAULT_GROUP
+    type: yaml

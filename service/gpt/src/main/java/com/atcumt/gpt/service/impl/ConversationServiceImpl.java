@@ -35,7 +35,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     private final RestTemplate restTemplate;
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
-    @Value("${gpt.http.uri}:${gpt.http.port}")
+    @Value("${gpt.http.host}:${gpt.http.port}")
     private String uri;
 
     @Override
