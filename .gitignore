@@ -37,6 +37,5 @@ build/
 **/test/
 application-dev.yaml
 application-prod.yaml
-nacos.env
-/src/main/resources/docker/cumt-forum/nacos/
-/src/main/resources/docker/cumt-forum/seata/
+*.env
+/src/main/resources/docker/cumt-forum/

@@ -39,7 +39,7 @@ services:
     image: nacos/nacos-server
     container_name: nacos
     env_file:
-      - ./cumt-forum/nacos/env/nacos.env
+      - cumt-forum/nacos/env/nacos.env
     volumes:
       - ./cumt-forum/nacos/logs:/home/nacos/logs
       - ./cumt-forum/nacos/conf/application.properties:/home/nacos/conf/application.properties
