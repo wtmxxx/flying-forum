@@ -24,3 +24,4 @@ spring:
         shared-configs:
           - data-id: shared-log.yaml
           - data-id: shared-jwt.yaml
+          - data-id: gateway-exclude.yaml

@@ -4,15 +4,6 @@ spring:
   main:
     web-application-type: reactive
 
-cumt-forum:
-  auth:
-    excludePaths: # 无需登录校验的路径
-      - /search/**
-      - /api/v1/user/user/register/*
-      - /api/v1/user/user/login/*
-      - /doc.html
-#      - /api/v2/gpt/user/**
-
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
