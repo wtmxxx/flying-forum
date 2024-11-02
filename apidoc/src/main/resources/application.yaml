@@ -3,41 +3,28 @@ server:
 spring:
   application:
     name: api-doc
+  profiles:
+    active: dev
 
 knife4j:
   enableAggregation: true
   nacos:
     enable: true
-    serviceUrl: http://192.168.200.130:8848/nacos/
+    serviceUrl: ${cumt-forum.knife4j.nacos.url}
     serviceAuth:
       enable: true
-      username: nacos
-      password: nacos
+      username: ${cumt-forum.knife4j.nacos.username}
+      password: ${cumt-forum.knife4j.nacos.password}
     routeAuth:
       enable: true
-      username: root
-      password: 1005
-
+      username: ${cumt-forum.knife4j.username}
+      password: ${cumt-forum.knife4j.password}
     routes:
       - name: GPT服务
         serviceName: gpt-service
-        groupName:
-        namespaceId:
-        clusters:
-        location: /v3/api-docs
-        swaggerVersion: 2.0
-        routeAuth:
-          enable: false
-          username: root
-          password: 1005
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}
       - name: 用户服务
         serviceName: user-service
-        groupName:
-        namespaceId:
-        clusters:
-        location: /v3/api-docs
-        swaggerVersion: 2.0
-        routeAuth:
-          enable: false
-          username: root
-          password: 1005
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}

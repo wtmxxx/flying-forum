@@ -10,6 +10,7 @@ cumt-forum:
       - /search/**
       - /api/v1/user/user/register/*
       - /api/v1/user/user/login/*
+      - /doc.html
 #      - /api/v2/gpt/user/**
 
 logging:
