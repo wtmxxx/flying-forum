@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: gateway
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      server-addr: 192.168.200.130:8848
+      discovery:
+        enabled: true
+        server-addr: 192.168.200.130:8848
+        group: DEFAULT_GROUP
+        username: nacos
+        password: nacos
+      config:
+        enabled: true
+        server-addr: 192.168.200.130:8848
+        username: nacos
+        password: nacos
+        #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
+        file-extension: yaml
+        refresh-enabled: true
+        #        group: DEFAULT_GROUP
+        shared-configs:
+          - data-id: shared-log.yaml
+          - data-id: shared-jwt.yaml

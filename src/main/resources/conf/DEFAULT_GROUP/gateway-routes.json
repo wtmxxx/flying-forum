@@ -1,0 +1,15 @@
+[
+  {
+    "id": "gpt",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/v2/gpt/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://gpt-service"
+  }
+]

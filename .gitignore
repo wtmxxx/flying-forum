@@ -35,7 +35,11 @@ build/
 ### Myself ###
 **/logs/
 **/test/
+application-local.yaml
 application-dev.yaml
 application-prod.yaml
 *.env
+*.jks
 /src/main/resources/docker/cumt-forum/
+/gateway/src/main/resources/cumt-forum.jks
+/gateway/src/main/resources/application.yaml

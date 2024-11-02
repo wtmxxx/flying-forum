@@ -1,13 +1,13 @@
 spring:
   datasource:
-    url: jdbc:mysql://${cumt-forum.db.host}:3306/${cumt-forum.db.schema}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${cumt-forum.db.host}:${cumt-forum.db.port:3306}/${cumt-forum.db.schema}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${cumt-forum.db.username}
     password: ${cumt-forum.db.pw}
   data:
     redis:
       host: ${cumt-forum.redis.host}
-      port: ${cumt-forum.redis.port}
+      port: ${cumt-forum.redis.port:6379}
       password: ${cumt-forum.redis.password}
-      timeout: ${cumt-forum.redis.timeout}
-      database: ${cumt-forum.redis.database}
+      timeout: ${cumt-forum.redis.timeout:6000}
+      database: ${cumt-forum.redis.database:0}

@@ -1,10 +1,12 @@
 package com.atcumt.model.common;
 
+
 import lombok.Getter;
 
 @Getter
 public enum ResultCode {
     SUCCESS(200, "Success"),
+    FAILURE(400, "Failure"),
     BAD_REQUEST(400, "Bad Request"),
     UNAUTHORIZED(401, "Unauthorized"),
     FORBIDDEN(403, "Forbidden"),

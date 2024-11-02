@@ -1,4 +1,5 @@
 seata:
+  data-source-proxy-mode: AT
   registry: # TC服务注册中心的配置，微服务根据这些信息去注册中心获取tc服务地址
     type: nacos # 注册中心类型 nacos
     nacos:

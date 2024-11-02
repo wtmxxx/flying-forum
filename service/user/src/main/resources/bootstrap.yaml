@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      server-addr: 192.168.200.130:8848
+      discovery:
+        enabled: true
+        server-addr: 192.168.200.130:8848
+        group: DEFAULT_GROUP
+        username: nacos
+        password: nacos
+      #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
+      config:
+        enabled: true
+        server-addr: 192.168.200.130:8848
+        username: nacos
+        password: nacos
+        #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
+        file-extension: yaml
+        refresh-enabled: true
+        #        group: DEFAULT_GROUP
+        shared-configs:
+          - data-id: shared-swagger.yaml
+          - data-id: shared-db.yaml
+          - data-id: shared-log.yaml
+          - data-id: shared-mp.yaml
+          - data-id: shared-spring.yaml
+          - data-id: shared-seata.yaml
+          - data-id: shared-feign.yaml
+          - data-id: shared-jwt.yaml

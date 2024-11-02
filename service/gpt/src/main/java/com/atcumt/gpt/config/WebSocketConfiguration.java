@@ -27,7 +27,7 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(webSocketGptServer, "/ws/gpt/v2/send")
+        registry.addHandler(webSocketGptServer, "/ws/v2/gpt/send")
                 .setAllowedOrigins("*"); // 允许跨域访问
     }
 }

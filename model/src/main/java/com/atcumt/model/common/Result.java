@@ -31,4 +31,12 @@ public class Result<T> {
     public static <T> Result<T> failure(ResultCode resultCode) {
         return new Result<>(resultCode.getCode(), resultCode.getMessage(), null);
     }
+
+    public static <T> Result<T> failure(int resultCode, String message) {
+        return new Result<>(resultCode, message, null);
+    }
+
+    public static <T> Result<T> failure(String message) {
+        return new Result<>(ResultCode.FAILURE.getCode(), message, null);
+    }
 }
