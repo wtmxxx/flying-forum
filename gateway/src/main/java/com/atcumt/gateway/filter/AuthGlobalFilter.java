@@ -8,6 +8,7 @@ import com.atcumt.gateway.property.AuthProperty;
 import com.atcumt.model.common.ResultCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Component
+@RefreshScope
 @EnableConfigurationProperties(AuthProperty.class)
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
@@ -59,7 +61,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return response.setComplete();
         }
         // 5.如果有效，传递用户信息
-        System.out.println(userId);
         ServerWebExchange webExchange = exchange.mutate()
                 .request(r -> r.header("user-id", userId))
                 .build();
