@@ -2,18 +2,26 @@ package com.atcumt.gpt.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONObject;
+import com.atcumt.common.exception.UnauthorizedException;
+import com.atcumt.common.utils.UserContext;
 import com.atcumt.gpt.mapper.ConversationMapper;
 import com.atcumt.gpt.mapper.MessageMapper;
 import com.atcumt.gpt.service.ConversationService;
+import com.atcumt.model.common.PageQueryDTO;
+import com.atcumt.model.common.PageQueryVO;
+import com.atcumt.model.common.ResultCode;
 import com.atcumt.model.gpt.dto.ConversationDTO;
 import com.atcumt.model.gpt.dto.ConversationGptDTO;
 import com.atcumt.model.gpt.entity.Conversation;
 import com.atcumt.model.gpt.entity.Message;
+import com.atcumt.model.gpt.vo.ConversationPageVO;
 import com.atcumt.model.gpt.vo.ConversationVO;
 import com.atcumt.model.gpt.vo.MessagePageVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +63,12 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     @Override
     public String getTitle(String conversationId) {
         Conversation conversation = conversationMapper.selectById(conversationId);
+
+        // 验证请求合法性（是否为本用户）
+        if (!UserContext.getUser().equals(conversation.getUserId())) {
+            throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
+        }
+
         ConversationGptDTO conversationGptDTO = BeanUtil.toBean(conversation, ConversationGptDTO.class);
         String title = conversation.getTitle();
 
@@ -91,6 +105,16 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
 
     @Override
     public void setTitle(String conversationId, String title) {
+        String userId = conversationMapper.selectOne(
+                Wrappers.<Conversation>lambdaQuery()
+                        .eq(Conversation::getId, conversationId)
+                        .select(Conversation::getUserId)
+        ).getUserId();
+        // 验证请求合法性（是否为本用户）
+        if (!UserContext.getUser().equals(userId)) {
+            throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
+        }
+
         // 定义正则表达式
         String regex = "[\\u4e00-\\u9fa5a-zA-Z\\s：:-—]+";
         // 编译正则表达式
@@ -114,6 +138,16 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteConversation(String conversationId) {
+        String userId = conversationMapper.selectOne(
+                Wrappers.<Conversation>lambdaQuery()
+                        .eq(Conversation::getId, conversationId)
+                        .select(Conversation::getUserId)
+        ).getUserId();
+        // 验证请求合法性（是否为本用户）
+        if (!UserContext.getUser().equals(userId)) {
+            throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
+        }
+
         conversationMapper.deleteById(conversationId);
         messageMapper.delete(new LambdaUpdateWrapper<Message>()
                 .eq(Message::getConversationId, conversationId));
@@ -122,6 +156,12 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     @Override
     public ConversationVO getConversation(String conversationId) {
         Conversation conversation = conversationMapper.selectById(conversationId);
+
+        // 验证请求合法性（是否为本用户）
+        if (!UserContext.getUser().equals(conversation.getUserId())) {
+            throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
+        }
+
         List<Message> messages = messageMapper.selectList(
                 Wrappers.<Message>lambdaQuery()
                         .eq(Message::getConversationId, conversationId)
@@ -133,6 +173,27 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         conversationVO.setMessages(messagePageVOs);
 
         return conversationVO;
+    }
+
+    @Override
+    public PageQueryVO<ConversationPageVO> getConversationTitles(PageQueryDTO pageQueryDTO) {
+        Page<Conversation> conversationPage = Page.of(pageQueryDTO.getPage(), pageQueryDTO.getSize());
+        conversationPage.addOrder(OrderItem.desc("update_time"));
+
+        conversationPage = conversationMapper.selectPage(
+                conversationPage,
+                Wrappers.<Conversation>lambdaQuery()
+                        .eq(Conversation::getUserId, UserContext.getUser())
+        );
+
+        return PageQueryVO
+                .<ConversationPageVO>staticBuilder()
+                .totalRecords(conversationPage.getTotal())
+                .totalPages(conversationPage.getPages())
+                .page(conversationPage.getCurrent())
+                .size(conversationPage.getSize())
+                .data(BeanUtil.copyToList(conversationPage.getRecords(), ConversationPageVO.class))
+                .build();
     }
 
 }

@@ -4,6 +4,10 @@ spring:
   profiles:
     active: dev
   cloud:
+    sentinel:
+      transport:
+        dashboard: 192.168.200.130:8090
+      http-method-specify: true # 开启请求方式前缀
     nacos:
       server-addr: 192.168.200.130:8848
       discovery:

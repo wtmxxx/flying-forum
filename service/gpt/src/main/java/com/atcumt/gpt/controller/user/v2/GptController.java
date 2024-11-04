@@ -3,8 +3,11 @@ package com.atcumt.gpt.controller.user.v2;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.gpt.service.ConversationService;
 import com.atcumt.gpt.service.MessageService;
+import com.atcumt.model.common.PageQueryDTO;
+import com.atcumt.model.common.PageQueryVO;
 import com.atcumt.model.common.Result;
 import com.atcumt.model.gpt.dto.ConversationDTO;
+import com.atcumt.model.gpt.vo.ConversationPageVO;
 import com.atcumt.model.gpt.vo.ConversationVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,13 +41,25 @@ public class GptController {
         return Result.success(conversationVO);
     }
 
+    @GetMapping("/c")
+    @Operation(summary = "获取分页对话标题")
+    public Result<PageQueryVO<ConversationPageVO>> getConversationTitles(@RequestBody PageQueryDTO pageQueryDTO) {
+        log.info("获取分页对话标题, page: {}, size: {}", pageQueryDTO.getPage(), pageQueryDTO.getSize());
+
+        // 分页查询参数校验
+        pageQueryDTO.checkParam();
+        PageQueryVO<ConversationPageVO> pageQueryVO = conversationService.getConversationTitles(pageQueryDTO);
+
+        return Result.success(pageQueryVO);
+    }
+
     @GetMapping("/c/{conversationId}")
-    @Operation(summary = "获取对话")
+    @Operation(summary = "获取对话内容")
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true)
     })
     public Result<ConversationVO> getConversation(@PathVariable String conversationId) {
-        log.info("获取对话, conversationId: {}", conversationId);
+        log.info("获取对话内容, conversationId: {}", conversationId);
 
         ConversationVO conversationVO = conversationService.getConversation(conversationId);
         return Result.success(conversationVO);

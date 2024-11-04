@@ -15,7 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 public class ConversationGptDTO {
     private String id;
-    private String userId;
     private String title;
     private List<Message> messages;
     private LocalDateTime createTime;

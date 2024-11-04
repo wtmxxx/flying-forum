@@ -6,16 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ConversationVO {
+public class ConversationPageVO {
     private String id;
     private String title;
-    private List<MessagePageVO> messages;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }
