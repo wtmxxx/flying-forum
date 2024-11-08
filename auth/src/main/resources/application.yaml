@@ -1,0 +1,6 @@
+server:
+  port: 8999
+
+school:
+  auth-server:
+    url: ${cumt-forum.school.auth-server.url}

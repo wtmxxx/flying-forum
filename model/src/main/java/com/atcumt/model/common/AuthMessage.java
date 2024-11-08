@@ -10,7 +10,7 @@ public enum AuthMessage {
     WEAK_PASSWORD("密码强度不够，请使用更复杂的密码"),
     INVALID_EMAIL_FORMAT("邮箱格式不正确，请输入有效的邮箱地址"),
     SUCCESSFUL_REGISTRATION("注册成功！欢迎加入"),
-    UNIFIED_AUTH_FAILURE("统一身份认证失败，请检查学号或密码"),
+    UNIFIED_AUTH_FAILURE("统一身份认证失败"),
     QQ_OAUTH_ID_ALREADY_BOUND("该QQ账号已绑定到其他用户"),
     WECHAT_OAUTH_ID_ALREADY_BOUND("该微信账号已绑定到其他用户"),
     SYSTEM_ERROR("系统错误，请稍后重试");

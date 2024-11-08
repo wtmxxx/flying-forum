@@ -28,3 +28,7 @@ knife4j:
         serviceName: user-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}
+      - name: 鉴权服务
+        serviceName: auth-service
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}

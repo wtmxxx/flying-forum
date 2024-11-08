@@ -1,13 +1,9 @@
 spring:
   application:
-    name: gateway
+    name: auth-service
   profiles:
     active: dev
   cloud:
-    sentinel:
-      transport:
-        dashboard: 192.168.200.130:8090
-      http-method-specify: true # 开启请求方式前缀
     nacos:
       server-addr: 192.168.200.130:8848
       discovery:
@@ -16,6 +12,7 @@ spring:
         group: DEFAULT_GROUP
         username: nacos
         password: nacos
+      #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
       config:
         enabled: true
         server-addr: 192.168.200.130:8848
@@ -26,7 +23,12 @@ spring:
         refresh-enabled: true
         #        group: DEFAULT_GROUP
         shared-configs:
-          - data-id: gateway-exclude.yaml
-            refresh: true
+          - data-id: shared-swagger.yaml
+          - data-id: shared-db.yaml
           - data-id: shared-log.yaml
+          - data-id: shared-mp.yaml
+          - data-id: shared-spring.yaml
+          - data-id: shared-feign.yaml
+          - data-id: shared-gpt.yaml
+          - data-id: shared-seata.yaml
           - data-id: shared-jwt.yaml

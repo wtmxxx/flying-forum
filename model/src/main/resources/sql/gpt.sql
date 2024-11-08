@@ -1,7 +1,7 @@
 -- GPT数据库表结构
 
 CREATE SCHEMA IF NOT EXISTS gpt;
--- 该Schema包含两个主要表：conversation（对话表）和 message（消息表），用于存储用户与 GPT 系统的对话及其相关消息。
+-- 该Schema包含两个主要表：conversation（对话表）和 msg（消息表），用于存储用户与 GPT 系统的对话及其相关消息。
 
 -- 创建聊天对话表，存储用户与GPT的对话记录
 USE gpt;

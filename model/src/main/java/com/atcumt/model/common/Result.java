@@ -7,12 +7,12 @@ import lombok.Data;
 @Builder
 public class Result<T> {
     private int code;
-    private String message;
+    private String msg;
     private T data;
 
-    public Result(int code, String message, T data) {
+    public Result(int code, String msg, T data) {
         this.code = code;
-        this.message = message;
+        this.msg = msg;
         this.data = data;
     }
 

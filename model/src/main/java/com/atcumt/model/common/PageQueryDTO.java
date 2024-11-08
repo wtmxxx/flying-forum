@@ -1,9 +1,11 @@
 package com.atcumt.model.common;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 @Schema(description = "分页查询DTO")
 public class PageQueryDTO {
     @Schema(description = "页码", example = "1")

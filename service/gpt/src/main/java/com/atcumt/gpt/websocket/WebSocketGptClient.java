@@ -91,7 +91,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
         String message = redisTemplate.opsForValue().get("gptWebSocket:" + conversationId);
 
         if (message == null) {
-            throw new IllegalStateException("Redis does not contain message.");
+            throw new IllegalStateException("Redis does not contain msg.");
         }
 
         if (gptSession != null && gptSession.isOpen()) {
@@ -132,7 +132,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(@NonNull WebSocketSession gptSession, @NonNull TextMessage message) throws IOException {
-//        System.out.println("Received: " + message.getPayload());
+//        System.out.println("Received: " + msg.getPayload());
         // 获取ConversationId
         String conversationId = getConversationId(gptSession);
 //        WebSocketSession userSession = (WebSocketSession) redisTemplate.opsForHash().get("gptWebSocket:" + conversationId, WebSocketType.USER);
@@ -196,7 +196,7 @@ public class WebSocketGptClient extends TextWebSocketHandler {
                 )));
 
             } else {
-                throw new IllegalStateException("Unknown message type: " + messageType);
+                throw new IllegalStateException("Unknown msg type: " + messageType);
             }
         } else {
             throw new IllegalStateException("Map got WebSocket null for conversationId.");

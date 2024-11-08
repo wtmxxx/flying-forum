@@ -43,8 +43,18 @@ public class GptController {
 
     @GetMapping("/c")
     @Operation(summary = "获取分页对话标题")
-    public Result<PageQueryVO<ConversationPageVO>> getConversationTitles(@RequestBody PageQueryDTO pageQueryDTO) {
-        log.info("获取分页对话标题, page: {}, size: {}", pageQueryDTO.getPage(), pageQueryDTO.getSize());
+    @Parameters({
+            @Parameter(name = "page", description = "页码", example = "1", required = true),
+            @Parameter(name = "size", description = "每页的记录数", example = "10", required = true)
+    })
+    public Result<PageQueryVO<ConversationPageVO>> getConversationTitles(Long page, Long size) {
+        log.info("获取分页对话标题, page: {}, size: {}", page, size);
+
+        PageQueryDTO pageQueryDTO = PageQueryDTO
+                .builder()
+                .page(page)
+                .size(size)
+                .build();
 
         // 分页查询参数校验
         pageQueryDTO.checkParam();

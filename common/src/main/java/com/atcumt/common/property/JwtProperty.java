@@ -13,4 +13,5 @@ public class JwtProperty {
     private String password;
     private String alias;
     private Duration ttl = Duration.ofDays(7);
+    private String type = "JKS";
 }
