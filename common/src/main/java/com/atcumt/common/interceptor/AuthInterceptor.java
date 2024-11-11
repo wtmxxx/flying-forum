@@ -10,7 +10,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         // 1.获取请求头中的用户信息
-        String userId = request.getHeader("user-id");
+        String userId = request.getHeader("X-User-ID");
         // 2.判断是否为空
         if (StrUtil.isNotBlank(userId)) {
             // 不为空，保存到ThreadLocal

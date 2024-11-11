@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum AuthMessage {
     USERNAME_ALREADY_EXISTS("用户名已存在，请选择其他用户名"),
+    USERNAME_NOT_EXISTS("用户名不存在，请先注册"),
     EMAIL_ALREADY_REGISTERED("该邮箱已注册，请使用其他邮箱"),
     STUDENT_ID_ALREADY_REGISTERED("该学号已注册，请检查学号是否正确"),
     WEAK_PASSWORD("密码强度不够，请使用更复杂的密码"),

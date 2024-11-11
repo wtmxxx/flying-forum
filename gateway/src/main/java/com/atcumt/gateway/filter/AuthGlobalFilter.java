@@ -1,5 +1,6 @@
 package com.atcumt.gateway.filter;
 
+import cn.dev33.satoken.same.SaSameUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.AntPathMatcher;
 import com.atcumt.common.exception.UnauthorizedException;
@@ -60,10 +61,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             response.setRawStatusCode(ResultCode.UNAUTHORIZED.getCode());
             return response.setComplete();
         }
-        // 5.如果有效，传递用户信息
+        // 5.如果有效，传递用户信息和网关鉴定SameToken
         ServerWebExchange webExchange = exchange.mutate()
-                .request(r -> r.header("user-id", userId))
-                .build();
+                .request(r -> r
+                        .header("X-User-ID", userId)
+                        .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
+                ).build();
         // 6.放行
         return chain.filter(webExchange);
     }

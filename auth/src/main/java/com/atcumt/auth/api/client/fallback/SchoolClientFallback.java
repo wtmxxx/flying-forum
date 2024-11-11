@@ -12,7 +12,7 @@ public class SchoolClientFallback implements FallbackFactory<SchoolClient> {
     public SchoolClient create(Throwable cause) {
         return new SchoolClient() {
             @Override
-            public String getProfile(String token) {
+            public String getSchoolCard(String token) {
                 throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage(), cause);
             }
         };

@@ -4,3 +4,4 @@ com.atcumt.common.config.OpenApiConfiguration
 com.atcumt.common.config.RedisConfiguration
 com.atcumt.common.config.MvcConfiguration
 com.atcumt.common.utils.JwtTool
+com.atcumt.common.config.SaTokenConfiguration

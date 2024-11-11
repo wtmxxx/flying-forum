@@ -1,10 +1,12 @@
 package com.atcumt.common.advice;
 
+import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.exception.BadRequestException;
 import com.atcumt.common.exception.CommonException;
 import com.atcumt.common.exception.DbException;
 import com.atcumt.common.utils.WebUtil;
 import com.atcumt.model.common.Result;
+import com.atcumt.model.common.ResultCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.ResponseEntity;
@@ -52,10 +54,23 @@ public class GlobalExceptionAdvice {
         return processResponse(new BadRequestException("请求参数格式错误"));
     }
 
+    @ExceptionHandler(AuthorizationException.class)
+    public Object handleBadRequestException(AuthorizationException e) {
+        log.error("鉴权异常 -> {} , 异常原因：{}  ", e.getClass().getName(), e.getMessage());
+        log.debug("", e);
+        return processResponse(e);
+    }
+
     @ExceptionHandler(Exception.class)
     public Object handleRuntimeException(Exception e) {
         log.error("其他异常 uri : {} -> ", Objects.requireNonNull(WebUtil.getRequest()).getRequestURI(), e);
         return processResponse(new CommonException("服务器内部异常", 500));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public Object handleRuntimeException(RuntimeException e) {
+        log.error("运行时异常 uri : {} -> ", Objects.requireNonNull(WebUtil.getRequest()).getRequestURI(), e);
+        return processResponse(new CommonException(e.getCause().getMessage(), ResultCode.FAILURE.getCode()));
     }
 
     private ResponseEntity<Result<Void>> processResponse(CommonException e) {

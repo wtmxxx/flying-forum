@@ -1,5 +1,6 @@
 package com.atcumt.gpt.api.config;
 
+import cn.dev33.satoken.same.SaSameUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.gpt.api.client.fallback.UserClientFallback;
 import feign.Logger;
@@ -24,7 +25,9 @@ public class FeignConfiguration {
                 return;
             }
             // 如果不为空则放入请求头中，传递给下游微服务
-            template.header("user-id", userId);
+            template
+                    .header("X-User-ID", userId)
+                    .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken());
         };
     }
 

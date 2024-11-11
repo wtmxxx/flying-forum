@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController("gptControllerV2")
-@RequestMapping("/api/v2/gpt/user")
+@RequestMapping("/api/gpt/v2/user")
 @Tag(name = "GPT", description = "GPT相关接口")
 @RequiredArgsConstructor
 @Slf4j

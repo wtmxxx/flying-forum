@@ -44,8 +44,8 @@ public class JwtTool {
     }
 
     public String createToken(String userId, Duration ttl) {
-        return JWT.create()
-                .addPayloads(Map.of("user_id", userId))
+        return "Bearer " + JWT.create()
+                .addPayloads(Map.of("userId", userId))
                 .setExpiresAt(new Date(System.currentTimeMillis() + ttl.toMillis()))
                 .setIssuer("atcumt")
                 .sign(jwtSigner);
@@ -55,6 +55,10 @@ public class JwtTool {
         // 1.校验token是否为空
         if (token == null) {
             throw new UnauthorizedException("用户未登录");
+        }
+        // 去掉"Bearer "前缀（如果存在）
+        if (token.startsWith("Bearer ") || token.startsWith("bearer ")) {
+            token = token.substring(7);
         }
         // 2.校验并解析jwt
         JWT jwt;
@@ -75,12 +79,11 @@ public class JwtTool {
             throw new UnauthorizedException("token已经过期");
         }
         // 4.数据格式校验
-        Object userPayload = jwt.getPayload("user_id");
+        Object userPayload = jwt.getPayload("userId");
         if (userPayload == null) {
             // 数据为空
             throw new UnauthorizedException("无效的token");
         }
-
         // 5.数据解析
         try {
             return userPayload.toString();
