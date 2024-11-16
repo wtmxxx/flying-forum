@@ -25,3 +25,4 @@ spring:
           - data-id: shared-spring.yaml
           - data-id: shared-gpt.yaml
           - data-id: shared-seata.yaml
+          - data-id: shared-redis.yaml

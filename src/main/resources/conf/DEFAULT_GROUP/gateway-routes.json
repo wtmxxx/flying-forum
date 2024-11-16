@@ -1,15 +1,41 @@
 [
   {
-    "id": "gpt",
+    "id": "gpt-service",
     "predicates": [
       {
         "name": "Path",
         "args": {
-          "_genkey_0": "/api/v2/gpt/**"
+          "_genkey_0": "/api/gpt/**"
         }
       }
     ],
     "filters": [],
     "uri": "lb://gpt-service"
+  },
+  {
+    "id": "user-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/user/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://user-service"
+  },
+  {
+    "id": "auth-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/auth/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://auth-service"
   }
 ]

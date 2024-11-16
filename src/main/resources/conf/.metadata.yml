@@ -41,6 +41,11 @@ metadata:
     type: yaml
   - appName: ''
     dataId: gateway-routes.json
-    desc: Gateway动态路由配置
+    desc: ''
     group: DEFAULT_GROUP
     type: json
+  - appName: ''
+    dataId: shared-jwt.yaml
+    desc: JWT的共享配置
+    group: DEFAULT_GROUP
+    type: yaml

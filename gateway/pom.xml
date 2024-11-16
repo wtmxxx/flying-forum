@@ -84,10 +84,6 @@
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-redis</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.baomidou</groupId>
                     <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 </exclusion>
@@ -102,6 +98,10 @@
                 <exclusion>
                     <groupId>com.github.xiaoymin</groupId>
                     <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>cn.dev33</groupId>
+                    <artifactId>sa-token-spring-boot3-starter</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -119,6 +119,12 @@
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-redis-jackson</artifactId>
+            <version>${sa-token.version}</version>
+        </dependency>
+        <!-- Sa-Token插件：权限缓存与业务缓存分离 -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-alone-redis</artifactId>
             <version>${sa-token.version}</version>
         </dependency>
         <dependency>

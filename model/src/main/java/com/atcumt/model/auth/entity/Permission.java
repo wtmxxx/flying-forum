@@ -21,4 +21,5 @@ public class Permission {
     private String permissionName; // 权限名称，如查看用户、编辑用户、删除用户
     private String description; // 权限描述，便于说明权限的作用
     private LocalDateTime createTime; // 权限创建时间
+    private LocalDateTime updateTime;
 }

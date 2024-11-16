@@ -43,3 +43,4 @@ application-prod.yaml
 /src/main/resources/docker/cumt-forum/
 /gateway/src/main/resources/cumt-forum.jks
 /gateway/src/main/resources/application.yaml
+/src/main/resources/conf/

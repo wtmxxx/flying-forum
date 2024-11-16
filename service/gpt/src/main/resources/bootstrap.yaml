@@ -31,4 +31,4 @@ spring:
           - data-id: shared-gpt.yaml
           - data-id: shared-seata.yaml
           - data-id: shared-feign.yaml
-          - data-id: shared-jwt.yaml
+          - data-id: shared-redis.yaml

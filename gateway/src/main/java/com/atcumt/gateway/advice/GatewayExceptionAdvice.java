@@ -4,6 +4,7 @@ import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @RestControllerAdvice
-@Order(Integer.MIN_VALUE)  // 优先级较高，确保捕获到异常
+@Order(Ordered.HIGHEST_PRECEDENCE)  // 优先级较高，确保捕获到异常
 public class GatewayExceptionAdvice implements WebExceptionHandler {
 
     @Override

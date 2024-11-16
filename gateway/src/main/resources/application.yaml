@@ -2,7 +2,8 @@ server:
   port: 8080
 spring:
   main:
-    web-application-type: reactive
+    web-application-type: reactive # 呵呵呵
+    allow-bean-definition-overriding: true # 为什么啊，我服了
 
 logging:
   level:

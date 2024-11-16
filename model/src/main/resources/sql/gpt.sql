@@ -3,8 +3,28 @@
 CREATE SCHEMA IF NOT EXISTS gpt;
 -- 该Schema包含两个主要表：conversation（对话表）和 msg（消息表），用于存储用户与 GPT 系统的对话及其相关消息。
 
--- 创建聊天对话表，存储用户与GPT的对话记录
+-- 使用gpt表
 USE gpt;
+
+-- 注意此处0.3.0+ 增加唯一索引 ux_undo_log
+CREATE TABLE `undo_log`
+(
+    `id`            bigint(20)   NOT NULL AUTO_INCREMENT,
+    `branch_id`     bigint(20)   NOT NULL,
+    `xid`           varchar(100) NOT NULL,
+    `context`       varchar(128) NOT NULL,
+    `rollback_info` longblob     NOT NULL,
+    `log_status`    int(11)      NOT NULL,
+    `log_created`   datetime     NOT NULL,
+    `log_modified`  datetime     NOT NULL,
+    `ext`           varchar(100) DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8;
+
+-- 创建聊天对话表，存储用户与GPT的对话记录
 CREATE TABLE IF NOT EXISTS conversation
 (
     id      VARCHAR(36) NOT NULL COMMENT '对话ID，由UUID算法生成'

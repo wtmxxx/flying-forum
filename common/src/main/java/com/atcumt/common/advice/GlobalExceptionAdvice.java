@@ -1,10 +1,9 @@
 package com.atcumt.common.advice;
 
-import com.atcumt.common.exception.AuthorizationException;
-import com.atcumt.common.exception.BadRequestException;
-import com.atcumt.common.exception.CommonException;
-import com.atcumt.common.exception.DbException;
+import cn.hutool.core.exceptions.ExceptionUtil;
+import com.atcumt.common.exception.*;
 import com.atcumt.common.utils.WebUtil;
+import com.atcumt.model.common.AuthMessage;
 import com.atcumt.model.common.Result;
 import com.atcumt.model.common.ResultCode;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,7 @@ public class GlobalExceptionAdvice {
     }
 
     @ExceptionHandler(CommonException.class)
-    public Object handleBadRequestException(CommonException e) {
+    public Object handleAuthorizationException(CommonException e) {
         log.error("自定义异常 -> {} , 异常原因：{}  ", e.getClass().getName(), e.getMessage());
         log.debug("", e);
         return processResponse(e);
@@ -55,22 +54,31 @@ public class GlobalExceptionAdvice {
     }
 
     @ExceptionHandler(AuthorizationException.class)
-    public Object handleBadRequestException(AuthorizationException e) {
+    public Object handleAuthorizationException(AuthorizationException e) {
         log.error("鉴权异常 -> {} , 异常原因：{}  ", e.getClass().getName(), e.getMessage());
         log.debug("", e);
         return processResponse(e);
     }
 
-    @ExceptionHandler(Exception.class)
-    public Object handleRuntimeException(Exception e) {
-        log.error("其他异常 uri : {} -> ", Objects.requireNonNull(WebUtil.getRequest()).getRequestURI(), e);
-        return processResponse(new CommonException("服务器内部异常", 500));
+    @ExceptionHandler(UnauthorizedException.class)
+    public Object handleUnauthorizedException(UnauthorizedException e) {
+        log.error("未授权异常 -> {} , 异常原因：{}  ", e.getClass().getName(), e.getMessage());
+        log.debug("", e);
+        return processResponse(new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public Object handleRuntimeException(RuntimeException e) {
+    public Object handleRuntimeException(RuntimeException e) throws Throwable {
         log.error("运行时异常 uri : {} -> ", Objects.requireNonNull(WebUtil.getRequest()).getRequestURI(), e);
-        return processResponse(new CommonException(e.getCause().getMessage(), ResultCode.FAILURE.getCode()));
+
+        Throwable finalCause = ExceptionUtil.getRootCause(e);
+        return processResponse(new CommonException(finalCause.getLocalizedMessage(), ResultCode.FAILURE.getCode()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public Object handleException(Exception e) {
+        log.error("其他异常 uri : {} -> ", Objects.requireNonNull(WebUtil.getRequest()).getRequestURI(), e);
+        return processResponse(new CommonException("服务器内部异常", 500));
     }
 
     private ResponseEntity<Result<Void>> processResponse(CommonException e) {

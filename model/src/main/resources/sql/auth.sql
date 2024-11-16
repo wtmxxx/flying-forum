@@ -6,6 +6,24 @@ CREATE SCHEMA IF NOT EXISTS auth;
 -- 使用 auth 表
 USE auth;
 
+-- 注意此处0.3.0+ 增加唯一索引 ux_undo_log （seata）
+CREATE TABLE `undo_log`
+(
+    `id`            bigint(20)   NOT NULL AUTO_INCREMENT,
+    `branch_id`     bigint(20)   NOT NULL,
+    `xid`           varchar(100) NOT NULL,
+    `context`       varchar(128) NOT NULL,
+    `rollback_info` longblob     NOT NULL,
+    `log_status`    int(11)      NOT NULL,
+    `log_created`   datetime     NOT NULL,
+    `log_modified`  datetime     NOT NULL,
+    `ext`           varchar(100) DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8;
+
 -- 创建用户认证表，用于存储用户的登录和认证信息
 CREATE TABLE IF NOT EXISTS user_auth
 (
@@ -15,8 +33,7 @@ CREATE TABLE IF NOT EXISTS user_auth
     username        VARCHAR(50) UNIQUE                                              NULL COMMENT '系统内唯一用户名，用于登录',
     email           VARCHAR(100) UNIQUE                                             NULL COMMENT '用户邮箱，唯一，用于找回密码',
     password        VARCHAR(255)                                                    NULL COMMENT '加密存储的用户密码',
-    qq_oauth_id     VARCHAR(100)                                                    NULL COMMENT 'QQ的OAuth 2.0认证ID，绑定QQ时使用',
-    wechat_oauth_id VARCHAR(100)                                                    NULL COMMENT '微信的OAuth 2.0认证ID，绑定微信时使用',
+    oauth_id VARCHAR(100) NULL COMMENT 'OAuthID，绑定第三方服务时使用',
     enabled         BOOLEAN   DEFAULT TRUE                                          NOT NULL COMMENT '账户是否启用，TRUE表示启用，FALSE表示禁用',
     create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP                             NOT NULL COMMENT '用户注册时间，默认为当前时间',
     update_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL COMMENT '用户信息更新时间，更新时自动刷新',
@@ -26,11 +43,25 @@ CREATE TABLE IF NOT EXISTS user_auth
     INDEX idx_student_id (student_id) COMMENT '学生学号的索引，加速按学号查询',
     INDEX idx_username (username) COMMENT '用户名的索引，加速按用户名查询',
     INDEX idx_email (email) COMMENT '用户邮箱的索引，加速按邮箱查询',
-    INDEX idx_qq_oauth_id (qq_oauth_id) COMMENT 'QQ OAuth ID的索引，加速按QQ OAuth ID查询',
-    INDEX idx_wechat_oauth_id (wechat_oauth_id) COMMENT '微信 OAuth ID的索引，加速按微信 OAuth ID查询'
+    INDEX idx_oauth_id (oauth_id) COMMENT 'OAuthID的索引，加速按OAuthID查询'
 )
     COMMENT = '用户认证表，存储用户的基本认证信息，包括用户名、邮箱、启用状态及第三方OAuth信息';
 
+-- OAuth授权信息表，用于存储不同平台的授权信息
+CREATE TABLE IF NOT EXISTS oauth
+(
+    oauth_id       CHAR(36)                                                        NOT NULL COMMENT '授权记录ID，由UUID生成'
+        PRIMARY KEY,
+    provider       VARCHAR(50)                                                     NOT NULL COMMENT '授权提供方，如QQ、WeChat、Github',
+    third_party_id VARCHAR(100)                                                    NOT NULL UNIQUE COMMENT '第三方平台的唯一用户标识',
+    create_time    TIMESTAMP DEFAULT CURRENT_TIMESTAMP                             NOT NULL COMMENT '记录创建时间',
+    update_time    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL COMMENT '记录更新时间',
+
+    -- 索引
+    INDEX idx_provider (provider) COMMENT '授权提供方索引，加速按提供方查询',
+    INDEX idx_third_party_id (third_party_id) COMMENT '第三方平台用户ID索引，加速查询'
+)
+    COMMENT = 'OAuth授权信息表，存储不同平台的授权信息';
 
 -- 微信授权信息表，用于存储微信授权登录信息
 CREATE TABLE IF NOT EXISTS wechat_auth
@@ -106,14 +137,30 @@ CREATE TABLE IF NOT EXISTS role_permission
 )
     COMMENT = '角色权限表，存储角色与权限的关联信息';
 
+-- 角色表，用于定义系统中的各项角色
+CREATE TABLE IF NOT EXISTS role
+(
+    role_id     VARCHAR(36)                                                     NOT NULL COMMENT '角色ID，由UUID生成'
+        PRIMARY KEY,
+    role_name   VARCHAR(50) UNIQUE                                              NOT NULL COMMENT '角色名称，如管理员、普通用户、访客',
+    description VARCHAR(255)                                                    NULL COMMENT '角色描述，便于说明角色的作用',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP                             NOT NULL COMMENT '角色创建时间',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL COMMENT '角色更新时间',
+
+    -- 索引
+    INDEX idx_role_name (role_name) COMMENT '角色名称索引，加速按角色名称查询'
+)
+    COMMENT = '角色表，定义系统中的各项角色';
+
 -- 权限表，用于定义系统中的各项权限
 CREATE TABLE IF NOT EXISTS permission
 (
-    permission_id   VARCHAR(36)                         NOT NULL COMMENT '权限ID，由UUID生成'
+    permission_id   VARCHAR(36)                                                     NOT NULL COMMENT '权限ID，由UUID生成'
         PRIMARY KEY,
-    permission_name VARCHAR(50) UNIQUE                  NOT NULL COMMENT '权限名称，如查看用户、编辑用户、删除用户',
-    description     VARCHAR(255)                        NULL COMMENT '权限描述，便于说明权限的作用',
-    create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '权限创建时间',
+    permission_name VARCHAR(50) UNIQUE                                              NOT NULL COMMENT '权限名称，如查看用户、编辑用户、删除用户',
+    description     VARCHAR(255)                                                    NULL COMMENT '权限描述，便于说明权限的作用',
+    create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP                             NOT NULL COMMENT '权限创建时间',
+    update_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL COMMENT '权限更新时间',
 
     -- 索引
     INDEX idx_permission_name (permission_name) COMMENT '权限名称索引，加速按权限名称查询'

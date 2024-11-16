@@ -19,7 +19,7 @@ public class OpenApiConfiguration {
                         .contact(
                                 new Contact().name("Wotemo").email("wotemo@qq.com")
                         )
-                        .version("v0.0.1")
+                        .version("v1.0.0")
                         .license(new License().name("Apache 2.0").url("https://kxz.atcumt.com")))
 //                .externalDocs(new ExternalDocumentation()
 //                        .description("SpringShop Wiki Documentation")

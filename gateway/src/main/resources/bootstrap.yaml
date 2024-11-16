@@ -29,4 +29,5 @@ spring:
           - data-id: gateway-exclude.yaml
             refresh: true
           - data-id: shared-log.yaml
-          - data-id: shared-jwt.yaml
+          - data-id: shared-satoken.yaml
+          - data-id: shared-redis.yaml

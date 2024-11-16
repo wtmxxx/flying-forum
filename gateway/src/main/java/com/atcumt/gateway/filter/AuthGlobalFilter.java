@@ -1,10 +1,9 @@
 package com.atcumt.gateway.filter;
 
 import cn.dev33.satoken.same.SaSameUtil;
-import cn.hutool.core.collection.CollectionUtil;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.text.AntPathMatcher;
 import com.atcumt.common.exception.UnauthorizedException;
-import com.atcumt.common.utils.JwtTool;
 import com.atcumt.gateway.property.AuthProperty;
 import com.atcumt.model.common.ResultCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,20 +18,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 
 @Component
 @RefreshScope
 @EnableConfigurationProperties(AuthProperty.class)
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
-    private final JwtTool jwtTool;
     private final AuthProperty authProperty;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
-
     @Autowired
-    AuthGlobalFilter(JwtTool jwtTool, AuthProperty authProperty) {
-        this.jwtTool = jwtTool;
+    AuthGlobalFilter(AuthProperty authProperty) {
         this.authProperty = authProperty;
     }
 
@@ -42,19 +37,19 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         // 2.判断是否不需要拦截
         if (isExclude(request.getPath().toString())) {
-            // 无需拦截，直接放行
-            return chain.filter(exchange);
+            // 传递网关鉴定SameToken
+            ServerWebExchange webExchange = exchange.mutate()
+                    .request(r -> r
+                            .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
+                    ).build();
+            // 放行
+            return chain.filter(webExchange);
         }
-        // 3.获取请求头中的token
-        String token = null;
-        List<String> headers = request.getHeaders().get("Authorization");
-        if (!CollectionUtil.isEmpty(headers)) {
-            token = headers.getFirst();
-        }
-        // 4.校验并解析token
+        // 3.sa-token自动获取请求头中的Token
+        // 4.校验并解析Token
         String userId;
         try {
-            userId = jwtTool.parseToken(token);
+            userId = StpUtil.getLoginIdAsString();
         } catch (UnauthorizedException e) {
             // 如果无效，拦截
             ServerHttpResponse response = exchange.getResponse();
@@ -72,6 +67,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isExclude(String antPath) {
+        // 首先检查include
+        for (String pathPattern : authProperty.getIncludePaths()) {
+            if (antPathMatcher.match(pathPattern, antPath)) {
+                return false;
+            }
+        }
+        // 其次检查exclude
         for (String pathPattern : authProperty.getExcludePaths()) {
             if (antPathMatcher.match(pathPattern, antPath)) {
                 return true;
