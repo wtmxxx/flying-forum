@@ -1,13 +1,17 @@
 package com.atcumt.model.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
 public class Result<T> {
+    @Schema(description = "响应码")
     private int code;
+    @Schema(description = "响应消息")
     private String msg;
+    @Schema(description = "响应数据")
     private T data;
 
     public Result(int code, String msg, T data) {

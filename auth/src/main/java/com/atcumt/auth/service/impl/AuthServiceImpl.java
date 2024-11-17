@@ -2,7 +2,11 @@ package com.atcumt.auth.service.impl;
 
 import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.captcha.AbstractCaptcha;
+import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.core.lang.UUID;
 import cn.hutool.core.lang.Validator;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
@@ -13,6 +17,7 @@ import com.atcumt.auth.service.AuthService;
 import com.atcumt.auth.utils.EmailUtil;
 import com.atcumt.auth.utils.RefreshTokenUtil;
 import com.atcumt.common.exception.AuthorizationException;
+import com.atcumt.common.exception.BadRequestException;
 import com.atcumt.common.exception.TooManyRequestsException;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.model.auth.entity.UserAuth;
@@ -25,10 +30,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.seata.spring.annotation.GlobalTransactional;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -186,7 +193,17 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public void SendVerifyCode(String email) throws Exception {
+    public void SendVerifyCode(String email, String captchaId, String captchaCode) throws Exception {
+        // 检查图形验证码
+        String captchaKey = "Authorization:captcha:" + captchaId;
+        String realCaptchaCode = redisStringTemplate.opsForValue().get(captchaKey);
+
+        redisStringTemplate.delete(captchaKey);
+
+        if (Objects.nonNull(realCaptchaCode) && !Objects.equals(captchaCode.toLowerCase(), realCaptchaCode.toLowerCase())) {
+            throw new IllegalArgumentException(AuthMessage.CAPTCHA_CODE_INCORRECT.getMessage());
+        }
+
         // 检查邮箱合法性
         if (!Validator.isEmail(email)) {
             throw new IllegalArgumentException(AuthMessage.INVALID_EMAIL_FORMAT.getMessage());
@@ -271,6 +288,121 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .expiresIn(StpUtil.getTokenTimeout())
                 .refreshToken(refreshTokenUtil.generateRefreshToken())
                 .build();
+    }
+
+    @Override
+    public void updateUsername(String unifiedToken, String userId, String username) {
+        // 验证频率限制
+        String usernameChangeKey = "Authorization:username-change:" + userId;
+        Integer usernameChangeValue = redisIntegerTemplate.opsForValue().get(usernameChangeKey);
+
+        if (usernameChangeValue != null && usernameChangeValue >= 1)
+            throw new BadRequestException(AuthMessage.USERNAME_CHANGE_LIMIT_EXCEEDED.getMessage());
+
+        String studentId = getStudentIdByToken(unifiedToken);
+
+        // 从数据库查询用户
+        UserAuth userAuth = authMapper.selectOne(Wrappers
+                .<UserAuth>lambdaQuery()
+                .eq(UserAuth::getUserId, userId)
+        );
+
+        // MFA多因素身份验证
+        // 第一道验证：统一身份认证验证身份
+        if (!Objects.equals(userAuth.getStudentId(), studentId))
+            throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
+
+        // 更新用户名
+        authMapper.update(
+                Wrappers.<UserAuth>lambdaUpdate()
+                        .eq(UserAuth::getUserId, userId)
+                        .set(UserAuth::getUsername, username)
+        );
+
+        redisIntegerTemplate.opsForValue().increment(usernameChangeKey);
+    }
+
+    @Override
+    public void updatePassword(String unifiedToken, String userId, String password) {
+        String studentId = getStudentIdByToken(unifiedToken);
+
+        // 从数据库查询用户
+        UserAuth userAuth = authMapper.selectOne(Wrappers
+                .<UserAuth>lambdaQuery()
+                .eq(UserAuth::getUserId, userId)
+        );
+
+        // MFA多因素身份验证
+        // 第一道验证：统一身份认证验证身份
+        if (!Objects.equals(userAuth.getStudentId(), studentId))
+            throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
+
+        // 更新密码
+        authMapper.update(
+                Wrappers.<UserAuth>lambdaUpdate()
+                        .eq(UserAuth::getUserId, userId)
+                        .set(UserAuth::getPassword, password)
+        );
+    }
+
+    @Override
+    public void updateEmail(String unifiedToken, String userId, String verificationCode, String email) {
+        String studentId = getStudentIdByToken(unifiedToken);
+
+        // 从数据库查询用户
+        UserAuth userAuth = authMapper.selectOne(Wrappers
+                .<UserAuth>lambdaQuery()
+                .eq(UserAuth::getUserId, userId)
+        );
+
+        // MFA多因素身份验证
+        // 第一道验证：统一身份认证验证身份
+        if (!Objects.equals(userAuth.getStudentId(), studentId))
+            throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
+
+        // 检查邮箱和验证码
+        validateVerificationCode(email, verificationCode);
+
+        // 更新邮箱
+        authMapper.update(
+                Wrappers.<UserAuth>lambdaUpdate()
+                        .eq(UserAuth::getUserId, userId)
+                        .set(UserAuth::getEmail, email)
+        );
+    }
+
+    @Override
+    public void sendCaptcha(HttpServletResponse response) throws Exception {
+        // 设置响应头
+        response.setContentType("image/png");
+        // 生成唯一验证码 ID
+        String captchaId = UUID.randomUUID().toString();
+        response.setHeader("X-Captcha-Id", captchaId);
+
+        //定义图形验证码的长、宽、验证码字符数、干扰线宽度
+        AbstractCaptcha captcha;
+        int choice = RandomUtil.randomInt(0, 5);
+        int codeWidth = 150;
+        int codeHeight = 50;
+        int codeCount = 4;
+        captcha = switch (choice) {
+            case 0 -> CaptchaUtil.createShearCaptcha(codeWidth, codeHeight, codeCount, 5);
+            case 1 -> CaptchaUtil.createCircleCaptcha(codeWidth, codeHeight, codeCount, 25);
+            default -> CaptchaUtil.createLineCaptcha(codeWidth, codeHeight, codeCount, 100);
+        };
+
+//        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(200, 100, 4, 4);
+
+        String captchaKey = "Authorization:captcha:" + captchaId;
+        try {
+            //图形验证码写出，可以写出到文件，也可以写出到流
+            captcha.write(response.getOutputStream());
+
+            // 存储验证码到 Redis，5 分钟过期
+            redisStringTemplate.opsForValue().set(captchaKey, captcha.getCode(), 5, TimeUnit.MINUTES);
+        } catch (IOException e) {
+            throw new IOException("验证码生成或写出失败");
+        }
     }
 
 

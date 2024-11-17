@@ -11,12 +11,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController("authControllerCommonV1")
 @RequestMapping("/api/auth/v1")
@@ -71,7 +69,7 @@ public class AuthController {
             @Parameter(name = "username", description = "用户名", required = true),
             @Parameter(name = "password", description = "密码", required = true)
     })
-    public Result<Object> bingUsername(@RequestHeader("Authorization") String accessToken, String username, String password) throws Exception {
+    public Result<Object> bingUsernamePassword(@RequestHeader("Authorization") String accessToken, String username, String password) throws Exception {
         log.info("绑定用户名, accessToken: {}", accessToken);
 
         authService.bindUsername(StpUtil.getLoginIdAsString(), username, password);
@@ -101,15 +99,25 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/captcha")
+    @Operation(summary = "获取图形验证码")
+    public void sendCaptcha(HttpServletResponse response) throws Exception {
+        log.info("获取图形验证码");
+
+        authService.sendCaptcha(response);
+    }
+
     @PostMapping("/verification-code")
     @Operation(summary = "发送验证码")
     @Parameters({
-            @Parameter(name = "email", description = "邮箱", required = true)
+            @Parameter(name = "email", description = "邮箱", required = true),
+            @Parameter(name = "captchaId", description = "图形验证码ID", required = true),
+            @Parameter(name = "captchaCode", description = "图形验证码内容", required = true)
     })
-    public Result<Object> sendVerifyCode(String email) throws Exception {
+    public Result<Object> sendVerifyCode(String email, String captchaId, String captchaCode) throws Exception {
         log.info("发送验证码, email: {}", email);
 
-        authService.SendVerifyCode(email);
+        authService.SendVerifyCode(email, captchaId, captchaCode);
 
         return Result.success("验证码已成功发送");
     }
@@ -180,6 +188,52 @@ public class AuthController {
         log.info("账号登出, accessToken: {}", accessToken);
 
         authService.logout();
+
+        return Result.success();
+    }
+
+    @PutMapping("/me/username")
+    @Operation(summary = "修改用户名")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "username", description = "用户名", required = true)
+    })
+    public Result<Object> updateUsername(@RequestHeader("Authorization") String accessToken, @RequestHeader("Unified-Auth") String unifiedToken, String username) throws Exception {
+        log.info("修改用户名, accessToken: {}", accessToken);
+
+        authService.updateUsername(unifiedToken, StpUtil.getLoginIdAsString(), username);
+
+        return Result.success();
+    }
+
+    @PutMapping("/me/password")
+    @Operation(summary = "修改密码")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "password", description = "密码", required = true)
+    })
+    public Result<Object> updatePassword(@RequestHeader("Authorization") String accessToken, @RequestHeader("Unified-Auth") String unifiedToken, String password) {
+        log.info("修改密码, accessToken: {}", accessToken);
+
+        authService.updatePassword(unifiedToken, StpUtil.getLoginIdAsString(), password);
+
+        return Result.success();
+    }
+
+    @PutMapping("/me/email")
+    @Operation(summary = "修改邮箱")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "verificationCode", description = "验证码", required = true),
+            @Parameter(name = "email", description = "邮箱", required = true)
+    })
+    public Result<Object> updateEmail(@RequestHeader("Authorization") String accessToken, @RequestHeader("Unified-Auth") String unifiedToken, String verificationCode, String email) {
+        log.info("修改邮箱, accessToken: {}", accessToken);
+
+        authService.updateEmail(unifiedToken, StpUtil.getLoginIdAsString(), verificationCode, email);
 
         return Result.success();
     }
