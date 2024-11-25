@@ -8,7 +8,7 @@ public class UserContext {
      *
      * @return 用户id
      */
-    public static String getUser() {
+    public static String getUserId() {
         return threadLocal.get();
     }
 
@@ -17,14 +17,14 @@ public class UserContext {
      *
      * @param userId 用户id
      */
-    public static void setUser(String userId) {
+    public static void setUserId(String userId) {
         threadLocal.set(userId);
     }
 
     /**
      * 移除当前登录用户信息
      */
-    public static void removeUser() {
+    public static void removeUserId() {
         threadLocal.remove();
     }
 }

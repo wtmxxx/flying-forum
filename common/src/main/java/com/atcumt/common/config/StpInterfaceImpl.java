@@ -1,16 +1,13 @@
-package com.atcumt.auth.config;
+package com.atcumt.common.config;
 
 import cn.dev33.satoken.stp.StpInterface;
-import com.atcumt.auth.mapper.PermissionMapper;
-import com.atcumt.auth.mapper.RoleMapper;
-import com.atcumt.auth.mapper.RolePermissionMapper;
-import com.atcumt.auth.mapper.UserRoleMapper;
-import com.atcumt.model.auth.entity.Permission;
+import cn.hutool.core.bean.BeanUtil;
+import com.atcumt.common.api.client.AuthClient;
 import com.atcumt.model.auth.entity.Role;
-import com.atcumt.model.auth.entity.RolePermission;
-import com.atcumt.model.auth.entity.UserRole;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.atcumt.model.auth.vo.PermissionVO;
+import com.atcumt.model.auth.vo.RoleVO;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -22,25 +19,20 @@ import java.util.concurrent.TimeUnit;
 /**
  * 角色和权限鉴定的实现类（sa-token）
  * Pattern: USER-ROLE-PERMISSION
+ * Cache: Redis
  */
 @Component
+@ConditionalOnMissingClass({"com.atcumt.auth.AuthApplication"})
 public class StpInterfaceImpl implements StpInterface {
     private final RedisTemplate<String, String> redisTemplate;
-    private final UserRoleMapper userRoleMapper;
-    private final RoleMapper roleMapper;
-    private final PermissionMapper permissionMapper;
-    private final RolePermissionMapper rolePermissionMapper;
+    private final AuthClient authClient;
 
-    public StpInterfaceImpl(@Qualifier("saRedisTemplate") RedisTemplate<String, String> redisTemplate,
-                            UserRoleMapper userRoleMapper,
-                            RoleMapper roleMapper,
-                            PermissionMapper permissionMapper,
-                            RolePermissionMapper rolePermissionMapper) {
+    public StpInterfaceImpl(
+            @Qualifier("saRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            AuthClient authClient
+    ) {
         this.redisTemplate = redisTemplate;
-        this.userRoleMapper = userRoleMapper;
-        this.roleMapper = roleMapper;
-        this.permissionMapper = permissionMapper;
-        this.rolePermissionMapper = rolePermissionMapper;
+        this.authClient = authClient;
     }
 
     /**
@@ -74,34 +66,25 @@ public class StpInterfaceImpl implements StpInterface {
         }
 
         // 如果缓存没有，查询数据库并更新缓存
-        List<String> roleIds = userRoleMapper.selectObjs(Wrappers
-                .<UserRole>lambdaQuery()
-                .eq(UserRole::getUserId, loginId)
-                .select(UserRole::getRoleId));
-
-        List<Role> roles = roleMapper.selectList(Wrappers
-                .<Role>lambdaQuery()
-                .in(Role::getRoleId, roleIds)
+        List<Role> roles = BeanUtil.copyToList(
+                authClient.getRole(loginId.toString()).getData(),
+                Role.class
         );
 
         // 从数据库获取权限
         for (Role role : roles) {
-            List<String> partPermissionIds = rolePermissionMapper.selectList(Wrappers
-                    .<RolePermission>lambdaQuery()
-                    .eq(RolePermission::getRoleId, role.getRoleId())
-                    .select(RolePermission::getPermissionId)
-            ).stream().map(RolePermission::getPermissionId).toList();
+            List<PermissionVO> partPermissionVOs = BeanUtil.copyToList(
+                    authClient.getPermission(role.getRoleId()).getData(),
+                    PermissionVO.class
+            );
 
             // 如果没有权限 ID，跳过查询
-            if (partPermissionIds.isEmpty()) {
+            if (partPermissionVOs == null || partPermissionVOs.isEmpty()) {
                 continue;
             }
 
-            List<String> partPermissionNames = permissionMapper.selectList(Wrappers
-                    .<Permission>lambdaQuery()
-                    .in(Permission::getPermissionId, partPermissionIds)
-                    .select(Permission::getPermissionName)
-            ).stream().map(Permission::getPermissionName).toList();
+            List<String> partPermissionNames = partPermissionVOs.stream()
+                    .map(PermissionVO::getPermissionName).toList();
 
             permissionNames.addAll(partPermissionNames);
 
@@ -126,18 +109,9 @@ public class StpInterfaceImpl implements StpInterface {
         String roleNames = redisTemplate.opsForValue().get(roleKey);
 
         if (roleNames == null || roleNames.isEmpty()) {
-            // 缓存未命中，从数据库查询角色
-            List<String> roleIds = userRoleMapper.selectObjs(Wrappers
-                    .<UserRole>lambdaQuery()
-                    .eq(UserRole::getUserId, loginId)
-                    .select(UserRole::getRoleId)
-            );
-
-            List<String> roleNameList = roleMapper.selectObjs(Wrappers
-                    .<Role>lambdaQuery()
-                    .in(Role::getRoleId, roleIds)
-                    .select(Role::getRoleName)
-            );
+            // 缓存未命中，用OpenFeign查询角色
+            List<RoleVO> roleVOs = authClient.getRole(loginId.toString()).getData();
+            List<String> roleNameList = roleVOs.stream().map(RoleVO::getRoleName).toList();
 
             // 更新缓存并返回
             redisTemplate.opsForValue().set(roleKey, String.join(",", roleNameList), 24, TimeUnit.HOURS);

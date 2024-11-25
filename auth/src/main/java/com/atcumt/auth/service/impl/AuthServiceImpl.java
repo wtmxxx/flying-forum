@@ -12,6 +12,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
 import com.atcumt.auth.api.client.SchoolClient;
 import com.atcumt.auth.mapper.AuthMapper;
+import com.atcumt.auth.mapper.RoleMapper;
 import com.atcumt.auth.mapper.UserRoleMapper;
 import com.atcumt.auth.service.AuthService;
 import com.atcumt.auth.utils.EmailUtil;
@@ -51,6 +52,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     private final EmailUtil emailUtil;
     private final RedisTemplate<String, Integer> redisIntegerTemplate;
     private final RedisTemplate<String, String> redisStringTemplate;
+    private final RoleMapper roleMapper;
 
     @Override
     @GlobalTransactional
@@ -160,6 +162,9 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .<UserAuth>lambdaQuery()
                 .eq(UserAuth::getUsername, username)
         );
+
+        // 检查用户名是否存在
+        if (Objects.isNull(userAuth)) throw new IllegalArgumentException(AuthMessage.USERNAME_NOT_EXISTS.getMessage());
 
         // 获取储存的加密密码
         String storedHash = userAuth.getPassword();
@@ -277,7 +282,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .<UserAuth>lambdaQuery()
                 .eq(UserAuth::getEmail, email)
         );
-
+        // 检查邮箱是否存在
         if (Objects.isNull(userAuth)) throw new IllegalArgumentException(AuthMessage.EMAIL_NOT_EXISTS.getMessage());
 
         StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
@@ -337,11 +342,14 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         if (!Objects.equals(userAuth.getStudentId(), studentId))
             throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
 
+        // 生成加密密码
+        String pw_hash = "{bcrypt}" + BCrypt.hashpw(password, BCrypt.gensalt());
+
         // 更新密码
         authMapper.update(
                 Wrappers.<UserAuth>lambdaUpdate()
                         .eq(UserAuth::getUserId, userId)
-                        .set(UserAuth::getPassword, password)
+                        .set(UserAuth::getPassword, pw_hash)
         );
     }
 

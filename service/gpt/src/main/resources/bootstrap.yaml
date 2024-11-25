@@ -32,3 +32,4 @@ spring:
           - data-id: shared-seata.yaml
           - data-id: shared-feign.yaml
           - data-id: shared-redis.yaml
+          - data-id: shared-satoken.yaml

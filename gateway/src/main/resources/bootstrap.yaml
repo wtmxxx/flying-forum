@@ -4,6 +4,10 @@ spring:
   profiles:
     active: dev
   cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
     sentinel:
       transport:
         dashboard: 192.168.200.130:8090
@@ -31,3 +35,4 @@ spring:
           - data-id: shared-log.yaml
           - data-id: shared-satoken.yaml
           - data-id: shared-redis.yaml
+          - data-id: shared-feign.yaml

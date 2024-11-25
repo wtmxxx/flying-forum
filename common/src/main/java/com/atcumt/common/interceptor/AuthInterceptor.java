@@ -14,7 +14,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 2.判断是否为空
         if (StrUtil.isNotBlank(userId)) {
             // 不为空，保存到ThreadLocal
-            UserContext.setUser(userId);
+            UserContext.setUserId(userId);
         }
         // 3.放行
         return true;
@@ -23,6 +23,6 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         // 移除用户
-        UserContext.removeUser();
+        UserContext.removeUserId();
     }
 }

@@ -4,7 +4,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.model.auth.vo.TokenVO;
 import com.atcumt.model.common.AuthMessage;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -12,13 +13,17 @@ import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@RequiredArgsConstructor
 public class RefreshTokenUtil {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int TOKEN_LENGTH = 128; // Token长度
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // 随机用序列码
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> saRedisTemplate;
+
+    @Autowired
+    public RefreshTokenUtil(@Qualifier("saRedisTemplate") RedisTemplate<String, String> saRedisTemplate) {
+        this.saRedisTemplate = saRedisTemplate;
+    }
 
     public String generateRefreshToken() {
         StringBuilder refreshToken = new StringBuilder(TOKEN_LENGTH);
@@ -34,7 +39,7 @@ public class RefreshTokenUtil {
                 + ":" + StpUtil.getLoginDevice();
 
         // 设置Token有效期为当前时间的一年后
-        redisTemplate.opsForValue().set(refreshKey, refreshToken.toString(), 180, TimeUnit.DAYS);
+        saRedisTemplate.opsForValue().set(refreshKey, refreshToken.toString(), 180, TimeUnit.DAYS);
 
         return refreshToken.toString();
     }
@@ -44,7 +49,7 @@ public class RefreshTokenUtil {
         String loginDevice = StpUtil.getLoginDevice();
 
         String refreshKey = "Authorization:login:refresh-token:" + userId + ":" + loginDevice;
-        if (!refreshToken.equals(redisTemplate.opsForValue().get(refreshKey))) {
+        if (!refreshToken.equals(saRedisTemplate.opsForValue().get(refreshKey))) {
             throw new UnauthorizedException(AuthMessage.REFRESH_TOKEN_NOT_EXISTS.getMessage());
         }
 
@@ -65,7 +70,7 @@ public class RefreshTokenUtil {
 
         String refreshKey = "Authorization:login:refresh-token:" + userId + ":" + loginDevice;
 
-        redisTemplate.delete(refreshKey);
+        saRedisTemplate.delete(refreshKey);
     }
 
 }

@@ -65,7 +65,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         Conversation conversation = conversationMapper.selectById(conversationId);
 
         // 验证请求合法性（是否为本用户）
-        if (!UserContext.getUser().equals(conversation.getUserId())) {
+        if (!UserContext.getUserId().equals(conversation.getUserId())) {
             throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
         }
 
@@ -111,7 +111,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
                         .select(Conversation::getUserId)
         ).getUserId();
         // 验证请求合法性（是否为本用户）
-        if (!UserContext.getUser().equals(userId)) {
+        if (!UserContext.getUserId().equals(userId)) {
             throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
         }
 
@@ -144,7 +144,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
                         .select(Conversation::getUserId)
         ).getUserId();
         // 验证请求合法性（是否为本用户）
-        if (!UserContext.getUser().equals(userId)) {
+        if (!UserContext.getUserId().equals(userId)) {
             throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
         }
 
@@ -158,7 +158,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         Conversation conversation = conversationMapper.selectById(conversationId);
 
         // 验证请求合法性（是否为本用户）
-        if (!UserContext.getUser().equals(conversation.getUserId())) {
+        if (!UserContext.getUserId().equals(conversation.getUserId())) {
             throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
         }
 
@@ -183,7 +183,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         conversationPage = conversationMapper.selectPage(
                 conversationPage,
                 Wrappers.<Conversation>lambdaQuery()
-                        .eq(Conversation::getUserId, UserContext.getUser())
+                        .eq(Conversation::getUserId, UserContext.getUserId())
         );
 
         return PageQueryVO

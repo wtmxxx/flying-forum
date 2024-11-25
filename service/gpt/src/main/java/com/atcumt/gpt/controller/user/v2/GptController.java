@@ -31,12 +31,12 @@ public class GptController {
     @PostMapping("/c")
     @Operation(summary = "新建对话")
     public Result<ConversationVO> newConversation() {
-        log.info("新建对话, userId: {}", UserContext.getUser());
+        log.info("新建对话, userId: {}", UserContext.getUserId());
 
         ConversationVO conversationVO = conversationService.newChat(
                 ConversationDTO
                         .builder()
-                        .userId(UserContext.getUser())
+                        .userId(UserContext.getUserId())
                         .build());
         return Result.success(conversationVO);
     }

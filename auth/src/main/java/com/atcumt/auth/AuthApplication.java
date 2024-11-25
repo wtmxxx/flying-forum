@@ -1,6 +1,7 @@
 package com.atcumt.auth;
 
 import com.atcumt.auth.api.config.FeignConfiguration;
+import com.atcumt.common.config.CommonFeignConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -12,7 +13,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication
 @EnableTransactionManagement
 @EnableAsync
-@EnableFeignClients(defaultConfiguration = FeignConfiguration.class)
+@EnableFeignClients(defaultConfiguration = {CommonFeignConfiguration.class, FeignConfiguration.class})
 @EnableDiscoveryClient
 @EnableScheduling
 public class AuthApplication {

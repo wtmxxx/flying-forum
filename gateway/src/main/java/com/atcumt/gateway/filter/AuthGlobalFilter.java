@@ -3,7 +3,9 @@ package com.atcumt.gateway.filter;
 import cn.dev33.satoken.same.SaSameUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.text.AntPathMatcher;
-import com.atcumt.common.exception.UnauthorizedException;
+import cn.hutool.json.JSONConfig;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.atcumt.gateway.property.AuthProperty;
 import com.atcumt.model.common.ResultCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +14,16 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 
 @Component
@@ -48,18 +55,45 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 3.sa-token自动获取请求头中的Token
         // 4.校验并解析Token
         String userId;
+        String tokenName = StpUtil.getTokenName();
+        String tokenValue;
         try {
-            userId = StpUtil.getLoginIdAsString();
-        } catch (UnauthorizedException e) {
+            tokenValue = request.getHeaders().getFirst("Authorization");
+
+            userId = String.valueOf(
+                    StpUtil.getLoginIdByToken(Objects
+                            .requireNonNull(tokenValue)
+                            .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length())
+                    ));
+        } catch (Exception e) {
             // 如果无效，拦截
             ServerHttpResponse response = exchange.getResponse();
-            response.setRawStatusCode(ResultCode.UNAUTHORIZED.getCode());
-            return response.setComplete();
+
+            // 构造 JSON 响应体
+            JSONObject errorResponse = JSONUtil
+                    .createObj(new JSONConfig().setIgnoreNullValue(false))
+                    .set("code", ResultCode.UNAUTHORIZED.getCode())
+                    .set("msg", e.getMessage())
+                    .set("data", null);
+
+            // 将 JSON 转换为字节数组
+            byte[] responseBytes;
+            responseBytes = errorResponse.toString().getBytes(StandardCharsets.UTF_8);
+
+            // 设置响应头
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+            // 将字节数组写入响应
+            return exchange.getResponse().writeWith(Mono.just(response
+                    .bufferFactory().wrap(responseBytes)));
         }
+
         // 5.如果有效，传递用户信息和网关鉴定SameToken
         ServerWebExchange webExchange = exchange.mutate()
                 .request(r -> r
                         .header("X-User-ID", userId)
+                        .header(tokenName, tokenValue)
                         .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
                 ).build();
         // 6.放行
