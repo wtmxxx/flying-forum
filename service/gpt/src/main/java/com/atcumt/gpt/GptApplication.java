@@ -1,6 +1,5 @@
 package com.atcumt.gpt;
 
-import com.atcumt.common.config.CommonFeignConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -13,7 +12,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 @EnableTransactionManagement
 @EnableAsync
 @EnableWebSocket
-@EnableFeignClients(defaultConfiguration = {CommonFeignConfiguration.class}, basePackages = {"com.atcumt.gpt", "com.atcumt.common.api.client"})
+@EnableFeignClients
 @EnableDiscoveryClient
 public class GptApplication {
 

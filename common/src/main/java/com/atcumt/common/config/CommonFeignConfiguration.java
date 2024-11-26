@@ -3,18 +3,15 @@ package com.atcumt.common.config;
 import cn.dev33.satoken.same.SaSameUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import com.atcumt.common.utils.UserContext;
-import feign.Feign;
 import feign.Logger;
 import feign.Request;
 import feign.RequestInterceptor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
 @Configuration
-@ConditionalOnBean(Feign.class)
 public class CommonFeignConfiguration {
     @Bean
     public Logger.Level feignLogLevel() {

@@ -1,4 +1,4 @@
-package com.atcumt.common.api.client;
+package com.atcumt.user.api.client;
 
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;

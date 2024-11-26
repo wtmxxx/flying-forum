@@ -31,7 +31,9 @@
       {
         "name": "Path",
         "args": {
-          "_genkey_0": "/api/auth/**"
+          "_genkey_0": "/api/auth/**",
+          "_genkey_1": "/api/admin/role/**",
+          "_genkey_2": "/api/admin/permission/**"
         }
       }
     ],
