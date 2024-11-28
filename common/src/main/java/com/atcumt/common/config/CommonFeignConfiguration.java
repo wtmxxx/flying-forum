@@ -23,17 +23,15 @@ public class CommonFeignConfiguration {
         return template -> {
             // 获取登录用户
             String userId = UserContext.getUserId();
-            if (userId == null) {
-                // 如果为空则直接跳过
-                return;
+            if (userId != null) {
+                // 如果不为空则放入请求头中，传递给下游微服务
+                String tokenName = StpUtil.getTokenName();
+                String tokenValue = StpUtil.getTokenValue();
+                template
+                        .header("X-User-ID", userId)
+                        .header(tokenName, tokenValue);
             }
-            String tokenName = StpUtil.getTokenName();
-            String tokenValue = StpUtil.getTokenValue();
-            // 如果不为空则放入请求头中，传递给下游微服务
-            template
-                    .header("X-User-ID", userId)
-                    .header(tokenName, tokenValue)
-                    .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken());
+            template.header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken());
         };
     }
 

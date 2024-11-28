@@ -11,6 +11,7 @@ import com.atcumt.model.auth.entity.RolePermission;
 import com.atcumt.model.auth.entity.UserRole;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  * Pattern: USER-ROLE-PERMISSION
  */
 @Component
+@Primary
 public class StpInterfaceImpl implements StpInterface {
     private final RedisTemplate<String, String> redisTemplate;
     private final UserRoleMapper userRoleMapper;

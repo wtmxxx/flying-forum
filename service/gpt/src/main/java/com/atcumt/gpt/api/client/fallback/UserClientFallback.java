@@ -2,7 +2,6 @@ package com.atcumt.gpt.api.client.fallback;
 
 import com.atcumt.gpt.api.client.UserClient;
 import com.atcumt.model.common.Result;
-import com.atcumt.model.common.ResultCode;
 import com.atcumt.model.gpt.vo.ConversationVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
@@ -16,7 +15,7 @@ public class UserClientFallback implements FallbackFactory<UserClient> {
             public Result<ConversationVO> getConversation(String conversationId) {
                 // 获取对话失败
                 log.error("远程调用UserClient#getConversation方法出现异常，参数：{}", conversationId, cause);
-                return Result.failure(ResultCode.BAD_REQUEST, cause.getMessage());
+                throw new RuntimeException(cause);
             }
 
         };

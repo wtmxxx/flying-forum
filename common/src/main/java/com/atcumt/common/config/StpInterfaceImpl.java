@@ -1,15 +1,20 @@
 package com.atcumt.common.config;
 
+import cn.dev33.satoken.same.SaSameUtil;
 import cn.dev33.satoken.stp.StpInterface;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
-import com.atcumt.common.api.client.AuthClient;
 import com.atcumt.model.auth.entity.Role;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
+import com.atcumt.model.common.Result;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,17 +27,18 @@ import java.util.concurrent.TimeUnit;
  * Cache: Redis
  */
 @Component
-@ConditionalOnMissingClass({"com.atcumt.auth.AuthApplication"})
+@ConditionalOnClass(StpUtil.class)
+@Slf4j
 public class StpInterfaceImpl implements StpInterface {
     private final RedisTemplate<String, String> redisTemplate;
-    private final AuthClient authClient;
-
+    private final WebClient webClient;
+    
     public StpInterfaceImpl(
             @Qualifier("saRedisTemplate") RedisTemplate<String, String> redisTemplate,
-            AuthClient authClient
+            WebClient.Builder webClientBuilder
     ) {
         this.redisTemplate = redisTemplate;
-        this.authClient = authClient;
+        this.webClient = webClientBuilder.baseUrl("http://auth-service/api/admin").build();
     }
 
     /**
@@ -67,14 +73,14 @@ public class StpInterfaceImpl implements StpInterface {
 
         // 如果缓存没有，查询数据库并更新缓存
         List<Role> roles = BeanUtil.copyToList(
-                authClient.getRole(loginId.toString()).getData(),
+                this.getRole(loginId.toString()).getData(),
                 Role.class
         );
 
         // 从数据库获取权限
         for (Role role : roles) {
             List<PermissionVO> partPermissionVOs = BeanUtil.copyToList(
-                    authClient.getPermission(role.getRoleId()).getData(),
+                    this.getPermission(role.getRoleId()).getData(),
                     PermissionVO.class
             );
 
@@ -110,7 +116,7 @@ public class StpInterfaceImpl implements StpInterface {
 
         if (roleNames == null || roleNames.isEmpty()) {
             // 缓存未命中，用OpenFeign查询角色
-            List<RoleVO> roleVOs = authClient.getRole(loginId.toString()).getData();
+            List<RoleVO> roleVOs = this.getRole(loginId.toString()).getData();
             List<String> roleNameList = roleVOs.stream().map(RoleVO::getRoleName).toList();
 
             // 更新缓存并返回
@@ -120,5 +126,35 @@ public class StpInterfaceImpl implements StpInterface {
             // 如果缓存命中，直接返回
             return List.of(roleNames.split(","));
         }
+    }
+
+    public Result<List<RoleVO>> getRole(String userId) {
+        // 使用 ParameterizedTypeReference 来指定泛型类型
+        return webClient.get()
+                .uri("/role/v1/user?userId={userId}", userId)
+                .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
+                .header(StpUtil.getTokenName(), StpUtil.getTokenValue())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Result<List<RoleVO>>>() {
+                })
+                .doOnError(e ->
+                        log.error("远程调用AuthClient#getRole方法出现异常，参数：{}", userId, e)
+                )
+                .block(); // 使用 block() 来阻塞等待结果
+    }
+
+    public Result<List<PermissionVO>> getPermission(String roleId) {
+        // 使用 ParameterizedTypeReference 来指定泛型类型
+        return webClient.get()
+                .uri("/permission/v1/role?roleId={roleId}", roleId)
+                .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
+                .header(StpUtil.getTokenName(), StpUtil.getTokenValue())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Result<List<PermissionVO>>>() {
+                })
+                .doOnError(e ->
+                        log.error("远程调用AuthClient#getPermission方法出现异常，参数：{}", roleId, e)
+                )
+                .block(); // 使用 block() 来阻塞等待结果
     }
 }
