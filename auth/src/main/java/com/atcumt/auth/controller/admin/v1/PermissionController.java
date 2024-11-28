@@ -8,6 +8,7 @@ import com.atcumt.common.utils.PermissionUtil;
 import com.atcumt.model.auth.dto.PermissionDTO;
 import com.atcumt.model.auth.dto.RolePermissionDTO;
 import com.atcumt.model.auth.vo.PermissionVO;
+import com.atcumt.model.auth.vo.SortedPermissionVO;
 import com.atcumt.model.common.AuthMessage;
 import com.atcumt.model.common.PageQueryDTO;
 import com.atcumt.model.common.PageQueryVO;
@@ -148,9 +149,10 @@ public class PermissionController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "page", description = "页码", example = "1", required = true),
-            @Parameter(name = "size", description = "每页的记录数", example = "10", required = true)
+            @Parameter(name = "size", description = "每页的记录数", example = "10", required = true),
+            @Parameter(name = "sorted", description = "是否按模块整理，默认为false", example = "true")
     })
-    public Result<Object> getAllPermissions(Long page, Long size) {
+    public Result<Object> getAllPermissions(Long page, Long size, Boolean sorted) {
         log.info("获取所有权限, page: {}, size: {}", page, size);
 
         PageQueryDTO pageQueryDTO = PageQueryDTO
@@ -165,13 +167,18 @@ public class PermissionController {
         // 权限鉴定
         StpUtil.checkPermission(PermissionUtil.generate(PermModule.PERMISSION, PermAction.READ));
 
-        PageQueryVO<PermissionVO> pageQueryVO = permissionService.getAllPermissions(pageQueryDTO);
-
-        return Result.success(pageQueryVO);
+        sorted = (sorted != null && sorted);
+        if (sorted) {
+            PageQueryVO<SortedPermissionVO> pageQueryVO = permissionService.getAllSortedPermissions(pageQueryDTO);
+            return Result.success(pageQueryVO);
+        } else {
+            PageQueryVO<PermissionVO> pageQueryVO = permissionService.getAllPermissions(pageQueryDTO);
+            return Result.success(pageQueryVO);
+        }
     }
 
     @PostMapping("/new")
-    @Operation(summary = "新增权限", description = "新增权限，请严格遵守module.action设置权限名称，暂时不做正则匹配")
+    @Operation(summary = "新增权限", description = "新增权限，请严格遵守module.action设置权限名称，权限描述请勿包含||或#|#")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })

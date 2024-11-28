@@ -12,9 +12,11 @@ import com.atcumt.common.enums.PermModule;
 import com.atcumt.common.utils.PermissionUtil;
 import com.atcumt.model.auth.dto.PermissionDTO;
 import com.atcumt.model.auth.dto.RolePermissionDTO;
+import com.atcumt.model.auth.dto.SortedPermissionDTO;
 import com.atcumt.model.auth.entity.Permission;
 import com.atcumt.model.auth.entity.RolePermission;
 import com.atcumt.model.auth.vo.PermissionVO;
+import com.atcumt.model.auth.vo.SortedPermissionVO;
 import com.atcumt.model.common.PageQueryDTO;
 import com.atcumt.model.common.PageQueryVO;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
@@ -25,7 +27,10 @@ import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permission> implements PermissionService {
@@ -66,8 +71,70 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
+    public PageQueryVO<SortedPermissionVO> getAllSortedPermissions(PageQueryDTO pageQueryDTO) {
+        // 分页对象
+        Page<SortedPermissionDTO> permissionPage = Page.of(pageQueryDTO.getPage(), pageQueryDTO.getSize());
+
+        // 查询分页数据
+        permissionPage = permissionMapper.selectSortedPermissionsPage(permissionPage);
+
+        List<SortedPermissionVO> modules = new ArrayList<>();
+
+        permissionPage.getRecords().forEach(permissionDTO -> {
+            List<PermissionVO> permissionDetails = new ArrayList<>();
+
+            // 按照记录分割（#|#）
+            String[] records = permissionDTO.getPermissions().split("#\\|#");
+
+            // 日期格式化
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            for (String record : records) {
+                // 按字段分割（||）
+                String[] fields = record.split("\\|\\|");
+
+                if (fields.length == 5) {
+                    PermissionVO permissionVO = new PermissionVO();
+
+                    permissionVO.setPermissionId(fields[0]);
+                    permissionVO.setPermissionName(fields[1]);
+                    permissionVO.setDescription(fields[2]);
+
+                    // 将时间字符串转换为 LocalDateTime
+                    permissionVO.setCreateTime(LocalDateTime.parse(fields[3], formatter));
+                    permissionVO.setUpdateTime(LocalDateTime.parse(fields[4], formatter));
+
+                    permissionDetails.add(permissionVO);
+                }
+            }
+
+            modules.add(new SortedPermissionVO(Map.of(permissionDTO.getModule(), permissionDetails)));
+        });
+
+        // 返回分页结果
+        return PageQueryVO
+                .<SortedPermissionVO>staticBuilder()
+                .totalRecords(permissionPage.getTotal())
+                .totalPages(permissionPage.getPages())
+                .page(permissionPage.getCurrent())
+                .size(permissionPage.getSize())
+                .data(modules)
+                .build();
+    }
+
+    @Override
     @GlobalTransactional
     public PermissionVO createPermission(PermissionDTO permissionDTO) {
+        String namePattern = "^[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)*$";
+        if (!permissionDTO.getPermissionName().matches(namePattern)) {
+            throw new IllegalArgumentException("权限名称不合法，请严格遵守module.action格式");
+        }
+        // 检查权限描述是否合法
+        String descriptionPattern = "^(?!.*\\|\\|)(?!.*#\\|#).*$";
+        if (!permissionDTO.getDescription().matches(descriptionPattern)) {
+            throw new IllegalArgumentException("权限描述不合法，不能包含||或#|#");
+        }
+
         // 检查是否已存在相同名称的权限
         Permission permission = permissionMapper.selectOne(Wrappers
                 .<Permission>lambdaQuery()
@@ -94,6 +161,12 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Override
     @GlobalTransactional
     public void updatePermissionDescription(String permissionId, String description) {
+        // 检查描述是否合法
+        String pattern = "^(?!.*\\|\\|)(?!.*#\\|#).*$";
+        if (!description.matches(pattern)) {
+            throw new IllegalArgumentException("权限描述不合法，不能包含||或#|#");
+        }
+
         Permission permission = permissionMapper.selectById(permissionId);
         if (permission == null) {
             throw new IllegalArgumentException("权限不存在");
