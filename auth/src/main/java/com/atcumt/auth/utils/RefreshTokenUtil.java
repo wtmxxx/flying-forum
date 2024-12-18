@@ -38,7 +38,7 @@ public class RefreshTokenUtil {
                 + StpUtil.getLoginIdAsString()
                 + ":" + StpUtil.getLoginDevice();
 
-        // 设置Token有效期为当前时间的一年后
+        // 设置Token有效期为当前时间的三个月后
         saRedisTemplate.opsForValue().set(refreshKey, refreshToken.toString(), 180, TimeUnit.DAYS);
 
         return refreshToken.toString();

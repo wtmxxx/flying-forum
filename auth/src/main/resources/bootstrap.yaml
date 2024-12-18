@@ -4,18 +4,22 @@ spring:
   profiles:
     active: dev
   cloud:
+    sentinel:
+      transport:
+        dashboard: ${server.sentinel.host}:${server.sentinel.port}
+      http-method-specify: true # 开启请求方式前缀
     nacos:
-      server-addr: 192.168.200.130:8848
+      server-addr: ${server.nacos.host}:${server.nacos.port}
       discovery:
         enabled: true
-        server-addr: 192.168.200.130:8848
+        server-addr: ${server.nacos.host}:${server.nacos.port}
         group: DEFAULT_GROUP
         username: nacos
         password: nacos
       #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
       config:
         enabled: true
-        server-addr: 192.168.200.130:8848
+        server-addr: ${server.nacos.host}:${server.nacos.port}
         username: nacos
         password: nacos
         #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
@@ -29,8 +33,11 @@ spring:
           - data-id: shared-mp.yaml
           - data-id: shared-spring.yaml
           - data-id: shared-feign.yaml
-          - data-id: shared-gpt.yaml
           - data-id: shared-seata.yaml
           - data-id: shared-satoken.yaml
           - data-id: shared-redis.yaml
           - data-id: shared-email.yaml
+          - data-id: shared-mongodb.yaml
+          - data-id: shared-rocketmq.yaml
+          - data-id: shared-third-party.yaml
+          - data-id: shared-baidu.yaml

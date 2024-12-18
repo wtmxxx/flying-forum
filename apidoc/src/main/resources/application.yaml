@@ -32,3 +32,11 @@ knife4j:
         serviceName: auth-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}
+      - name: 论坛服务
+        serviceName: forum-service
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}
+      - name: 对象存储服务
+        serviceName: oss-service
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}

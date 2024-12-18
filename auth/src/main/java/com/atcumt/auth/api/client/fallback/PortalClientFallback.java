@@ -1,18 +1,19 @@
 package com.atcumt.auth.api.client.fallback;
 
-import com.atcumt.auth.api.client.SchoolClient;
+import cn.hutool.json.JSONObject;
+import com.atcumt.auth.api.client.PortalClient;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.model.common.AuthMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 
 @Slf4j
-public class SchoolClientFallback implements FallbackFactory<SchoolClient> {
+public class PortalClientFallback implements FallbackFactory<PortalClient> {
     @Override
-    public SchoolClient create(Throwable cause) {
-        return new SchoolClient() {
+    public PortalClient create(Throwable cause) {
+        return new PortalClient() {
             @Override
-            public String getSchoolCard(String token) {
+            public JSONObject getProfile(String cookie) {
                 throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
             }
         };

@@ -9,10 +9,13 @@ import java.util.List;
 @Getter
 public enum DisableEnum {
     ACCOUNT(PermModule.ACCOUNT, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
-    QUESTION(PermModule.QUESTION, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
-    ANSWER(PermModule.ANSWER, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
-    COMMENT(PermModule.COMMENT, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
-    ARTICLE(PermModule.ARTICLE, PermAction.DISABLE, PermAction.UNTIE_DISABLE);
+    QA(PermModule.QA, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
+    DISCUSSION(PermModule.DISCUSSION, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
+    TEAM(PermModule.TEAM, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
+    TRADE(PermModule.TRADE, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
+    HELP(PermModule.HELP, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
+    ACTIVITY(PermModule.ACTIVITY, PermAction.DISABLE, PermAction.UNTIE_DISABLE),
+    COMMENT(PermModule.COMMENT, PermAction.DISABLE, PermAction.UNTIE_DISABLE);
 
     private final PermModule module;
     private final PermAction disableAction;

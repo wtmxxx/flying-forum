@@ -28,7 +28,7 @@ public class CommonFeignConfiguration {
                 String tokenName = StpUtil.getTokenName();
                 String tokenValue = StpUtil.getTokenValue();
                 template
-                        .header("X-User-ID", userId)
+                        .header("User-ID", userId)
                         .header(tokenName, tokenValue);
             }
             template.header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken());

@@ -152,14 +152,17 @@ public class WebUtil {
             return StrUtil.EMPTY;
         }
 
-        String ip = request.getHeader("X-Forwarded-For");
-        if (StrUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.split(",")[0]; // 处理多个IP的情况
+        String ip = null;
+
+        String[] headers = new String[]{"X-Forwarded-For", "X-Real-IP", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
+
+        for (String header : headers) {
+            ip = request.getHeader(header);
+            if (StrUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
+                return ip.split(",")[0].trim(); // 处理多个IP的情况
+            }
         }
-        ip = request.getHeader("X-Real-IP");
-        if (StrUtil.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
-            return ip;
-        }
+
         return request.getRemoteAddr();
     }
 }

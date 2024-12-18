@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum RoleType {
+    DEFAULT("user"),      // 默认类型
     ADMIN("admin"),       // 系统管理员
     USER("user"),         // 普通用户
     EXAMINER("examiner"), // 审查员

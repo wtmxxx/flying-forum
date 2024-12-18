@@ -3,6 +3,7 @@ package com.atcumt.common.config;
 import cn.dev33.satoken.filter.SaServletFilter;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.same.SaSameUtil;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
@@ -16,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Sa-Token 权限认证 配置类
  */
 @Configuration
-@ConditionalOnClass(DispatcherServlet.class)
+@ConditionalOnClass({DispatcherServlet.class, StpUtil.class})
 @ConditionalOnMissingClass({"com.atcumt.gateway.GatewayApplication"})
 public class SaTokenConfiguration implements WebMvcConfigurer {
     // 注册 Sa-Token 全局过滤器

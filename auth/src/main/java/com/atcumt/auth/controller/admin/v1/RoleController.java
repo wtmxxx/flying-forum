@@ -25,7 +25,7 @@ import java.util.List;
 
 
 @RestController("roleControllerV1")
-@RequestMapping("/api/admin/role/v1")
+@RequestMapping("/api/auth/admin/role/v1")
 @Tag(name = "Role", description = "角色管理相关接口")
 @RequiredArgsConstructor
 @Slf4j

@@ -27,7 +27,7 @@ CREATE TABLE `undo_log`
 -- 创建聊天对话表，存储用户与GPT的对话记录
 CREATE TABLE IF NOT EXISTS conversation
 (
-    id      VARCHAR(36) NOT NULL COMMENT '对话ID，由UUID算法生成'
+    conversation_id VARCHAR(36) NOT NULL COMMENT '对话ID，由UUID算法生成'
         PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL COMMENT '用户ID',
     title       VARCHAR(255)                       NULL COMMENT '对话标题',
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS conversation
 USE gpt;
 CREATE TABLE IF NOT EXISTS message
 (
-    id              VARCHAR(36) NOT NULL PRIMARY KEY COMMENT '使用UUID算法生成',
+    message_id VARCHAR(36) NOT NULL PRIMARY KEY COMMENT '使用UUID算法生成',
     conversation_id VARCHAR(36) NOT NULL COMMENT '会话ID，标识消息所属的会话',
     role            VARCHAR(50)                                                     NOT NULL COMMENT '消息发送者的角色，例如用户或系统',
     content         TEXT                                                            NOT NULL COMMENT '消息的文本内容',

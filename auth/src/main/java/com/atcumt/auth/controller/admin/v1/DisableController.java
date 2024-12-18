@@ -18,7 +18,7 @@ import java.util.List;
 
 
 @RestController("disableControllerAdminV1")
-@RequestMapping("/api/admin/disable/v1")
+@RequestMapping("/api/auth/admin/disable/v1")
 @Tag(name = "Disable", description = "封禁管理相关接口")
 @RequiredArgsConstructor
 @Slf4j

@@ -28,11 +28,16 @@ public enum AuthMessage {
 
     // 注册相关
     SUCCESSFUL_REGISTRATION("注册成功！欢迎加入"),
-    STUDENT_ID_ALREADY_REGISTERED("该学号已注册，请检查学号是否正确"),
+    SID_ALREADY_REGISTERED("该学号已注册，请检查学号是否正确"),
 
     // 第三方登录相关
-    QQ_OAUTH_ID_ALREADY_BOUND("该QQ账号已绑定到其他用户"),
-    WECHAT_OAUTH_ID_ALREADY_BOUND("该微信账号已绑定到其他用户"),
+    QQ_ALREADY_BOUND("该QQ账号已绑定到其他用户"),
+    QQ_AUTH_FAILURE("QQ认证失败"),
+    QQ_NOT_BOUND("该QQ账号未绑定"),
+    APPLE_ALREADY_BOUND("该APPLE账号已绑定到其他用户"),
+    APPLE_AUTH_FAILURE("APPLE认证失败"),
+    APPLE_NOT_BOUND("该APPLE账号未绑定"),
+    WECHAT_ALREADY_BOUND("该微信账号已绑定到其他用户"),
 
     // 权限相关
     REFRESH_TOKEN_NOT_EXISTS("Refresh_Token失效或不存在"),
@@ -40,6 +45,7 @@ public enum AuthMessage {
 
     // 统一认证
     UNIFIED_AUTH_FAILURE("统一身份认证失败"),
+    SID_ALREADY_EXISTS("学号已注册"),
 
     // 系统相关
     SYSTEM_ERROR("系统错误，请稍后重试");

@@ -5,3 +5,4 @@ com.atcumt.common.config.RedisConfiguration
 com.atcumt.common.config.MvcConfiguration
 com.atcumt.common.config.SaTokenConfiguration
 com.atcumt.common.config.StpInterfaceImpl
+com.atcumt.common.config.WebClientConfiguration

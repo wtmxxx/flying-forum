@@ -10,15 +10,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 
-@RestController("authControllerCommonV1")
-@RequestMapping("/api/auth/v1")
-@Tag(name = "Auth", description = "公共鉴权相关接口")
+//@RestController("authControllerCommonV1")
+//@RequestMapping("/api/auth/v1")
+//@Tag(name = "Auth", description = "公共鉴权相关接口")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
@@ -27,7 +29,8 @@ public class AuthController {
     @PostMapping("/register/school")
     @Operation(summary = "统一身份认证注册")
     @Parameters({
-            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> registerBySchool(@RequestHeader("Unified-Auth") String token) throws Exception {
         log.info("统一身份认证注册");
@@ -46,7 +49,8 @@ public class AuthController {
     @PostMapping("/login/school")
     @Operation(summary = "统一身份认证登录")
     @Parameters({
-            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Unified-Auth", description = "统一身份认证Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> loginBySchool(@RequestHeader("Unified-Auth") String token) throws Exception {
         log.info("统一身份认证登录");
@@ -81,7 +85,8 @@ public class AuthController {
     @Operation(summary = "用户名密码登录")
     @Parameters({
             @Parameter(name = "username", description = "用户名", required = true),
-            @Parameter(name = "password", description = "密码", required = true)
+            @Parameter(name = "password", description = "密码", required = true),
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
     })
     @SaIgnore
     public Result<TokenVO> loginByUsernamePassword(String username, String password) throws Exception {
@@ -141,7 +146,8 @@ public class AuthController {
     @Operation(summary = "邮箱验证码登录")
     @Parameters({
             @Parameter(name = "email", description = "邮箱", required = true),
-            @Parameter(name = "verificationCode", description = "验证码", required = true)
+            @Parameter(name = "verificationCode", description = "验证码", required = true),
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
     })
     @SaIgnore
     public Result<TokenVO> loginByEmailVerificationCode(String email, String verificationCode) throws Exception {
@@ -182,12 +188,13 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(summary = "账号登出")
     @Parameters({
-            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "device", description = "登出设备，默认全部登出")
     })
-    public Result<Object> logout(@RequestHeader("Authorization") String accessToken) throws Exception {
-        log.info("账号登出, accessToken: {}", accessToken);
+    public Result<Object> logout(@RequestHeader("Authorization") String accessToken, String device) throws Exception {
+        log.info("账号登出, accessToken: {}, device: {}", accessToken, device);
 
-        authService.logout();
+        authService.logout(device);
 
         return Result.success();
     }

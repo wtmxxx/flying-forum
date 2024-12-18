@@ -6,6 +6,7 @@ import cn.hutool.core.text.AntPathMatcher;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.gateway.property.AuthProperty;
 import com.atcumt.model.common.ResultCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,11 +61,15 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         try {
             tokenValue = request.getHeaders().getFirst("Authorization");
 
-            userId = String.valueOf(
-                    StpUtil.getLoginIdByToken(Objects
-                            .requireNonNull(tokenValue)
-                            .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length())
-                    ));
+            Object loginId = StpUtil.getLoginIdByToken(Objects
+                    .requireNonNull(tokenValue, "未能读取到有效 token")
+                    .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length())
+            );
+            if (loginId == null) {
+                throw new UnauthorizedException("未能读取到有效 token");
+            }
+
+            userId = String.valueOf(loginId);
         } catch (Exception e) {
             // 如果无效，拦截
             ServerHttpResponse response = exchange.getResponse();
@@ -92,7 +97,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 5.如果有效，传递用户信息和网关鉴定SameToken
         ServerWebExchange webExchange = exchange.mutate()
                 .request(r -> r
-                        .header("X-User-ID", userId)
+                        .header("User-ID", userId)
                         .header(tokenName, tokenValue)
                         .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
                 ).build();

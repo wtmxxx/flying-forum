@@ -18,10 +18,6 @@ public class WechatAuth {
     private String authId;         // 关联auth表的ID
     private String openid;         // 微信OpenID
     private String unionid;        // 微信UnionID（同一开放平台下唯一）
-    private String accessToken;    // 微信Access Token
-    private String refreshToken;   // 微信Refresh Token
-    private Integer expiresIn;     // Access Token有效期（秒）
-    private String scope;          // 授权作用域
     private LocalDateTime createTime;    // 创建时间
     private LocalDateTime updateTime;    // 更新时间
 }
