@@ -1,5 +1,6 @@
 package com.atcumt.model.gpt.entity;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conversation {
-    private String id;
+    @TableId
+    private String conversationId;
     private String userId;
     private String title;
     private LocalDateTime createTime;

@@ -1,0 +1,5 @@
+server:
+  port: 8084
+rocketmq:
+  producer:
+    send-message-timeout: 30000
