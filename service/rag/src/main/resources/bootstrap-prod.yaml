@@ -1,4 +1,0 @@
-server:
-  nacos:
-    host: server.wotemo.com
-    port: 8848

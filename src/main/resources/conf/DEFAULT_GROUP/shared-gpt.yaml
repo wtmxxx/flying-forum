@@ -1,7 +1,0 @@
-gpt:
-  ws:
-    host: ${cumt-forum.gpt.ws.host}
-    port: ${cumt-forum.gpt.ws.port}
-  http:
-    host: ${cumt-forum.gpt.http.host}
-    port: ${cumt-forum.gpt.http.port}

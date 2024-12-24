@@ -1,9 +1,0 @@
-mybatis-plus:
-  configuration:
-    map-underscore-to-camel-case: true
-    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
-  global-config:
-    db-config:
-      update-strategy: not_null
-      id-type: ASSIGN_UUID
-  mapper-locations: classpath:/mapper/**.xml

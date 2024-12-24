@@ -1,6 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:mysql://${cumt-forum.db.host}:${cumt-forum.db.port:3306}/${cumt-forum.db.schema}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${cumt-forum.db.username}
-    password: ${cumt-forum.db.pw}

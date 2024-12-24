@@ -1,4 +1,0 @@
-spring:
-  mvc:
-    async:
-      request-timeout: 60000  # 60000 毫秒，即 60 秒

@@ -1,7 +1,0 @@
-server:
-  nacos:
-    host: server.wotemo.com
-    port: 8848
-  sentinel:
-    host: server.wotemo.com
-    port: 8090
