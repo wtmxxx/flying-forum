@@ -1,9 +1,10 @@
 package com.atcumt.forum.controller.admin.v1;
 
+import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.forum.service.DiscussionService;
 import com.atcumt.forum.service.admin.AdminDiscussionService;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.forum.dto.DiscussionUpdateDTO;
 import com.atcumt.model.forum.vo.DiscussionPostVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +30,7 @@ public class DiscussionController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public Result<DiscussionPostVO> updateDiscussion(@RequestBody DiscussionUpdateDTO discussionUpdateDTO) {
+    public Result<DiscussionPostVO> updateDiscussion(@RequestBody DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
         log.info("修改杂谈, authorId: {}", UserContext.getUserId());
 
         DiscussionPostVO discussionPostVO = discussionService.updateDiscussion(discussionUpdateDTO);

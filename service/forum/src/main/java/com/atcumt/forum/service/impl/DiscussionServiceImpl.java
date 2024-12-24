@@ -6,11 +6,11 @@ import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.forum.repository.DiscussionRepository;
 import com.atcumt.forum.service.DiscussionService;
-import com.atcumt.model.common.AuthMessage;
+import com.atcumt.model.common.enums.AuthMessage;
 import com.atcumt.model.forum.dto.DiscussionDTO;
 import com.atcumt.model.forum.dto.DiscussionUpdateDTO;
 import com.atcumt.model.forum.entity.Discussion;
-import com.atcumt.model.forum.entity.MediaFile;
+import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.forum.enums.PostStatus;
 import com.atcumt.model.forum.vo.DiscussionPostVO;
 import lombok.RequiredArgsConstructor;
@@ -92,7 +92,7 @@ public class DiscussionServiceImpl implements DiscussionService {
     }
 
     @Override
-    public void deleteDiscussion(Long discussionId) {
+    public void deleteDiscussion(Long discussionId) throws AuthorizationException {
         String loginId = UserContext.getUserId();
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
@@ -113,7 +113,7 @@ public class DiscussionServiceImpl implements DiscussionService {
     }
 
     @Override
-    public void privateDiscussion(Long discussionId) {
+    public void privateDiscussion(Long discussionId) throws AuthorizationException {
         String loginId = UserContext.getUserId();
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
@@ -134,7 +134,7 @@ public class DiscussionServiceImpl implements DiscussionService {
     }
 
     @Override
-    public DiscussionPostVO updateDiscussion(DiscussionUpdateDTO discussionUpdateDTO) {
+    public DiscussionPostVO updateDiscussion(DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
         String authorId = discussionRepository.findAuthorIdByDiscussionId(discussionUpdateDTO.getDiscussionId()).getAuthorId();
         if (authorId == null || !authorId.equals(UserContext.getUserId())) {
             throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());

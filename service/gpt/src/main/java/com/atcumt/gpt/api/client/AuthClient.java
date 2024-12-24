@@ -2,7 +2,7 @@ package com.atcumt.gpt.api.client;
 
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 

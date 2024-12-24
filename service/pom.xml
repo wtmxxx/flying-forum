@@ -8,7 +8,9 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modules>
-        <module>forum</module>
+        <module>post</module>
+        <module>comment</module>
+        <module>like</module>
         <module>gpt</module>
         <module>user</module>
         <module>rag</module>

@@ -3,7 +3,7 @@ package com.atcumt.forum.service.impl;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.forum.service.LikeService;
 import com.atcumt.model.forum.dto.PostLikeDTO;
-import com.atcumt.model.forum.enums.PostType;
+import com.atcumt.model.common.enums.PostType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;

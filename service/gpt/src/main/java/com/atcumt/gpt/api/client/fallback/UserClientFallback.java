@@ -1,7 +1,7 @@
 package com.atcumt.gpt.api.client.fallback;
 
 import com.atcumt.gpt.api.client.UserClient;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.gpt.vo.ConversationVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController("gptControllerV1")
-@RequestMapping("/api/gpt/v1/user")
+@RequestMapping("/api/gpt/user/v1")
 @RequiredArgsConstructor
 @Slf4j
 public class GptController {

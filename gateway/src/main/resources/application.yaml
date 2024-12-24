@@ -1,5 +1,6 @@
 server:
   port: 8080
+#  forward-headers-strategy: framework
 spring:
   main:
     web-application-type: reactive # 呵呵呵
@@ -7,4 +8,4 @@ spring:
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: ${cumt-forum.logging.level}

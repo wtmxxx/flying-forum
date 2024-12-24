@@ -1,9 +1,10 @@
 package com.atcumt.forum.controller.user.v1;
 
 import cn.dev33.satoken.annotation.SaCheckDisable;
+import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.forum.service.DiscussionService;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.forum.dto.DiscussionDTO;
 import com.atcumt.model.forum.dto.DiscussionUpdateDTO;
 import com.atcumt.model.forum.vo.DiscussionPostVO;
@@ -57,7 +58,7 @@ public class DiscussionController {
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
     @SaCheckDisable("discussion")
-    public Result<DiscussionPostVO> updateDiscussion(@RequestBody DiscussionUpdateDTO discussionUpdateDTO) {
+    public Result<DiscussionPostVO> updateDiscussion(@RequestBody DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
         log.info("修改杂谈, authorId: {}", UserContext.getUserId());
 
         DiscussionPostVO discussionPostVO = discussionService.updateDiscussion(discussionUpdateDTO);
@@ -71,7 +72,7 @@ public class DiscussionController {
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "discussionId", description = "杂谈ID", required = true)
     })
-    public Result<Object> deleteDiscussion(Long discussionId) {
+    public Result<Object> deleteDiscussion(Long discussionId) throws AuthorizationException {
         log.info("删除杂谈, authorId: {}", UserContext.getUserId());
 
         // 删除帖子
@@ -86,7 +87,7 @@ public class DiscussionController {
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "discussionId", description = "杂谈ID", required = true)
     })
-    public Result<Object> privateDiscussion(Long discussionId) {
+    public Result<Object> privateDiscussion(Long discussionId) throws AuthorizationException {
         log.info("私密杂谈, authorId: {}", UserContext.getUserId());
 
         // 私密帖子

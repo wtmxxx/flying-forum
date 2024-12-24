@@ -2,7 +2,7 @@ package com.atcumt.user.api.client.fallback;
 
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.user.api.client.AuthClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;

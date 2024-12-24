@@ -1,0 +1,4 @@
+server:
+  nacos:
+    host: dev-server.wotemo.com
+    port: 8848

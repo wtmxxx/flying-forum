@@ -3,7 +3,7 @@ package com.atcumt.forum.listener;
 import cn.hutool.core.util.IdUtil;
 import com.atcumt.model.forum.dto.PostLikeDTO;
 import com.atcumt.model.forum.entity.PostLike;
-import com.atcumt.model.forum.enums.PostType;
+import com.atcumt.model.common.enums.PostType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQListener;

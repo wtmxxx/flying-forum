@@ -7,7 +7,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.atcumt.model.auth.entity.Role;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

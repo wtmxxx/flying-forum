@@ -40,7 +40,8 @@ application-dev.yaml
 application-prod.yaml
 *.env
 *.jks
-/src/main/resources/docker/cumt-forum/
-/gateway/src/main/resources/cumt-forum.jks
-/gateway/src/main/resources/application.yaml
-/src/main/resources/conf/
+**/src/main/resources/conf
+**/src/main/resources/docker
+*.p8
+*.yaml
+/auth/src/main/resources/apple/

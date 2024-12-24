@@ -1,0 +1,93 @@
+[
+  {
+    "id": "auth-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/auth/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://auth-service"
+  },
+  {
+    "id": "post-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/post/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://post-service"
+  },
+  {
+    "id": "like-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/like/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://like-service"
+  },
+  {
+    "id": "comment-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/comment/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://comment-service"
+  },
+  {
+    "id": "user-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/user/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://user-service"
+  },
+  {
+    "id": "oss-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/file/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://oss-service"
+  },
+  {
+    "id": "gpt-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/gpt/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://gpt-service"
+  }
+]

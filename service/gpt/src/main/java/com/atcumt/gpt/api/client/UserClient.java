@@ -1,7 +1,7 @@
 package com.atcumt.gpt.api.client;
 
 import com.atcumt.gpt.api.client.fallback.UserClientFallback;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.gpt.vo.ConversationVO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

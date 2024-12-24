@@ -1,10 +1,11 @@
 package com.atcumt.gpt.websocket;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.atcumt.gpt.mapper.ConversationMapper;
 import com.atcumt.gpt.mapper.MessageMapper;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.gpt.constants.MessageRole;
 import com.atcumt.model.gpt.constants.WebSocketType;
 import com.atcumt.model.gpt.dto.ConversationGptDTO;
@@ -31,7 +32,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -169,11 +169,11 @@ public class WebSocketGptClient extends TextWebSocketHandler {
             } else if (messageType.equals(WebSocketType.CITATIONS)) {
                 Object citations = JSONUtil.parseObj(message.getPayload()).get(WebSocketType.CITATIONS);
 
-                String uuid = UUID.randomUUID().toString(); // 使用UUID算法生成唯一ID
+                String uuid = IdUtil.simpleUUID(); // 使用UUID算法生成唯一ID
 
                 Message gptReply = Message
                         .builder()
-                        .id(uuid)
+                        .messageId(uuid)
                         .role(MessageRole.AI)
                         .conversationId(conversationId)
                         .content(conversationCache.toString())  // 完整拼接后的内容

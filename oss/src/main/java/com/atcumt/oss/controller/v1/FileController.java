@@ -1,6 +1,6 @@
 package com.atcumt.oss.controller.v1;
 
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.oss.vo.FileInfoVO;
 import com.atcumt.oss.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;

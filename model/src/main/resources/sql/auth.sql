@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS qq_auth
         PRIMARY KEY,
     user_id     CHAR(36)    NOT NULL UNIQUE COMMENT '用户ID',
     qq_openid   VARCHAR(50) NOT NULL UNIQUE COMMENT 'QQ OpenID，唯一标识用户在应用中的身份',
-    qq_nickname CHAR(36)    NOT NULL COMMENT 'QQ昵称',
+    qq_nickname CHAR(36) NULL COMMENT 'QQ昵称',
     create_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP                             NOT NULL COMMENT '记录创建时间',
     update_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL COMMENT '记录更新时间',
 
@@ -165,10 +165,10 @@ CREATE TABLE IF NOT EXISTS apple_auth
 (
     apple_auth_id CHAR(36)                                                        NOT NULL COMMENT '记录ID，由UUID生成'
         PRIMARY KEY,
-    user_id       CHAR(36)                                                        NULL UNIQUE COMMENT '用户ID，关联auth表的ID（可以为空）',
+    user_id     CHAR(36)     NOT NULL UNIQUE COMMENT '用户ID，关联auth表的ID（可以为空）',
     apple_id      VARCHAR(255)                                                    NOT NULL UNIQUE COMMENT 'Apple唯一标识ID，用于标识用户在Apple中的唯一标识',
-    apple_name    VARCHAR(255)                                                    NOT NULL COMMENT 'Apple用户名',
-    apple_email   VARCHAR(255)                                                    NOT NULL COMMENT 'Apple用户邮箱',
+    apple_name  VARCHAR(255) NULL COMMENT 'Apple用户名',
+    apple_email VARCHAR(255) NULL COMMENT 'Apple用户邮箱',
     create_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP                             NOT NULL COMMENT '记录创建时间',
     update_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL COMMENT '记录更新时间',
 

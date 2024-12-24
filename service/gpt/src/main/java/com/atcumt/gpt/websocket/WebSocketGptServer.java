@@ -83,12 +83,12 @@ public class WebSocketGptServer extends TextWebSocketHandler {
         // 更新会话的最后更新时间
         LambdaUpdateWrapper<Conversation> conversationUpdateWrapper = new LambdaUpdateWrapper<>();
         conversationUpdateWrapper
-                .eq(Conversation::getId, conversationId)
+                .eq(Conversation::getConversationId, conversationId)
                 .set(Conversation::getUpdateTime, LocalDateTime.now());
         conversationMapper.update(conversationUpdateWrapper);
         if (content != null && !content.isEmpty()) messageMapper.insert(userMessage);  // 插入用户消息
 
-        session.getAttributes().put("userMessageId", userMessage.getId());
+        session.getAttributes().put("userMessageId", userMessage.getMessageId());
 
         redisTemplate.opsForValue().set("gptWebSocket:" + conversationId, content == null ? "" : content);
 

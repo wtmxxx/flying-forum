@@ -8,7 +8,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.gateway.property.AuthProperty;
-import com.atcumt.model.common.ResultCode;
+import com.atcumt.model.common.enums.ResultCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;

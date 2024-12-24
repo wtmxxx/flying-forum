@@ -3,7 +3,7 @@ package com.atcumt.gpt.api.client.fallback;
 import com.atcumt.gpt.api.client.AuthClient;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 

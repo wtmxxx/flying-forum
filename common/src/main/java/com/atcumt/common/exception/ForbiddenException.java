@@ -1,6 +1,6 @@
 package com.atcumt.common.exception;
 
-import com.atcumt.model.common.ResultCode;
+import com.atcumt.model.common.enums.ResultCode;
 
 public class ForbiddenException extends CommonException {
 

@@ -7,9 +7,9 @@ import com.atcumt.common.utils.UserContext;
 import com.atcumt.gpt.mapper.ConversationMapper;
 import com.atcumt.gpt.mapper.MessageMapper;
 import com.atcumt.gpt.service.ConversationService;
-import com.atcumt.model.common.PageQueryDTO;
-import com.atcumt.model.common.PageQueryVO;
-import com.atcumt.model.common.ResultCode;
+import com.atcumt.model.common.dto.PageQueryDTO;
+import com.atcumt.model.common.enums.ResultCode;
+import com.atcumt.model.common.vo.PageQueryVO;
 import com.atcumt.model.gpt.dto.ConversationDTO;
 import com.atcumt.model.gpt.dto.ConversationGptDTO;
 import com.atcumt.model.gpt.entity.Conversation;
@@ -61,7 +61,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     }
 
     @Override
-    public String getTitle(String conversationId) {
+    public String getTitle(String conversationId) throws UnauthorizedException {
         Conversation conversation = conversationMapper.selectById(conversationId);
 
         // 验证请求合法性（是否为本用户）
@@ -91,7 +91,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
                     LambdaUpdateWrapper<Conversation> conversationUpdateWrapper = new LambdaUpdateWrapper<>();
                     conversationMapper.update(
                             conversationUpdateWrapper
-                                    .eq(Conversation::getId, conversationId)
+                                    .eq(Conversation::getConversationId, conversationId)
                                     .set(Conversation::getTitle, title)
                     );
                 }
@@ -104,10 +104,10 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     }
 
     @Override
-    public void setTitle(String conversationId, String title) {
+    public void setTitle(String conversationId, String title) throws UnauthorizedException {
         String userId = conversationMapper.selectOne(
                 Wrappers.<Conversation>lambdaQuery()
-                        .eq(Conversation::getId, conversationId)
+                        .eq(Conversation::getConversationId, conversationId)
                         .select(Conversation::getUserId)
         ).getUserId();
         // 验证请求合法性（是否为本用户）
@@ -130,17 +130,17 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         LambdaUpdateWrapper<Conversation> conversationUpdateWrapper = new LambdaUpdateWrapper<>();
         conversationMapper.update(
                 conversationUpdateWrapper
-                        .eq(Conversation::getId, conversationId)
+                        .eq(Conversation::getConversationId, conversationId)
                         .set(Conversation::getTitle, title)
         );
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteConversation(String conversationId) {
+    public void deleteConversation(String conversationId) throws UnauthorizedException {
         String userId = conversationMapper.selectOne(
                 Wrappers.<Conversation>lambdaQuery()
-                        .eq(Conversation::getId, conversationId)
+                        .eq(Conversation::getConversationId, conversationId)
                         .select(Conversation::getUserId)
         ).getUserId();
         // 验证请求合法性（是否为本用户）
@@ -154,7 +154,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     }
 
     @Override
-    public ConversationVO getConversation(String conversationId) {
+    public ConversationVO getConversation(String conversationId) throws UnauthorizedException {
         Conversation conversation = conversationMapper.selectById(conversationId);
 
         // 验证请求合法性（是否为本用户）

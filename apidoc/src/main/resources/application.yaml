@@ -20,23 +20,35 @@ knife4j:
       username: ${cumt-forum.knife4j.username}
       password: ${cumt-forum.knife4j.password}
     routes:
-      - name: GPT服务
-        serviceName: gpt-service
+      - name: 鉴权服务
+        serviceName: auth-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}
       - name: 用户服务
         serviceName: user-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}
-      - name: 鉴权服务
-        serviceName: auth-service
+      - name: 帖子服务
+        serviceName: post-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}
-      - name: 论坛服务
-        serviceName: forum-service
+      - name: 点赞服务
+        serviceName: like-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}
+      - name: 评论服务
+        serviceName: comment-service
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}
+      #      - name: 论坛服务
+      #        serviceName: forum-service
+      #        debug-url: ${cumt-forum.knife4j.debug-url}
+      #        location: ${cumt-forum.knife4j.location}
       - name: 对象存储服务
         serviceName: oss-service
+        debug-url: ${cumt-forum.knife4j.debug-url}
+        location: ${cumt-forum.knife4j.location}
+      - name: GPT服务
+        serviceName: gpt-service
         debug-url: ${cumt-forum.knife4j.debug-url}
         location: ${cumt-forum.knife4j.location}

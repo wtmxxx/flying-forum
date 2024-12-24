@@ -1,43 +1,59 @@
 [
   {
-    "id": "gpt-service",
-    "predicates": [
-      {
-        "name": "Path",
-        "args": {
-          "_genkey_0": "/api/gpt/**"
-        }
+    "id": "auth-service",
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/api/auth/**",
+        "_genkey_1": "/api/auth/admin/**"
       }
-    ],
+    }],
+    "filters": [],
+    "uri": "lb://auth-service"
+  },
+  {
+    "id": "forum-service",
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/api/forum/**",
+        "_genkey_1": "/api/forum/admin/**"
+      }
+    }],
+    "filters": [],
+    "uri": "lb://forum-service"
+  },
+  {
+    "id": "gpt-service",
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/api/gpt/**"
+      }
+    }],
     "filters": [],
     "uri": "lb://gpt-service"
   },
   {
     "id": "user-service",
-    "predicates": [
-      {
-        "name": "Path",
-        "args": {
-          "_genkey_0": "/api/user/**"
-        }
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/api/user/**"
       }
-    ],
+    }],
     "filters": [],
     "uri": "lb://user-service"
   },
   {
-    "id": "auth-service",
-    "predicates": [
-      {
-        "name": "Path",
-        "args": {
-          "_genkey_0": "/api/auth/**",
-          "_genkey_1": "/api/admin/role/**",
-          "_genkey_2": "/api/admin/permission/**"
-        }
+    "id": "oss-service",
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/api/file/**"
       }
-    ],
+    }],
     "filters": [],
-    "uri": "lb://auth-service"
+    "uri": "lb://oss-service"
   }
 ]

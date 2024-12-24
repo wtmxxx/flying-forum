@@ -1,6 +1,6 @@
 package com.atcumt.forum.controller.user.v1;
 
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;

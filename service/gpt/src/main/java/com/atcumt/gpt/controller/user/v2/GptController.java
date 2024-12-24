@@ -1,11 +1,12 @@
 package com.atcumt.gpt.controller.user.v2;
 
+import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.gpt.service.ConversationService;
 import com.atcumt.gpt.service.MessageService;
-import com.atcumt.model.common.PageQueryDTO;
-import com.atcumt.model.common.PageQueryVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.dto.PageQueryDTO;
+import com.atcumt.model.common.entity.Result;
+import com.atcumt.model.common.vo.PageQueryVO;
 import com.atcumt.model.gpt.dto.ConversationDTO;
 import com.atcumt.model.gpt.vo.ConversationPageVO;
 import com.atcumt.model.gpt.vo.ConversationVO;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController("gptControllerV2")
-@RequestMapping("/api/gpt/v2/user")
+@RequestMapping("/api/gpt/user/v2")
 @Tag(name = "GPT", description = "GPT相关接口")
 @RequiredArgsConstructor
 @Slf4j
@@ -68,7 +69,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true)
     })
-    public Result<ConversationVO> getConversation(@PathVariable String conversationId) {
+    public Result<ConversationVO> getConversation(@PathVariable String conversationId) throws UnauthorizedException {
         log.info("获取对话内容, conversationId: {}", conversationId);
 
         ConversationVO conversationVO = conversationService.getConversation(conversationId);
@@ -96,7 +97,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true)
     })
-    public Result<Map<String, String>> getTitle(String conversationId) {
+    public Result<Map<String, String>> getTitle(String conversationId) throws UnauthorizedException {
         log.info("获取标题, conversationId: {}", conversationId);
 
         String title = conversationService.getTitle(conversationId);
@@ -109,7 +110,7 @@ public class GptController {
             @Parameter(name = "conversationId", description = "对话ID", required = true),
             @Parameter(name = "title", description = "title内容", required = true)
     })
-    public Result<Object> setTitle(String conversationId, String title) {
+    public Result<Object> setTitle(String conversationId, String title) throws UnauthorizedException {
         log.info("修改标题, conversationId: {}", conversationId);
 
         conversationService.setTitle(conversationId, title);
@@ -122,7 +123,7 @@ public class GptController {
     @Parameters({
             @Parameter(name = "conversationId", description = "对话ID", required = true),
     })
-    public Result<Object> deleteConversation(String conversationId) {
+    public Result<Object> deleteConversation(String conversationId) throws UnauthorizedException {
         log.info("删除对话, conversationId: {}", conversationId);
 
         conversationService.deleteConversation(conversationId);

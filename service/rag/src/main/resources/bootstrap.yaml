@@ -5,14 +5,14 @@ spring:
     active: dev
   cloud:
     nacos:
-      server-addr: 192.168.200.130:8848
+      server-addr: ${server.nacos.host}:${server.nacos.port}
       discovery:
-        server-addr: 192.168.200.130:8848
+        server-addr: ${server.nacos.host}:${server.nacos.port}
         username: nacos
         password: nacos
       #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
       config:
-        server-addr: 192.168.200.130:8848
+        server-addr: ${server.nacos.host}:${server.nacos.port}
         username: nacos
         password: nacos
         #        secret-key: SecretKey012345678901234567890123456789012345678901234567890123456789
