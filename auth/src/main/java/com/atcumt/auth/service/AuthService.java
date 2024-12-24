@@ -1,5 +1,8 @@
 package com.atcumt.auth.service;
 
+import com.atcumt.common.exception.AuthorizationException;
+import com.atcumt.common.exception.BadRequestException;
+import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.model.auth.dto.RegisterDTO;
 import com.atcumt.model.auth.entity.AppleAuth;
 import com.atcumt.model.auth.entity.QqAuth;
@@ -8,8 +11,8 @@ import com.atcumt.model.auth.vo.AuthenticationVO;
 import com.atcumt.model.auth.vo.LinkedAccountVO;
 import com.atcumt.model.auth.vo.SensitiveRecordVO;
 import com.atcumt.model.auth.vo.TokenVO;
-import com.atcumt.model.common.PageQueryVO;
-import com.atcumt.model.common.TypePageQueryDTO;
+import com.atcumt.model.common.dto.TypePageQueryDTO;
+import com.atcumt.model.common.vo.PageQueryVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -20,7 +23,7 @@ public interface AuthService extends IService<UserAuth> {
 
     TokenVO loginBySchool(String schoolToken) throws Exception;
 
-    TokenVO refreshToken(String refreshToken);
+    TokenVO refreshToken(String refreshToken) throws UnauthorizedException;
 
     void logout(String device);
 
@@ -28,49 +31,55 @@ public interface AuthService extends IService<UserAuth> {
 
     TokenVO loginByUsernamePassword(String username, String password) throws Exception;
 
+    void sendVerifyCodeWithCaptcha(String email, String captchaId, String captchaCode) throws Exception;
+
     void bindEmail(String userId, String email, String verificationCode) throws Exception;
 
-    void SendVerifyCode(String email, String captchaId, String captchaCode) throws Exception;
+    void sendVerifyCode(String email) throws Exception;
 
-    TokenVO loginByEmailVerificationCode(String email, String verificationCode);
+    TokenVO loginByEmailVerificationCode(String email, String verificationCode) throws AuthorizationException;
 
-    void updateUsername(String unifiedToken, String userId, String username);
+    void updateUsername(String unifiedToken, String userId, String username) throws BadRequestException, UnauthorizedException;
 
-    void updatePassword(String unifiedToken, String userId, String password);
+    void updatePassword(String unifiedToken, String userId, String password) throws UnauthorizedException;
 
-    void updateEmail(String unifiedToken, String userId, String verificationCode, String email);
+    void updateEmail(String unifiedToken, String userId, String verificationCode, String email) throws UnauthorizedException;
 
     void sendCaptcha(HttpServletResponse response) throws Exception;
 
-    AuthenticationVO authenticationByUnifiedAuth(String cookie);
+    AuthenticationVO authenticationByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException;
 
-    TokenVO register(RegisterDTO registerDTO);
+    TokenVO register(RegisterDTO registerDTO) throws Exception;
 
-    TokenVO loginByUnifiedAuth(String cookie);
+    TokenVO loginByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException;
 
-    TokenVO loginByQQ(String qqAuthorizationCode);
+    TokenVO loginByQQ(String qqAuthorizationCode) throws AuthorizationException;
 
     void changeEmail(String verificationCode, String email);
 
-    void changeUsername(String username);
+    void changeUsername(String username) throws BadRequestException;
 
     void changePassword(String oldPassword, String newPassword) throws Exception;
 
-    void resetPassword(String cookie, String password);
+    void resetPassword(String cookie, String password) throws AuthorizationException, UnauthorizedException;
 
     void deleteAccount(String password) throws Exception;
 
     PageQueryVO<SensitiveRecordVO> getSensitiveRecord(TypePageQueryDTO typePageQueryDTO);
 
+    QqAuth bindQQ(String qqAuthorizationCode, String userId) throws AuthorizationException;
+
     void unBindQQ();
 
-    QqAuth bindQQ(String qqAuthorizationCode);
+    QqAuth bindQQ(String qqAuthorizationCode) throws AuthorizationException;
 
-    AppleAuth bindApple(String appleAuthorizationCode);
+    AppleAuth bindApple(String appleAuthorizationCode) throws Exception;
+
+    AppleAuth bindApple(String appleAuthorizationCode, String userId) throws Exception;
 
     void unBindApple();
 
-    TokenVO loginByApple(String appleAuthorizationCode);
+    TokenVO loginByApple(String appleAuthorizationCode) throws Exception;
 
     LinkedAccountVO getLinkedAccount();
 

@@ -5,8 +5,8 @@ import com.atcumt.model.auth.dto.RolePermissionDTO;
 import com.atcumt.model.auth.entity.Permission;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.SortedPermissionVO;
-import com.atcumt.model.common.PageQueryDTO;
-import com.atcumt.model.common.PageQueryVO;
+import com.atcumt.model.common.dto.PageQueryDTO;
+import com.atcumt.model.common.vo.PageQueryVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;

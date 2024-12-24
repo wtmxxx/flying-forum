@@ -3,7 +3,7 @@ package com.atcumt.auth.utils;
 import cn.dev33.satoken.stp.StpUtil;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.model.auth.vo.TokenVO;
-import com.atcumt.model.common.AuthMessage;
+import com.atcumt.model.common.enums.AuthMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -44,7 +44,7 @@ public class RefreshTokenUtil {
         return refreshToken.toString();
     }
 
-    public TokenVO getAccessToken(String refreshToken) {
+    public TokenVO getAccessToken(String refreshToken) throws UnauthorizedException {
         String userId = StpUtil.getLoginIdAsString();
         String loginDevice = StpUtil.getLoginDevice();
 

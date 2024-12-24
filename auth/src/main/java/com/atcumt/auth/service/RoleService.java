@@ -4,8 +4,8 @@ import com.atcumt.model.auth.dto.RoleDTO;
 import com.atcumt.model.auth.dto.UserRoleDTO;
 import com.atcumt.model.auth.entity.Role;
 import com.atcumt.model.auth.vo.RoleVO;
-import com.atcumt.model.common.PageQueryDTO;
-import com.atcumt.model.common.PageQueryVO;
+import com.atcumt.model.common.dto.PageQueryDTO;
+import com.atcumt.model.common.vo.PageQueryVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;

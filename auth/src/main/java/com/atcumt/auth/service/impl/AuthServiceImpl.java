@@ -36,10 +36,10 @@ import com.atcumt.model.auth.vo.AuthenticationVO;
 import com.atcumt.model.auth.vo.LinkedAccountVO;
 import com.atcumt.model.auth.vo.SensitiveRecordVO;
 import com.atcumt.model.auth.vo.TokenVO;
-import com.atcumt.model.common.AuthMessage;
-import com.atcumt.model.common.DeviceType;
-import com.atcumt.model.common.PageQueryVO;
-import com.atcumt.model.common.TypePageQueryDTO;
+import com.atcumt.model.common.dto.TypePageQueryDTO;
+import com.atcumt.model.common.enums.AuthMessage;
+import com.atcumt.model.common.enums.DeviceType;
+import com.atcumt.model.common.vo.PageQueryVO;
 import com.atcumt.model.user.entity.UserInfo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
@@ -98,7 +98,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     @Override
     @GlobalTransactional
     @Deprecated
-    public TokenVO registerBySchool(String schoolToken) {
+    public TokenVO registerBySchool(String schoolToken) throws AuthorizationException, UnauthorizedException {
         // 使用token获取学号
         String sid = getSidByToken(schoolToken);
 
@@ -142,7 +142,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     @Override
     @GlobalTransactional
     @Deprecated
-    public TokenVO loginBySchool(String schoolToken) {
+    public TokenVO loginBySchool(String schoolToken) throws AuthorizationException, UnauthorizedException {
         // 使用token获取学号
         String sid = getSidByToken(schoolToken);
 
@@ -166,7 +166,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public TokenVO refreshToken(String refreshToken) {
+    public TokenVO refreshToken(String refreshToken) throws UnauthorizedException {
         return refreshTokenUtil.getAccessToken(refreshToken);
     }
 
@@ -175,7 +175,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         refreshTokenUtil.deleteRefreshToken();
         if (device == null || device.isEmpty()) {
             StpUtil.logout();
-        } else if ("all".equals(device)) {
+        } else if ("ALL".equalsIgnoreCase(device)) {
             StpUtil.logout(StpUtil.getLoginIdAsString());
         } else {
             StpUtil.logout(StpUtil.getLoginIdAsString(), device);
@@ -209,7 +209,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         );
 
         // 检查用户名是否存在
-        if (Objects.isNull(userAuth)) throw new IllegalArgumentException(AuthMessage.USERNAME_NOT_EXISTS.getMessage());
+        if (Objects.isNull(userAuth)) throw new AuthorizationException(AuthMessage.USERNAME_NOT_EXISTS.getMessage());
 
         // 获取储存的加密密码
         String storedHash = userAuth.getPassword();
@@ -238,17 +238,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public void SendVerifyCode(String email, String captchaId, String captchaCode) throws Exception {
-        // 检查图形验证码
-        String captchaKey = "Authorization:captcha:" + captchaId;
-        String realCaptchaCode = redisStringTemplate.opsForValue().get(captchaKey);
-
-        redisStringTemplate.delete(captchaKey);
-
-        if (Objects.nonNull(realCaptchaCode) && !Objects.equals(captchaCode.toLowerCase(), realCaptchaCode.toLowerCase())) {
-            throw new IllegalArgumentException(AuthMessage.CAPTCHA_CODE_INCORRECT.getMessage());
-        }
-
+    public void sendVerifyCode(String email) throws Exception {
         // 检查邮箱合法性
         if (!Validator.isEmail(email)) {
             throw new IllegalArgumentException(AuthMessage.INVALID_EMAIL_FORMAT.getMessage());
@@ -302,6 +292,21 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
+    public void sendVerifyCodeWithCaptcha(String email, String captchaId, String captchaCode) throws Exception {
+        // 检查图形验证码
+        String captchaKey = "Authorization:captcha:" + captchaId;
+        String realCaptchaCode = redisStringTemplate.opsForValue().get(captchaKey);
+
+        redisStringTemplate.delete(captchaKey);
+
+        if (Objects.nonNull(realCaptchaCode) && !Objects.equals(captchaCode.toLowerCase(), realCaptchaCode.toLowerCase())) {
+            throw new IllegalArgumentException(AuthMessage.CAPTCHA_CODE_INCORRECT.getMessage());
+        }
+
+        sendVerifyCode(email);
+    }
+
+    @Override
     public void bindEmail(String userId, String email, String verificationCode) {
         // 检查邮箱和验证码
         validateVerificationCode(email, verificationCode);
@@ -314,7 +319,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public TokenVO loginByEmailVerificationCode(String email, String verificationCode) {
+    public TokenVO loginByEmailVerificationCode(String email, String verificationCode) throws AuthorizationException {
         // 检查邮箱和验证码
         validateVerificationCode(email, verificationCode);
 
@@ -323,7 +328,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .eq(UserAuth::getEmail, email)
         );
         // 检查邮箱是否存在
-        if (Objects.isNull(userAuth)) throw new IllegalArgumentException(AuthMessage.EMAIL_NOT_EXISTS.getMessage());
+        if (Objects.isNull(userAuth)) throw new AuthorizationException(AuthMessage.EMAIL_NOT_EXISTS.getMessage());
 
         StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
         return TokenVO
@@ -337,7 +342,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
     @Override
     @Deprecated
-    public void updateUsername(String unifiedToken, String userId, String username) {
+    public void updateUsername(String unifiedToken, String userId, String username) throws BadRequestException, UnauthorizedException {
         // 验证频率限制
         String usernameChangeKey = "Authorization:usernameChange:" + userId;
         Integer usernameChangeValue = redisIntegerTemplate.opsForValue().get(usernameChangeKey);
@@ -371,7 +376,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
     @Override
     @Deprecated
-    public void updatePassword(String unifiedToken, String userId, String password) {
+    public void updatePassword(String unifiedToken, String userId, String password) throws UnauthorizedException {
         String sid = getSidByToken(unifiedToken);
 
         // 从数据库查询用户
@@ -398,7 +403,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
     @Override
     @Deprecated
-    public void updateEmail(String unifiedToken, String userId, String verificationCode, String email) {
+    public void updateEmail(String unifiedToken, String userId, String verificationCode, String email) throws UnauthorizedException {
         String sid = getSidByToken(unifiedToken);
 
         // 从数据库查询用户
@@ -458,7 +463,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public AuthenticationVO authenticationByUnifiedAuth(String cookie) {
+    public AuthenticationVO authenticationByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException {
         // 获取学工号
         String sid = getSidByUnifiedAuth(cookie);
 
@@ -482,7 +487,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
             lockRetryTimes = 5
     )
     @Transactional(rollbackFor = Exception.class)
-    public TokenVO register(RegisterDTO registerDTO) {
+    public TokenVO register(RegisterDTO registerDTO) throws Exception {
         validateUsername(registerDTO.getUsername());
         validatePassword(registerDTO.getPassword());
 
@@ -508,19 +513,21 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
             throw new AuthorizationException(AuthMessage.USERNAME_ALREADY_EXISTS.getMessage());
         }
 
+        String userId = IdUtil.simpleUUID();
+
         // 绑定QQ
         String qqAuthorizationCode = registerDTO.getQqAuthorizationCode();
         QqAuth qqAuth = null;
 
         if (qqAuthorizationCode != null && !qqAuthorizationCode.isEmpty()) {
-            qqAuth = bindQQ(qqAuthorizationCode);
+            qqAuth = bindQQ(qqAuthorizationCode, userId);
         }
 
         // 绑定Apple
         String appleAuthorizationCode = registerDTO.getAppleAuthorizationCode();
         AppleAuth appleAuth = null;
         if (appleAuthorizationCode != null && !appleAuthorizationCode.isEmpty()) {
-            appleAuth = bindApple(appleAuthorizationCode);
+            appleAuth = bindApple(appleAuthorizationCode, userId);
         }
 
         // 生成加密密码
@@ -528,6 +535,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
         UserAuth userAuth = UserAuth
                 .builder()
+                .userId(userId)
                 .sid(sid)
                 .username(registerDTO.getUsername())
                 .password(pw_hash)
@@ -547,6 +555,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         UserInfo userInfo = UserInfo
                 .builder()
                 .userId(userAuth.getUserId())
+                .gender(-1)
                 .followersCount(0)
                 .followingCount(0)
                 .likeReceivedCount(0)
@@ -577,7 +586,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public TokenVO loginByUnifiedAuth(String cookie) {
+    public TokenVO loginByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException {
         // 使用统一身份认证Cookie获取学号
         String sid = getSidByUnifiedAuth(cookie);
 
@@ -601,7 +610,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public TokenVO loginByQQ(String qqAuthorizationCode) {
+    public TokenVO loginByQQ(String qqAuthorizationCode) throws AuthorizationException {
         // QQ登录
         String qqAccessToken;
         String qqOpenId = null;
@@ -644,7 +653,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public void changeUsername(String username) {
+    public void changeUsername(String username) throws BadRequestException {
         String userId = StpUtil.getLoginIdAsString();
         // 验证频率限制
         String usernameChangeKey = "Authorization:usernameChange:" + userId;
@@ -682,7 +691,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public void resetPassword(String cookie, String password) {
+    public void resetPassword(String cookie, String password) throws AuthorizationException, UnauthorizedException {
         // 使用统一身份认证Cookie获取学号
         String sid = getSidByUnifiedAuth(cookie);
 
@@ -759,7 +768,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     @Override
     public PageQueryVO<SensitiveRecordVO> getSensitiveRecord(TypePageQueryDTO typePageQueryDTO) {
         Page<SensitiveRecord> recordPage = Page.of(typePageQueryDTO.getPage(), typePageQueryDTO.getSize());
-        recordPage.addOrder(OrderItem.asc("update_time"));
+        recordPage.addOrder(OrderItem.asc("record_time"));
 
         String type = typePageQueryDTO.getType();
 
@@ -782,7 +791,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public QqAuth bindQQ(String qqAuthorizationCode) {
+    public QqAuth bindQQ(String qqAuthorizationCode) throws AuthorizationException {
         if (qqAuthorizationCode == null || qqAuthorizationCode.isEmpty()) {
             return null;
         }
@@ -814,6 +823,39 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
+    public QqAuth bindQQ(String qqAuthorizationCode, String userId) throws AuthorizationException {
+        if (qqAuthorizationCode == null || qqAuthorizationCode.isEmpty()) {
+            return null;
+        }
+
+        QqAccessTokenDTO qqAccessTokenDTO = getQqAccessToken(qqAuthorizationCode);
+        String qqAccessToken = qqAccessTokenDTO.getAccess_token();
+        String qqOpenId = qqAccessTokenDTO.getOpenid();
+        if (qqOpenId == null || qqOpenId.isEmpty()) {
+            qqOpenId = getQqOpenId(qqAccessToken);
+        }
+        String qqNickname = getQqNickname(qqOpenId, qqAccessToken);
+
+        // 检查QQ是否已绑定
+        QqAuth qqAuth = qqAuthMapper.selectOne(Wrappers
+                .<QqAuth>lambdaQuery()
+                .eq(QqAuth::getQqOpenid, qqOpenId)
+                .select(QqAuth::getUserId)
+        );
+        if (qqAuth != null) throw new AuthorizationException(AuthMessage.QQ_ALREADY_BOUND.getMessage());
+
+        qqAuth = QqAuth
+                .builder()
+                .qqOpenid(qqOpenId)
+                .qqNickname(qqNickname)
+                .userId(userId)
+                .build();
+        qqAuthMapper.insert(qqAuth);
+
+        return qqAuth;
+    }
+
+    @Override
     public void unBindQQ() {
         String userId = StpUtil.getLoginIdAsString();
         qqAuthMapper.delete(Wrappers
@@ -823,7 +865,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public AppleAuth bindApple(String appleAuthorizationCode) {
+    public AppleAuth bindApple(String appleAuthorizationCode) throws Exception {
         String appleIdToken = appleAuthUtil.getAppleIdToken(appleAuthorizationCode);
 
         if (appleIdToken == null || appleIdToken.isEmpty()) {
@@ -844,6 +886,27 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
+    public AppleAuth bindApple(String appleAuthorizationCode, String userId) throws Exception {
+        String appleIdToken = appleAuthUtil.getAppleIdToken(appleAuthorizationCode);
+
+        if (appleIdToken == null || appleIdToken.isEmpty()) {
+            throw new AuthorizationException(AuthMessage.APPLE_ALREADY_BOUND.getMessage());
+        }
+
+        AppleAuth appleAuth = appleAuthUtil.getAppleInfo(appleIdToken);
+
+        appleAuth.setUserId(userId);
+        appleAuth.setCreateTime(LocalDateTime.now());
+        appleAuth.setUpdateTime(LocalDateTime.now());
+        try {
+            appleAuthMapper.insert(appleAuth);
+        } catch (Exception e) {
+            throw new AuthorizationException(AuthMessage.APPLE_ALREADY_BOUND.getMessage());
+        }
+        return appleAuth;
+    }
+
+    @Override
     public void unBindApple() {
         appleAuthMapper.delete(Wrappers
                 .<AppleAuth>lambdaUpdate()
@@ -852,7 +915,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    public TokenVO loginByApple(String appleAuthorizationCode) {
+    public TokenVO loginByApple(String appleAuthorizationCode) throws Exception {
         String appleIdToken = appleAuthUtil.getAppleIdToken(appleAuthorizationCode);
 
         if (appleIdToken == null || appleIdToken.isEmpty()) {
@@ -860,6 +923,8 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         }
 
         AppleAuth appleAuth = appleAuthUtil.getAppleInfo(appleIdToken);
+
+        System.out.println(appleAuth);
 
         // 检查Apple是否已绑定
         appleAuth = appleAuthMapper.selectOne(Wrappers
@@ -885,17 +950,17 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         UserAuth userAuth = authMapper.selectOne(Wrappers
                 .<UserAuth>lambdaQuery()
                 .eq(UserAuth::getUserId, userId)
-                .select(UserAuth::getEmail)
+                .select(UserAuth::getUserId, UserAuth::getEmail)
         );
         QqAuth qqAuth = qqAuthMapper.selectOne(Wrappers
                 .<QqAuth>lambdaQuery()
                 .eq(QqAuth::getUserId, userId)
-                .select(QqAuth::getQqNickname)
+                .select(QqAuth::getUserId, QqAuth::getQqNickname)
         );
         AppleAuth appleAuth = appleAuthMapper.selectOne(Wrappers
                 .<AppleAuth>lambdaQuery()
                 .eq(AppleAuth::getUserId, userId)
-                .select(AppleAuth::getAppleName)
+                .select(AppleAuth::getUserId, AppleAuth::getAppleName)
         );
 
         return LinkedAccountVO
@@ -931,7 +996,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     // Cookie获取学工号
-    String getSidByUnifiedAuth(String cookie) {
+    String getSidByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException {
         // 使用统一身份认证Cookie获取学号
         JSONObject profile = portalClient.getProfile(cookie);
         String sid = null;
@@ -950,7 +1015,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
     // 获Token取学工号
     @Deprecated
-    String getSidByToken(String schoolToken) {
+    String getSidByToken(String schoolToken) throws UnauthorizedException {
         // 请求学校服务器获取校园卡信息
         String schoolCard = schoolYktClient.getSchoolCard(schoolToken);
         // 解析JSON字符串
@@ -977,7 +1042,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     // 获取QQ Access Token
-    QqAccessTokenDTO getQqAccessToken(String qqAuthorizationCode) {
+    QqAccessTokenDTO getQqAccessToken(String qqAuthorizationCode) throws AuthorizationException {
         try {
             return webClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -1002,7 +1067,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     // 获取QQ OpenId
-    String getQqOpenId(String qqAccessToken) {
+    String getQqOpenId(String qqAccessToken) throws AuthorizationException {
         QqOpenIdDTO qqOpenIdDTO = null;
         try {
             qqOpenIdDTO = webClient.get()

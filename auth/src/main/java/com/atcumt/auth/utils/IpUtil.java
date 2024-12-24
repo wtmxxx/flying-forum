@@ -10,28 +10,26 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
 public class IpUtil {
-    private static final String IPV4_REGEX =
-            "^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\." +
-                    "(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\." +
-                    "(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\." +
-                    "(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$";
-    private static final String IPV6_REGEX =
-            "([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|" +
-                    "([0-9a-fA-F]{1,4}:){1,7}:|" +
-                    "([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|" +
-                    "::";
-    private static final Pattern IPV4_PATTERN = Pattern.compile(IPV4_REGEX);
-    private static final Pattern IPV6_PATTERN = Pattern.compile(IPV6_REGEX);
     private final BaiduIp2Region baiduIp2Region;
     private final WebClient webClient;
 
     public static boolean isValidIp(String ip) {
-        return IPV4_PATTERN.matcher(ip).matches() || IPV6_PATTERN.matcher(ip).matches();
+        try {
+            InetAddress inetAddress = InetAddress.getByName(ip);
+            if (inetAddress instanceof java.net.Inet4Address) {
+                return true;
+            } else if (inetAddress instanceof java.net.Inet6Address) {
+                return true;
+            }
+        } catch (UnknownHostException e) {
+            return false;
+        }
+
+        return false;
     }
 
     public String convertToIpv4(String ip) {
@@ -58,7 +56,7 @@ public class IpUtil {
 
         String ip = null;
         String[] headers = new String[]{
-                "X-Forwarded-For", "X-Real-IP", "Proxy-Client-IP",
+                "x-forwarded-for", "X-Forwarded-For", "X-Real-IP", "Proxy-Client-IP",
                 "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"
         };
 
@@ -67,6 +65,7 @@ public class IpUtil {
             if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
                 ip = ip.split(",")[0].trim(); // 多个 IP 的情况下取第一个
                 if (isValidIp(ip)) { // 验证 IP 格式
+//                    System.out.println("ip: " + ip);
                     return ip;
                 }
             }
@@ -81,6 +80,8 @@ public class IpUtil {
     }
 
     public String getRegionByIp(String ip) {
+        if (ip.equals("127.0.0.1")) return "本地局域网";
+
         String region = ip2RegionByUserAgentInfo(ip);
 
         if (region == null) {
@@ -93,6 +94,7 @@ public class IpUtil {
 
         // 未知地区置空
         if (region.isEmpty()) region = null;
+        else region = region.trim();
         return region;
     }
 

@@ -9,10 +9,10 @@ import com.atcumt.model.auth.dto.PermissionDTO;
 import com.atcumt.model.auth.dto.RolePermissionDTO;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.SortedPermissionVO;
-import com.atcumt.model.common.AuthMessage;
-import com.atcumt.model.common.PageQueryDTO;
-import com.atcumt.model.common.PageQueryVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.dto.PageQueryDTO;
+import com.atcumt.model.common.entity.Result;
+import com.atcumt.model.common.enums.AuthMessage;
+import com.atcumt.model.common.vo.PageQueryVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 
 @RestController("permissionControllerV1")
 @RequestMapping("/api/auth/admin/permission/v1")

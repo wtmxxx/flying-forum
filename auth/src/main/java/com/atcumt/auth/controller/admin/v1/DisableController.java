@@ -4,7 +4,7 @@ import com.atcumt.auth.service.DisableService;
 import com.atcumt.model.auth.dto.DisableServiceBatchDTO;
 import com.atcumt.model.auth.dto.UntieDisableServiceBatchDTO;
 import com.atcumt.model.auth.vo.DisableTimeVO;
-import com.atcumt.model.common.Result;
+import com.atcumt.model.common.entity.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
