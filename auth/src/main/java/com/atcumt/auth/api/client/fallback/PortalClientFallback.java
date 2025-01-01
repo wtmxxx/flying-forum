@@ -3,7 +3,7 @@ package com.atcumt.auth.api.client.fallback;
 import cn.hutool.json.JSONObject;
 import com.atcumt.auth.api.client.PortalClient;
 import com.atcumt.common.exception.UnauthorizedException;
-import com.atcumt.model.common.enums.AuthMessage;
+import com.atcumt.model.auth.enums.AuthMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 

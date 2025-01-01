@@ -24,10 +24,12 @@ import java.time.LocalDateTime;
 })
 public class CommentLike {
     @MongoId
-    private String likeId;
+    private Long likeId;
     @Indexed
-    private String commentId;
+    private Long commentId;
     @Indexed
     private String userId;
+    @Indexed
+    private Boolean isLike;
     private LocalDateTime createTime;
 }

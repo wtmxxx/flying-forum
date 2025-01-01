@@ -4,7 +4,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.jwt.JWTUtil;
 import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.model.auth.entity.AppleAuth;
-import com.atcumt.model.common.enums.AuthMessage;
+import com.atcumt.model.auth.enums.AuthMessage;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import lombok.RequiredArgsConstructor;

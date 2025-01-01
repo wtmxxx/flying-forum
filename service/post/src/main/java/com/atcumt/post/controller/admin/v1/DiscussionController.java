@@ -33,7 +33,7 @@ public class DiscussionController {
     public Result<DiscussionPostVO> updateDiscussion(@RequestBody DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
         log.info("修改杂谈, authorId: {}", UserContext.getUserId());
 
-        DiscussionPostVO discussionPostVO = discussionService.updateDiscussion(discussionUpdateDTO);
+        DiscussionPostVO discussionPostVO = adminDiscussionService.updateDiscussion(discussionUpdateDTO);
 
         return Result.success(discussionPostVO);
     }

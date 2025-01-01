@@ -2,8 +2,8 @@ package com.atcumt.auth.utils;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.atcumt.common.exception.UnauthorizedException;
+import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.auth.vo.TokenVO;
-import com.atcumt.model.common.enums.AuthMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;

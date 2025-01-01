@@ -3,12 +3,16 @@ package com.atcumt.post.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import com.atcumt.common.exception.AuthorizationException;
+import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
+import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.entity.MediaFile;
-import com.atcumt.model.common.enums.AuthMessage;
 import com.atcumt.model.post.dto.DiscussionDTO;
 import com.atcumt.model.post.dto.DiscussionUpdateDTO;
+import com.atcumt.model.post.dto.PostReviewDTO;
 import com.atcumt.model.post.entity.Discussion;
+import com.atcumt.model.post.entity.Tag;
+import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.post.enums.PostStatus;
 import com.atcumt.model.post.vo.DiscussionPostVO;
 import com.atcumt.model.post.vo.DiscussionVO;
@@ -16,8 +20,6 @@ import com.atcumt.post.repository.DiscussionRepository;
 import com.atcumt.post.service.DiscussionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.client.producer.SendCallback;
-import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -26,6 +28,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -37,10 +41,17 @@ public class DiscussionServiceImpl implements DiscussionService {
 
     @Override
     public DiscussionPostVO postDiscussion(DiscussionDTO discussionDTO) {
+        // 查询tagIds对应的标签是否存在
+        Query queryTag = Query.query(Criteria.where("_id").in(discussionDTO.getTagIds()));
+        queryTag.fields().include("_id");
+        List<Long> tagIds = mongoTemplate.find(queryTag, Tag.class).stream().map(Tag::getTagId).toList();
+
+        discussionDTO.setTagIds(tagIds);
+
         Discussion discussion = Discussion
                 .builder()
                 .discussionId(IdUtil.getSnowflakeNextId())
-                .authorId(UserContext.getUserId())
+                .userId(UserContext.getUserId())
                 .title(discussionDTO.getTitle())
                 .content(discussionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(discussionDTO.getMediaFiles(), MediaFile.class))
@@ -48,6 +59,7 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .commentCount(0)
                 .likeCount(0)
                 .viewCount(0L)
+                .score(HeatScoreUtil.getPostHeat(0, 0))
                 .status(PostStatus.UNDER_REVIEW.getCode())
                 .createTime(LocalDateTime.now())
                 .updateTime(LocalDateTime.now())
@@ -56,7 +68,7 @@ public class DiscussionServiceImpl implements DiscussionService {
         discussionRepository.save(discussion);
 
         // 消息队列异步审核帖子
-        asyncReviewDiscussion(discussion.getDiscussionId());
+        reviewDiscussion(discussion.getDiscussionId());
 
         return DiscussionPostVO
                 .builder()
@@ -67,10 +79,14 @@ public class DiscussionServiceImpl implements DiscussionService {
 
     @Override
     public DiscussionPostVO saveDiscussionAsDraft(DiscussionDTO discussionDTO) {
+        // 将tagIds去重
+        Set<Long> tagIds = Set.copyOf(discussionDTO.getTagIds());
+        discussionDTO.setTagIds(tagIds.stream().toList());
+
         Discussion discussion = Discussion
                 .builder()
                 .discussionId(IdUtil.getSnowflakeNextId())
-                .authorId(UserContext.getUserId())
+                .userId(UserContext.getUserId())
                 .title(discussionDTO.getTitle())
                 .content(discussionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(discussionDTO.getMediaFiles(), MediaFile.class))
@@ -97,10 +113,10 @@ public class DiscussionServiceImpl implements DiscussionService {
         String loginId = UserContext.getUserId();
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
-        if (discussion == null || discussion.getAuthorId() == null) {
-            throw new IllegalArgumentException("无此帖子");
+        if (discussion == null || discussion.getUserId() == null) {
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
         }
-        if (!loginId.equals(discussion.getAuthorId())) {
+        if (!loginId.equals(discussion.getUserId())) {
             throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
         }
 
@@ -118,10 +134,10 @@ public class DiscussionServiceImpl implements DiscussionService {
         String loginId = UserContext.getUserId();
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
-        if (discussion == null || discussion.getAuthorId() == null) {
-            throw new IllegalArgumentException("无此帖子");
+        if (discussion == null || discussion.getUserId() == null) {
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
         }
-        if (!loginId.equals(discussion.getAuthorId())) {
+        if (!loginId.equals(discussion.getUserId())) {
             throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
         }
 
@@ -139,22 +155,22 @@ public class DiscussionServiceImpl implements DiscussionService {
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
         // 无此帖子
         if (discussion == null) {
-            throw new IllegalArgumentException("无此帖子");
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
         }
         // 作者可见
-        if (discussion.getAuthorId().equals(UserContext.getUserId())) {
+        if (discussion.getUserId().equals(UserContext.getUserId())) {
             return BeanUtil.copyProperties(discussion, DiscussionVO.class);
         }
         // 帖子未发布
         if (discussion.getStatus() != PostStatus.PUBLISHED.getCode()) {
-            throw new IllegalArgumentException("帖子未发布");
+            throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
         }
         return BeanUtil.copyProperties(discussion, DiscussionVO.class);
     }
 
     @Override
     public DiscussionPostVO updateDiscussion(DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
-        String authorId = discussionRepository.findAuthorIdByDiscussionId(discussionUpdateDTO.getDiscussionId()).getAuthorId();
+        String authorId = discussionRepository.findAuthorIdByDiscussionId(discussionUpdateDTO.getDiscussionId()).getUserId();
         if (authorId == null || !authorId.equals(UserContext.getUserId())) {
             throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
         }
@@ -172,6 +188,10 @@ public class DiscussionServiceImpl implements DiscussionService {
             update.set("mediaFiles", discussionUpdateDTO.getMediaFiles());
         }
         if (discussionUpdateDTO.getTagIds() != null) {
+            // 将tagIds去重
+            Set<Long> tagIds = Set.copyOf(discussionUpdateDTO.getTagIds());
+            discussionUpdateDTO.setTagIds(tagIds.stream().toList());
+
             update.set("tagIds", discussionUpdateDTO.getTagIds());
         }
         // 设置状态为审核中
@@ -187,7 +207,7 @@ public class DiscussionServiceImpl implements DiscussionService {
         );
 
         // 消息队列异步审核帖子
-        asyncReviewDiscussion(discussionUpdateDTO.getDiscussionId());
+        reviewDiscussion(discussionUpdateDTO.getDiscussionId());
 
         return DiscussionPostVO
                 .builder()
@@ -197,17 +217,12 @@ public class DiscussionServiceImpl implements DiscussionService {
     }
 
 
-    public void asyncReviewDiscussion(Long discussionId) {
-        rocketMQTemplate.asyncSend("forum:discussionReview", discussionId, new SendCallback() {
-            @Override
-            public void onSuccess(SendResult sendResult) {
-                log.info("帖子审核任务下发成功");
-            }
-
-            @Override
-            public void onException(Throwable throwable) {
-                log.info("帖子审核任务下发失败 {}", throwable.getMessage());
-            }
-        });
+    public void reviewDiscussion(Long discussionId) {
+        PostReviewDTO postReviewDTO = PostReviewDTO
+                .builder()
+                .postId(discussionId)
+                .postType("discussion")
+                .build();
+        rocketMQTemplate.convertAndSend("post:postReview", postReviewDTO);
     }
 }

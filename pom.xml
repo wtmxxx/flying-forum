@@ -50,6 +50,7 @@
         <sa-token.version>1.39.0</sa-token.version>
         <minio.version>8.5.14</minio.version>
         <tika.version>3.0.0</tika.version>
+        <jsoup.version>1.18.1</jsoup.version>
         <rocketmq.version>5.3.1</rocketmq.version>
         <rocketmq-spring.version>2.3.1</rocketmq-spring.version>
         <houbb.sensitive-word.version>0.23.0</houbb.sensitive-word.version>

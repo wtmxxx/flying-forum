@@ -16,6 +16,7 @@ public enum PermModule {
     HELP("help", "互助"),                            // 互助模块
     ACTIVITY("activity", "活动"),                    // 活动模块
     COMMENT("comment", "评论"),                      // 评论模块
+    TAG("tag", "标签"),                              // 标签模块
     USER("user", "用户");                            // 用户模块
 
     private final String value;

@@ -1,4 +1,4 @@
-package com.atcumt.model.common.enums;
+package com.atcumt.model.auth.enums;
 
 import lombok.Getter;
 

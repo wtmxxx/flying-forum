@@ -6,6 +6,7 @@ import com.atcumt.common.enums.PermModule;
 import com.atcumt.common.utils.PermissionUtil;
 import com.atcumt.model.post.dto.DiscussionUpdateDTO;
 import com.atcumt.model.post.entity.Discussion;
+import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.post.enums.PostStatus;
 import com.atcumt.model.post.vo.DiscussionPostVO;
 import com.atcumt.post.repository.DiscussionRepository;
@@ -69,8 +70,8 @@ public class AdminDiscussionServiceImpl implements AdminDiscussionService {
         StpUtil.checkPermission(PermissionUtil.generate(PermModule.DISCUSSION, PermAction.DELETE));
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
-        if (discussion == null || discussion.getAuthorId() == null) {
-            throw new IllegalArgumentException("无此帖子");
+        if (discussion == null || discussion.getUserId() == null) {
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
         }
 
         Update update = new Update();

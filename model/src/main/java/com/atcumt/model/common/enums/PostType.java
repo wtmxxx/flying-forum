@@ -10,7 +10,8 @@ public enum PostType {
     TEAM("team", "组队"),
     SECOND_HAND("trade", "二手"),
     INTERACTION("help", "互助"),
-    ACTIVITY("activity", "活动");
+    ACTIVITY("activity", "活动"),
+    NEWS("news", "新闻");
 
     private final String value;
     @Getter

@@ -4,16 +4,18 @@ import lombok.Getter;
 
 @Getter
 public enum RoleType {
-    DEFAULT("user"),      // 默认类型
-    ADMIN("admin"),       // 系统管理员
-    USER("user"),         // 普通用户
-    EXAMINER("examiner"), // 审查员
-    GUEST("guest");       // 访客
+    DEFAULT("user", "用户"),         // 默认类型
+    ADMIN("admin", "管理员"),        // 系统管理员
+    USER("user", "用户"),            // 普通用户
+    EXAMINER("examiner", "审查员"),  // 审查员
+    GUEST("guest", "访客");         // 访客
 
     private final String code;
+    private final String description;
 
-    RoleType(String code) {
+    RoleType(String code, String description) {
         this.code = code;
+        this.description = description;
     }
 
     /**

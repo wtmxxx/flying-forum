@@ -8,9 +8,14 @@ import com.atcumt.model.auth.entity.Role;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
 import com.atcumt.model.common.entity.Result;
+import com.atcumt.model.common.enums.ResultCode;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -22,23 +27,45 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * 角色和权限鉴定的实现类（sa-token）
- * Pattern: USER-ROLE-PERMISSION
- * Cache: Redis
+ * 角色和权限鉴定的实现类（sa-token）<br>
+ * Pattern: USER-ROLE-PERMISSION <br>
+ * Cache: Redis <br>
+ * Remote: WebClient <br>
+ * Attention: 请为每个角色设定至少一个权限，否则会导致必然的网络请求
  */
 @Component
 @ConditionalOnClass(StpUtil.class)
 @Slf4j
 public class StpInterfaceImpl implements StpInterface {
     private final RedisTemplate<String, String> redisTemplate;
-    private final WebClient webClient;
-    
+    private final LoadBalancerClient loadBalancerClient;
+    private final WebClient.Builder webClientBuilder;
+    private WebClient webClient;
+
+    @Autowired
     public StpInterfaceImpl(
             @Qualifier("saRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            LoadBalancerClient loadBalancerClient,
             WebClient.Builder webClientBuilder
     ) {
         this.redisTemplate = redisTemplate;
-        this.webClient = webClientBuilder.baseUrl("http://auth-service/api/admin").build();
+        this.loadBalancerClient = loadBalancerClient;
+        this.webClientBuilder = webClientBuilder;
+    }
+
+    @PostConstruct
+    public void init() {
+        ServiceInstance instance = loadBalancerClient.choose("auth-service");
+
+        if (instance != null) {
+//            System.out.println("instance = " + instance.getUri());
+
+            webClient = webClientBuilder
+                    .baseUrl(instance.getUri() + "/api/auth/admin")
+                    .build();
+        } else {
+            log.warn("未找到 auth-service 服务实例");
+        }
     }
 
     /**
@@ -84,7 +111,7 @@ public class StpInterfaceImpl implements StpInterface {
                     PermissionVO.class
             );
 
-            // 如果没有权限 ID，跳过查询
+            // 如果没有权限 ID，跳过查询（这里会导致没有权限的角色永远不会被缓存）
             if (partPermissionVOs == null || partPermissionVOs.isEmpty()) {
                 continue;
             }
@@ -129,32 +156,42 @@ public class StpInterfaceImpl implements StpInterface {
     }
 
     public Result<List<RoleVO>> getRole(String userId) {
+        init();
         // 使用 ParameterizedTypeReference 来指定泛型类型
-        return webClient.get()
-                .uri("/role/v1/user?userId={userId}", userId)
-                .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
-                .header(StpUtil.getTokenName(), StpUtil.getTokenValue())
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Result<List<RoleVO>>>() {
-                })
-                .doOnError(e ->
-                        log.error("远程调用AuthClient#getRole方法出现异常，参数：{}", userId, e)
-                )
-                .block(); // 使用 block() 来阻塞等待结果
+        try {
+            return webClient.get()
+                    .uri("/role/v1/user")
+                    .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
+                    .header(StpUtil.getTokenName(), StpUtil.getTokenValueNotCut())
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Result<List<RoleVO>>>() {
+                    })
+                    .doOnError(e ->
+                            log.error("远程调用AuthClient#getRole方法出现异常，参数：{}", userId, e)
+                    )
+                    .block(); // 使用 block() 来阻塞等待结果
+        } catch (Exception e) {
+            throw new RuntimeException(ResultCode.INTERNAL_SERVER_ERROR.getMessage());
+        }
     }
 
     public Result<List<PermissionVO>> getPermission(String roleId) {
+        init();
         // 使用 ParameterizedTypeReference 来指定泛型类型
-        return webClient.get()
-                .uri("/permission/v1/role?roleId={roleId}", roleId)
-                .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
-                .header(StpUtil.getTokenName(), StpUtil.getTokenValue())
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Result<List<PermissionVO>>>() {
-                })
-                .doOnError(e ->
-                        log.error("远程调用AuthClient#getPermission方法出现异常，参数：{}", roleId, e)
-                )
-                .block(); // 使用 block() 来阻塞等待结果
+        try {
+            return webClient.get()
+                    .uri("/permission/v1/role?roleId={roleId}", roleId)
+                    .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
+                    .header(StpUtil.getTokenName(), StpUtil.getTokenValueNotCut())
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Result<List<PermissionVO>>>() {
+                    })
+                    .doOnError(e ->
+                            log.error("远程调用AuthClient#getPermission方法出现异常，参数：{}", roleId, e)
+                    )
+                    .block(); // 使用 block() 来阻塞等待结果
+        } catch (Exception e) {
+            throw new RuntimeException(ResultCode.INTERNAL_SERVER_ERROR.getMessage());
+        }
     }
 }

@@ -23,7 +23,7 @@ public class QA {
     @MongoId
     private Long qaId; // 雪花算法生成ID，自动作为主键，MongoDB会为其创建索引
     @Indexed  // 为authorId创建单字段索引
-    private String authorId;  // 作者ID
+    private String userId;  // 作者ID
     private String title;  // 帖子标题
     private String content; // 帖子内容
     private List<MediaFile> mediaFiles; // 动态存储附件数据：图片、视频、文档等，每个媒体文件包含文件类型、URL等信息

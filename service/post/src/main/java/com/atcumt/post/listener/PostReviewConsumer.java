@@ -1,5 +1,6 @@
 package com.atcumt.post.listener;
 
+import com.atcumt.model.post.dto.PostReviewDTO;
 import com.atcumt.model.post.entity.Discussion;
 import com.atcumt.post.repository.DiscussionRepository;
 import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
@@ -15,21 +16,26 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RocketMQMessageListener(
-        topic = "forum",
-        selectorExpression = "discussionReview",
-        consumerGroup = "forum-consumer",
-        maxReconsumeTimes = 16
+        topic = "post",
+        selectorExpression = "postReview",
+        consumerGroup = "post-review-consumer",
+        maxReconsumeTimes = 8
 )
 @RequiredArgsConstructor
 @Slf4j
-public class DiscussionReviewConsumer implements RocketMQListener<Long> {
+public class PostReviewConsumer implements RocketMQListener<PostReviewDTO> {
     private final MongoTemplate mongoTemplate;
     private final DiscussionRepository discussionRepository;
 
     @Override
-    public void onMessage(Long discussionId) {
-        log.info("收到帖子审核任务: {}", discussionId);
+    public void onMessage(PostReviewDTO postReviewDTO) {
+        log.info("收到帖子审核任务: {}", postReviewDTO);
+        if (postReviewDTO.getPostType().equals("discussion")) {
+            reviewDiscussion(postReviewDTO.getPostId());
+        }
+    }
 
+    public void reviewDiscussion(Long discussionId) {
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
         if (discussion == null) {

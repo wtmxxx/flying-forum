@@ -18,4 +18,7 @@ public interface DiscussionRepository extends MongoRepository<Discussion, Long> 
     @Query(value = "{ '_id': ?0 }", fields = "{ 'authorId': 1, '_id': 0 }")
         // 投影，仅返回 mediaFiles 字段
     Discussion findAuthorIdByDiscussionId(Long discussionId);
+
+    @Query(value = "{ 'tagIds': ?0 }", fields = "{ '_id': 1 }")
+    List<Discussion> findDiscussionIdsInTagIds(Long tagId);
 }

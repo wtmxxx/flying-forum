@@ -44,7 +44,8 @@
       {
         "name": "Path",
         "args": {
-          "_genkey_0": "/api/comment/**"
+          "_genkey_0": "/api/comment/**",
+          "_genkey_1": "/api/reply/**"
         }
       }
     ],
