@@ -28,8 +28,8 @@ public class GatewayExceptionAdvice implements WebExceptionHandler {
         // 构造 JSON 响应体
         JSONObject errorResponse = JSONUtil
                 .createObj(new JSONConfig().setIgnoreNullValue(false))
-                .set("code", 404)
-                .set("msg", "请求路径无效")
+                .set("code", HttpStatus.NOT_FOUND.value())
+                .set("msg", "无效请求")
                 .set("data", null);
 
         // 将 JSON 转换为字节数组

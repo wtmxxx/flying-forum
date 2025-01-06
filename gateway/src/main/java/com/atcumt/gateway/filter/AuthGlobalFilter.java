@@ -62,11 +62,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             tokenValue = request.getHeaders().getFirst("Authorization");
 
             Object loginId = StpUtil.getLoginIdByToken(Objects
-                    .requireNonNull(tokenValue, "未能读取到有效 token")
+                    .requireNonNull(tokenValue, ResultCode.UNAUTHORIZED.getMessage())
                     .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length())
             );
-            if (loginId == null) {
-                throw new UnauthorizedException("未能读取到有效 token");
+            if (loginId == null || !StpUtil.isLogin(loginId)) {
+                throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
             }
 
             userId = String.valueOf(loginId);
@@ -78,7 +78,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             JSONObject errorResponse = JSONUtil
                     .createObj(new JSONConfig().setIgnoreNullValue(false))
                     .set("code", ResultCode.UNAUTHORIZED.getCode())
-                    .set("msg", e.getMessage())
+                    .set("msg", ResultCode.UNAUTHORIZED.getMessage())
                     .set("data", null);
 
             // 将 JSON 转换为字节数组
