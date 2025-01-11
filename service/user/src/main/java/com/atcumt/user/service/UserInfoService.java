@@ -1,21 +1,27 @@
 package com.atcumt.user.service;
 
+import com.atcumt.model.user.entity.UserStatus;
 import com.atcumt.model.user.vo.UserInfoVO;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public interface UserInfoService {
-    UserInfoVO getUserInfo(String userId);
+    UserInfoVO getUserInfo(String userId) throws ExecutionException, InterruptedException;
 
     void changeNickname(String nickname);
 
     void changeAvatar(String avatar);
 
-    void changeBanner(String banner);
-
     void changeBio(String bio);
 
     void changeGender(Integer gender);
 
-    void changeStatus(List<String> status);
+    void changeHometown(String hometown);
+
+    void changeMajor(String major);
+
+    void changeGrade(Integer grade);
+
+    void changeStatuses(List<UserStatus> status);
 }

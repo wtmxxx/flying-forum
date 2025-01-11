@@ -2,6 +2,7 @@ package com.atcumt.user.controller.user.v1;
 
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.common.entity.Result;
+import com.atcumt.model.user.entity.UserStatus;
 import com.atcumt.model.user.vo.UserInfoVO;
 import com.atcumt.user.service.UserInfoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController("userInfoControllerUserV1")
 @RequestMapping("/api/user/info/v1")
@@ -24,12 +26,12 @@ public class UserInfoController {
     private final UserInfoService userInfoService;
 
     @GetMapping("/me")
-    @Operation(summary = "获取用户信息", description = "获取用户信息")
+    @Operation(summary = "获取我的信息", description = "获取我的信息")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public Result<UserInfoVO> getUserInfo() {
-        log.info("获取用户信息, userId: {}", UserContext.getUserId());
+    public Result<UserInfoVO> getUserInfo() throws ExecutionException, InterruptedException {
+        log.info("获取我的信息, userId: {}", UserContext.getUserId());
 
         UserInfoVO userInfoVO = userInfoService.getUserInfo(UserContext.getUserId());
 
@@ -39,9 +41,10 @@ public class UserInfoController {
     @GetMapping("/other")
     @Operation(summary = "获取他人信息", description = "获取他人信息")
     @Parameters({
-            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "userId", description = "用户ID", in = ParameterIn.QUERY, required = true)
     })
-    public Result<UserInfoVO> getUserInfo(String userId) {
+    public Result<UserInfoVO> getUserInfo(String userId) throws ExecutionException, InterruptedException {
         log.info("获取他人信息, userId: {}", userId);
 
         UserInfoVO userInfoVO = userInfoService.getUserInfo(userId);
@@ -77,20 +80,6 @@ public class UserInfoController {
         return Result.success();
     }
 
-    @PatchMapping("/me/banner")
-    @Operation(summary = "修改横幅", description = "修改用户横幅")
-    @Parameters({
-            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
-            @Parameter(name = "banner", description = "横幅URL", required = true)
-    })
-    public Result<Object> changeBanner(@RequestParam String banner) {
-        log.info("修改横幅, userId: {}", UserContext.getUserId());
-
-        userInfoService.changeBanner(banner);
-
-        return Result.success();
-    }
-
     @PatchMapping("/me/bio")
     @Operation(summary = "修改简介", description = "修改用户简介")
     @Parameters({
@@ -119,15 +108,57 @@ public class UserInfoController {
         return Result.success();
     }
 
+    @PatchMapping("/me/hometown")
+    @Operation(summary = "修改家乡", description = "修改用户家乡")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "hometown", description = "家乡", required = true)
+    })
+    public Result<Object> changeHometown(@RequestParam String hometown) {
+        log.info("修改家乡, userId: {}", UserContext.getUserId());
+
+        userInfoService.changeHometown(hometown);
+
+        return Result.success();
+    }
+
+    @PatchMapping("/me/major")
+    @Operation(summary = "修改专业", description = "修改用户专业")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "major", description = "专业", required = true)
+    })
+    public Result<Object> changeMajor(@RequestParam String major) {
+        log.info("修改专业, userId: {}", UserContext.getUserId());
+
+        userInfoService.changeMajor(major);
+
+        return Result.success();
+    }
+
+    @PatchMapping("/me/grade")
+    @Operation(summary = "修改年级", description = "修改用户年级")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "grade", description = "年级", required = true)
+    })
+    public Result<Object> changeGrade(@RequestParam Integer grade) {
+        log.info("修改年级, userId: {}", UserContext.getUserId());
+
+        userInfoService.changeGrade(grade);
+
+        return Result.success();
+    }
+
     @PatchMapping("/me/status")
     @Operation(summary = "修改状态", description = "修改用户状态")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public Result<Object> changeStatus(@RequestBody List<String> status) {
+    public Result<Object> changeStatuses(@RequestBody List<UserStatus> statuses) {
         log.info("修改状态, userId: {}", UserContext.getUserId());
 
-        userInfoService.changeStatus(status);
+        userInfoService.changeStatuses(statuses);
 
         return Result.success();
     }
