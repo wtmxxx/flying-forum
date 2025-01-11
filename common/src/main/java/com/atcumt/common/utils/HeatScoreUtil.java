@@ -1,14 +1,17 @@
 package com.atcumt.common.utils;
 
 public class HeatScoreUtil {
-    public static double getPostHeat(int likeCount, int commentCount,
+    public static double getPostHeat(int likeCount, int dislikeCount, int commentCount,
                                      double likeWeight, double commentWeight) {
+        // 点赞差值
+        int likeDifference = likeCount - dislikeCount;
+
         // 热度计算
-        return likeWeight * likeCount + commentWeight * commentCount;
+        return likeWeight * likeDifference + commentWeight * commentCount;
     }
 
-    public static double getPostHeat(int likeCount, int commentCount) {
-        return getPostHeat(likeCount, commentCount, 2.0, 1.0);
+    public static double getPostHeat(int likeCount, int dislikeCount, int commentCount) {
+        return getPostHeat(likeCount, dislikeCount, commentCount, 2.0, 1.0);
     }
 
     public static double getCommentHeat(int likeCount, int dislikeCount, int replyCount, long publishTime,
