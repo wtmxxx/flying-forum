@@ -1,4 +1,4 @@
-package com.atcumt.model.like.entity;
+package com.atcumt.model.user.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,19 +15,15 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "post_like")
-@TypeAlias("PostLike")
-public class PostLike {
+@Document(collection = "user_follow")
+@TypeAlias("UserFollow")
+public class UserFollow {
     @MongoId
-    private Long likeId;
+    private Long followId;
     @Indexed
-    private String action;
+    private String followerId; // 关注者的用户ID
     @Indexed
-    private String postType;
-    @Indexed
-    private Long postId;
-    @Indexed
-    private String userId;
+    private String followedId; // 被关注者的用户ID
     @Indexed
     private LocalDateTime createTime;
 }

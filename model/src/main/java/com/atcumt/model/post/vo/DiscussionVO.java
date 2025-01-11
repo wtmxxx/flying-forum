@@ -21,6 +21,7 @@ public class DiscussionVO {
     private List<MediaFileVO> mediaFiles; // 动态存储附件数据：图片、视频、文档等，每个媒体文件包含文件类型、URL等信息
     private List<Long> tagIds; // 标签ID
     private Integer likeCount; // 点赞数
+    private Integer dislikeCount; // 点踩数
     private Integer commentCount; // 评论数
     private Long viewCount;  // 观看量
     private Integer status;  // 帖子状态

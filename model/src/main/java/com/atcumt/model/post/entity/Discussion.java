@@ -30,6 +30,7 @@ public class Discussion {
     @Indexed
     private List<Long> tagIds; // 标签ID
     private Integer likeCount; // 点赞数
+    private Integer dislikeCount; // 点踩数
     private Integer commentCount; // 评论数
     private Long viewCount;  // 观看量
     @Indexed

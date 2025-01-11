@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PostLikeDTO {
-    private String action;
-    private String postType;
-    private Long postId;
-    private String userId;
+public class CommentLikeCountDTO {
+    private String commentType;
+    private Long commentId;
 }

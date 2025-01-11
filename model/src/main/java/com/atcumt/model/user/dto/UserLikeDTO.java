@@ -1,4 +1,4 @@
-package com.atcumt.model.like.dto;
+package com.atcumt.model.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PostLikeDTO {
-    private String action;
-    private String postType;
-    private Long postId;
+public class UserLikeDTO {
     private String userId;
+    private String cursor;
+    private Long lastLikeId;
+    private Integer size;
 }

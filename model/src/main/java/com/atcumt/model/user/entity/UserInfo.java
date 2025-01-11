@@ -21,12 +21,14 @@ public class UserInfo {
     private String userId;
     private String nickname;
     private String avatar;
-    private String banner;
     private String bio;
     private Integer gender;
+    private String hometown;
+    private String major;
+    private Integer grade;
+    private List<UserStatus> statuses;
     private Integer level;
     private Integer followersCount;
     private Integer followingCount;
     private Integer likeReceivedCount;
-    private List<String> status;
 }

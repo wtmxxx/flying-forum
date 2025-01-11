@@ -10,10 +10,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Wotemo {
-    private String id;
-    private String name;
-    private String description;
-    private String email;
-    private String website;
-    private String department;
+    @Builder.Default
+    private String id = "wtmxxx";
+    @Builder.Default
+    private String name = "Wotemo";
+    @Builder.Default
+    private String description = "Wotemo is a software engineer.";
+    @Builder.Default
+    private String email = "iswotemo@gmail.com";
+    @Builder.Default
+    private String website = "https://www.wotemo.com";
+    @Builder.Default
+    private String department = "CUMT Flying Studio";
 }
