@@ -18,6 +18,7 @@ import com.atcumt.model.comment.vo.ReplyVO;
 import com.atcumt.model.comment.vo.UserReplyVO;
 import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.common.vo.MediaFileVO;
+import com.atcumt.model.like.constants.LikeAction;
 import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.user.vo.UserInfoSimpleVO;
 import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
@@ -218,12 +219,12 @@ public class ReplyServiceImpl implements ReplyService {
         List<CommentLike> likes = mongoTemplate.find(likeQuery, CommentLike.class);
 
         Set<Long> likeReplyIds = likes.stream()
-                .filter(CommentLike::getIsLike)
+                .filter(commentLike -> commentLike.getAction().equals(LikeAction.LIKE))
                 .map(CommentLike::getCommentId)
                 .collect(Collectors.toSet());
 
         Set<Long> dislikeReplyIds = likes.stream()
-                .filter(commentLike -> !commentLike.getIsLike())
+                .filter(commentLike -> commentLike.getAction().equals(LikeAction.DISLIKE))
                 .map(CommentLike::getCommentId)
                 .collect(Collectors.toSet());
 

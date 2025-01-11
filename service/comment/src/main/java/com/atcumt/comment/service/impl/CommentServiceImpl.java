@@ -21,6 +21,7 @@ import com.atcumt.model.comment.vo.PostCommentVO;
 import com.atcumt.model.comment.vo.UserCommentVO;
 import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.common.vo.MediaFileVO;
+import com.atcumt.model.like.constants.LikeAction;
 import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.user.vo.UserInfoSimpleVO;
@@ -235,17 +236,17 @@ public class CommentServiceImpl implements CommentService {
                 .where("userId").is(UserContext.getUserId())
                 .and("commentId").in(commentIds)
         );
-        likeQuery.fields().include("commentId", "isLike");
+        likeQuery.fields().include("commentId", "action");
 
         List<CommentLike> likes = mongoTemplate.find(likeQuery, CommentLike.class);
 
         Set<Long> likeCommentIds = likes.stream()
-                .filter(CommentLike::getIsLike)
+                .filter(commentLike -> commentLike.getAction().equals(LikeAction.LIKE))
                 .map(CommentLike::getCommentId)
                 .collect(Collectors.toSet());
 
         Set<Long> dislikeCommentIds = likes.stream()
-                .filter(commentLike -> !commentLike.getIsLike())
+                .filter(commentLike -> commentLike.getAction().equals(LikeAction.DISLIKE))
                 .map(CommentLike::getCommentId)
                 .collect(Collectors.toSet());
 
@@ -318,7 +319,7 @@ public class CommentServiceImpl implements CommentService {
     public UserCommentVO getUserComments(UserCommentDTO userCommentDTO) {
         String userId = userCommentDTO.getUserId();
 
-        Query query = Query.query(Criteria.where("userId").is(userCommentDTO.getUserId()));
+        Query query = Query.query(Criteria.where("userId").is(userId));
 
         if (userCommentDTO.getCursor() != null) {
             LocalDateTime cursor;
@@ -347,17 +348,17 @@ public class CommentServiceImpl implements CommentService {
 
         List<Comment> comments = mongoTemplate.find(query, Comment.class);
 
-        List<CommentVO> commentVOs = new ArrayList<>();
+        List<CommentVO> commentVOS = new ArrayList<>();
 
         for (var comment : comments) {
             CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class);
 
-            commentVOs.add(commentVO);
+            commentVOS.add(commentVO);
         }
 
         Long lastCommentId = null;
         String cursor = null;
-        if (!commentVOs.isEmpty()) {
+        if (!commentVOS.isEmpty()) {
             lastCommentId = comments.getLast().getCommentId();
 
             cursor = comments.getLast().getCreateTime().toString();
@@ -368,7 +369,7 @@ public class CommentServiceImpl implements CommentService {
                 .size(comments.size())
                 .cursor(cursor)
                 .lastCommentId(lastCommentId)
-                .comments(commentVOs)
+                .comments(commentVOS)
                 .build();
 
         return userCommentVO;

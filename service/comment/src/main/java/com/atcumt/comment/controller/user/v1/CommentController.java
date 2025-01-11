@@ -120,7 +120,7 @@ public class CommentController {
             @RequestParam(name = "size", defaultValue = "10") Integer size,
             @PathVariable(name = "userId") String userId
     ) throws AuthorizationException {
-        log.info("获取我的评论, userId: {}", UserContext.getUserId());
+        log.info("获取用户评论, userId: {}", userId);
 
         if (size > 1000 || size < 0) size = 10;
 

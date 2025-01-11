@@ -3,9 +3,11 @@ package com.atcumt.post.repository;
 import com.atcumt.model.post.entity.Discussion;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface DiscussionRepository extends MongoRepository<Discussion, Long> {
     // 你可以在这里定义自己的查询方法
     // 例如：根据状态查询讨论

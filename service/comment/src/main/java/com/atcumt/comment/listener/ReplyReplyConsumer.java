@@ -119,17 +119,7 @@ public class ReplyReplyConsumer implements RocketMQListener<ReplyReplyScoreDTO> 
         }
 
         // 等待所有任务完成
-        try {
-            // 关闭线程池之前等待任务完成
-            executor.shutdown();
-            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                log.warn("任务未能在指定时间内完成，强制关闭线程池");
-                executor.shutdownNow(); // 超时后强制关闭
-            }
-        } catch (InterruptedException e) {
-            log.error("等待线程池关闭时发生异常", e);
-            executor.shutdownNow(); // 中断时强制关闭线程池
-        }
+        shutdownExecutor(executor);
 
         long start = System.currentTimeMillis();
 
@@ -143,5 +133,20 @@ public class ReplyReplyConsumer implements RocketMQListener<ReplyReplyScoreDTO> 
         long end = System.currentTimeMillis();
 
         log.info("批量更新根回复热度耗时：{}ms", end - start);
+    }
+
+    private void shutdownExecutor(ExecutorService executor) {
+        // 等待所有任务完成
+        try {
+            // 关闭线程池之前等待任务完成
+            executor.shutdown();
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                log.warn("任务未能在指定时间内完成，强制关闭线程池");
+                executor.shutdownNow(); // 超时后强制关闭
+            }
+        } catch (InterruptedException e) {
+            log.error("等待线程池关闭时发生异常", e);
+            executor.shutdownNow(); // 中断时强制关闭线程池
+        }
     }
 }
