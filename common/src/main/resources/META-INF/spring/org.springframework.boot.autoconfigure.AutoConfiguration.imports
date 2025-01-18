@@ -9,3 +9,4 @@ com.atcumt.common.config.WebClientConfiguration
 com.atcumt.common.config.MongoTransactionConfiguration
 com.atcumt.common.utils.UserInfoUtil
 com.atcumt.common.config.SentinelConfiguration
+com.atcumt.common.utils.UserPrivacyUtil

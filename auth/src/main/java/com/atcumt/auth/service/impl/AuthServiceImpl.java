@@ -557,7 +557,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .userId(userAuth.getUserId())
                 .gender(-1)
                 .followersCount(0)
-                .followingCount(0)
+                .followingsCount(0)
                 .likeReceivedCount(0)
                 .level(5)
                 .build();

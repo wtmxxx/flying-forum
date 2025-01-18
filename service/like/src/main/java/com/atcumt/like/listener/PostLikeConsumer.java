@@ -145,7 +145,7 @@ public class PostLikeConsumer implements RocketMQListener<PostLikeCountDTO> {
 
                     log.info("计算帖子点赞量耗时：{}ms", end - start);
                 } catch (Exception e) {
-                    log.error("计算帖子点赞量时发生错误，postId: {}", post.getPostId(), e);
+                    log.error("计算帖子点赞量时发生错误，post: {}", post, e);
                 }
             });
         }

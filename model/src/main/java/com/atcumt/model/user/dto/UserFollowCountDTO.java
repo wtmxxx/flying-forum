@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserLikeDTO {
-    private String userId;
-    private String cursor;
-    private Long lastLikeId;
-    private Integer size;
+public class UserFollowCountDTO {
+    private String followerId; // 关注者的用户ID
+    private String followedId; // 被关注者的用户ID
 }

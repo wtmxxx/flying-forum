@@ -46,7 +46,7 @@ public class UserInfoServiceImpl implements UserInfoService {
                     List<UserStatus> userStatuses = new ArrayList<>();
 
                     for (var status : userInfo.getStatuses()) {
-                        if (status.getExpiresAt().isAfter(LocalDateTime.now())) {
+                        if (status.getEndTime().isAfter(LocalDateTime.now())) {
                             userStatuses.add(status);
                         }
                     }
@@ -154,7 +154,7 @@ public class UserInfoServiceImpl implements UserInfoService {
         // 使用HashSet去重
         // 去重并过滤过期的状态
         statuses = statuses.stream()
-                .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now())) // 过滤未过期状态
+                .filter(s -> s.getEndTime() == null || s.getEndTime().isAfter(LocalDateTime.now())) // 过滤未过期状态
                 .filter(new HashSet<>()::add) // 利用HashSet的add方法去重
                 .toList();
 

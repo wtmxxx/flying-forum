@@ -3,20 +3,21 @@ package com.atcumt.like.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONObject;
+import com.atcumt.common.exception.AuthorizationException;
+import com.atcumt.common.utils.UserContext;
+import com.atcumt.common.utils.UserPrivacyUtil;
 import com.atcumt.like.service.LikeService;
 import com.atcumt.model.common.enums.ResultCode;
 import com.atcumt.model.like.constants.LikeAction;
-import com.atcumt.model.like.dto.CommentLikeCountDTO;
-import com.atcumt.model.like.dto.CommentLikeDTO;
-import com.atcumt.model.like.dto.PostLikeCountDTO;
-import com.atcumt.model.like.dto.PostLikeDTO;
+import com.atcumt.model.like.dto.*;
 import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.like.entity.PostLike;
 import com.atcumt.model.like.enums.LikeMessage;
 import com.atcumt.model.like.vo.PostLikeVO;
 import com.atcumt.model.like.vo.UserPostLikeVO;
 import com.atcumt.model.post.enums.PostStatus;
-import com.atcumt.model.user.dto.UserLikeDTO;
+import com.atcumt.model.user.enums.PrivacyScope;
+import com.atcumt.model.user.enums.UserMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 public class LikeServiceImpl implements LikeService {
     private final RocketMQTemplate rocketMQTemplate;
     private final MongoTemplate mongoTemplate;
+    private final UserPrivacyUtil userPrivacyUtil;
 
     @Override
     public void likePost(PostLikeDTO postLikeDTO) {
@@ -135,6 +137,10 @@ public class LikeServiceImpl implements LikeService {
     @Override
     public UserPostLikeVO getUserLikes(UserLikeDTO userLikeDTO) throws InterruptedException {
         String userId = userLikeDTO.getUserId();
+        // 检查用户是否有权限访问关注列表
+        if (!userId.equals(UserContext.getUserId()) && !userPrivacyUtil.checkPrivacy(userId, PrivacyScope.LIKE)) {
+            throw new AuthorizationException(UserMessage.LIKE_PRIVACY_DENIED.getMessage());
+        }
 
         Query query = Query.query(Criteria.where("userId").is(userId));
 

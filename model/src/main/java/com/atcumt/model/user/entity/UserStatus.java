@@ -13,5 +13,5 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class UserStatus {
     private String content;
-    private LocalDateTime expiresAt;
+    private LocalDateTime endTime;
 }

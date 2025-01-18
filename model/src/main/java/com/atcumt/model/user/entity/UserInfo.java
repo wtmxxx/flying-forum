@@ -29,6 +29,6 @@ public class UserInfo {
     private List<UserStatus> statuses;
     private Integer level;
     private Integer followersCount;
-    private Integer followingCount;
+    private Integer followingsCount;
     private Integer likeReceivedCount;
 }
