@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class DiscussionController {
     private final DiscussionService discussionService;
 
-    @PostMapping("/")
+    @PostMapping("")
     @Operation(summary = "发表杂谈", description = "发表杂谈")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
@@ -53,7 +53,7 @@ public class DiscussionController {
         return Result.success(discussionPostVO);
     }
 
-    @PatchMapping("/")
+    @PatchMapping("")
     @Operation(summary = "修改杂谈", description = "修改杂谈")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
@@ -67,7 +67,7 @@ public class DiscussionController {
         return Result.success(discussionPostVO);
     }
 
-    @DeleteMapping("/")
+    @DeleteMapping("")
     @Operation(summary = "删除杂谈", description = "删除杂谈")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
@@ -97,15 +97,17 @@ public class DiscussionController {
         return Result.success();
     }
 
-    @GetMapping("/")
+    @GetMapping("")
     @Operation(summary = "获取杂谈", description = "获取杂谈")
     @Parameters({
-            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "discussionId", description = "杂谈ID", in = ParameterIn.QUERY, required = true)
     })
     public Result<DiscussionVO> getDiscussion(Long discussionId) {
         log.info("获取杂谈, discussionId: {}", discussionId);
 
         // 获取杂谈
+        // TODO 增加VO的是否关注、是否点赞等信息
         DiscussionVO discussionVO = discussionService.getDiscussion(discussionId);
 
         return Result.success(discussionVO);

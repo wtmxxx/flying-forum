@@ -66,6 +66,19 @@
     "uri": "lb://user-service"
   },
   {
+    "id": "search-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/search/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://search-service"
+  },
+  {
     "id": "oss-service",
     "predicates": [
       {

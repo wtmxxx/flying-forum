@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostCommentDTO {
-    private Long postId;
     private String postType;
+    private Long postId;
     private String cursor;
     private Long lastCommentId;
     private Integer size;

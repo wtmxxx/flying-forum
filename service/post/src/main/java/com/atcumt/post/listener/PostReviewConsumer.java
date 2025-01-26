@@ -6,21 +6,19 @@ import com.atcumt.post.repository.DiscussionRepository;
 import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Service;
 
-@Service
-@RocketMQMessageListener(
-        topic = "post",
-        selectorExpression = "postReview",
-        consumerGroup = "post-review-consumer",
-        maxReconsumeTimes = 8
-)
+//@Service
+//@RocketMQMessageListener(
+//        topic = "post",
+//        selectorExpression = "postReview",
+//        consumerGroup = "post-review-consumer",
+//        maxReconsumeTimes = 8
+//)
 @RequiredArgsConstructor
 @Slf4j
 public class PostReviewConsumer implements RocketMQListener<PostReviewDTO> {

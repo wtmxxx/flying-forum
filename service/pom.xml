@@ -13,6 +13,7 @@
         <module>like</module>
         <module>gpt</module>
         <module>user</module>
+        <module>search</module>
         <module>rag</module>
     </modules>
     <artifactId>service</artifactId>
@@ -105,16 +106,13 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter-test</artifactId>
-            <version>${mybatis.version}</version>
-            <scope>test</scope>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-            <version>${mybatis-plus.version}</version>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
             <optional>true</optional>
         </dependency>
         <!--Druid-->
@@ -197,6 +195,12 @@
             <artifactId>rocketmq-client</artifactId>
             <version>${rocketmq.version}</version>
         </dependency>
+        <!-- MongoDB -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

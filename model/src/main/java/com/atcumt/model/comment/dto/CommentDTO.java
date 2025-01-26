@@ -13,8 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommentDTO {
-    private Long postId;
     private String postType;
+    private Long postId;
     private String content;
     private List<MediaFileDTO> mediaFiles;
 }

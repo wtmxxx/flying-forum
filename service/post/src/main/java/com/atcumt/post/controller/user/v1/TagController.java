@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class TagController {
     private final TagService tagService;
 
-    @PostMapping("/")
+    @PostMapping("")
     @Operation(summary = "新建或查询标签", description = "新建或查询标签，如果标签不存在则新建，否则返回已有标签")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)

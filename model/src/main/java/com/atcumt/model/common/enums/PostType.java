@@ -5,7 +5,7 @@ import lombok.Getter;
 
 public enum PostType {
 
-    QA("qa", "问答"),
+    QUESTION("question", "问答"),
     DISCUSSION("discussion", "杂谈"),
     TEAM("team", "组队"),
     SECOND_HAND("trade", "二手"),

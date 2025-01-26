@@ -559,7 +559,8 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .followersCount(0)
                 .followingsCount(0)
                 .likeReceivedCount(0)
-                .level(5)
+                .level(0)
+                .experience(0)
                 .build();
 
         if (qqAuth != null && qqAuth.getQqNickname() != null && !qqAuth.getQqNickname().isEmpty()) {

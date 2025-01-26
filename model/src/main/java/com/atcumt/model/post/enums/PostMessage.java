@@ -7,6 +7,13 @@ public enum PostMessage {
     // 帖子相关
     POST_NOT_FOUND("无此帖子"),
     POST_UNPUBLISHED("帖子未发布"),
+    POST_DELETED("帖子已删除"),
+
+    // 新闻相关
+    NEWS_NOT_FOUND("无此新闻"),
+    NEWS_UNPUBLISHED("新闻未发布"),
+    NEWS_LIST_EMPTY("新闻列表不能为空"),
+    NEWS_COUNT_TOO_MANY("新闻数量过多"),
 
     // 标签相关
     TAG_NOT_FOUND("无此标签"),

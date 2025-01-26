@@ -12,8 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostCommentVO {
-    private Long postId;
     private String postType;
+    private Long postId;
     private Integer size;
     private String sort;
     private String cursor;

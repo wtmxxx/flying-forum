@@ -25,7 +25,7 @@ public class DiscussionController {
     private final DiscussionService discussionService;
     private final AdminDiscussionService adminDiscussionService;
 
-    @PatchMapping("/")
+    @PatchMapping("")
     @Operation(summary = "修改杂谈", description = "修改杂谈")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
@@ -38,7 +38,7 @@ public class DiscussionController {
         return Result.success(discussionPostVO);
     }
 
-    @DeleteMapping("/")
+    @DeleteMapping("")
     @Operation(summary = "删除杂谈", description = "删除杂谈")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),

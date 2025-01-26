@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserStatus {
-    private String content;
+    private String emoji;
+    private String text;
     private LocalDateTime endTime;
 }

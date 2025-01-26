@@ -20,8 +20,8 @@ public class ReplyVO {
     private String replyToUserId;
     private UserInfoSimpleVO replyToUserInfo;
     private Long rootCommentId;
-    private Long postId;
     private String postType;
+    private Long postId;
     private String userId;
     private String content;
     private List<MediaFileVO> mediaFiles;

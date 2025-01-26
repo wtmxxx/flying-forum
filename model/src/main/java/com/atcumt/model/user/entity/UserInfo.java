@@ -28,6 +28,7 @@ public class UserInfo {
     private Integer grade;
     private List<UserStatus> statuses;
     private Integer level;
+    private Integer experience;
     private Integer followersCount;
     private Integer followingsCount;
     private Integer likeReceivedCount;

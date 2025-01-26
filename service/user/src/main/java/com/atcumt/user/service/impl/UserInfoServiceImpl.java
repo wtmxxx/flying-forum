@@ -3,9 +3,11 @@ package com.atcumt.user.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.auth.entity.UserAuth;
+import com.atcumt.model.user.entity.UserFollow;
 import com.atcumt.model.user.entity.UserInfo;
 import com.atcumt.model.user.entity.UserStatus;
 import com.atcumt.model.user.enums.UserMessage;
+import com.atcumt.model.user.vo.UserInfoOtherVO;
 import com.atcumt.model.user.vo.UserInfoVO;
 import com.atcumt.user.mapper.UserAuthMapper;
 import com.atcumt.user.service.UserInfoService;
@@ -35,7 +37,8 @@ public class UserInfoServiceImpl implements UserInfoService {
     private final UserAuthMapper userAuthMapper;
 
     @Override
-    public UserInfoVO getUserInfo(String userId) throws ExecutionException, InterruptedException {
+    public UserInfoVO getMyUserInfo() throws ExecutionException, InterruptedException {
+        String userId = UserContext.getUserId();
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             Future<UserInfo> userInfoFuture = executor.submit(() -> {
                 UserInfo userInfo = mongoTemplate.findOne(
@@ -53,7 +56,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 
                     if (userInfo.getStatuses().size() != userStatuses.size()) {
                         mongoTemplate.updateFirst(
-                                Query.query(Criteria.where("userId").is(UserContext.getUserId())),
+                                Query.query(Criteria.where("userId").is(userId)),
                                 Update.update("statuses", userStatuses), UserInfo.class
                         );
                     }
@@ -80,6 +83,83 @@ public class UserInfoServiceImpl implements UserInfoService {
             userInfoVO.setUsername(userAuthFuture.get().getUsername());
 
             return userInfoVO;
+        }
+    }
+
+    @Override
+    public UserInfoOtherVO getOtherUserInfo(String userId) throws ExecutionException, InterruptedException {
+        String currentUserId = UserContext.getUserId();
+
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            Future<UserInfo> userInfoFuture = executor.submit(() -> {
+                UserInfo userInfo = mongoTemplate.findOne(
+                        Query.query(Criteria.where("userId").is(userId)), UserInfo.class
+                );
+
+                if (userInfo != null && userInfo.getStatuses() != null && !userInfo.getStatuses().isEmpty()) {
+                    List<UserStatus> userStatuses = new ArrayList<>();
+
+                    for (var status : userInfo.getStatuses()) {
+                        if (status.getEndTime().isAfter(LocalDateTime.now())) {
+                            userStatuses.add(status);
+                        }
+                    }
+
+                    if (userInfo.getStatuses().size() != userStatuses.size()) {
+                        mongoTemplate.updateFirst(
+                                Query.query(Criteria.where("userId").is(currentUserId)),
+                                Update.update("statuses", userStatuses), UserInfo.class
+                        );
+                    }
+
+                    userInfo.setStatuses(userStatuses);
+                }
+
+                return userInfo;
+            });
+
+            Future<List<UserFollow>> userFollowFuture = executor.submit(() -> {
+                return mongoTemplate.find(
+                        Query.query(new Criteria().orOperator(
+                                Criteria.where("followerId").is(currentUserId)
+                                        .and("followedId").is(userId),
+                                Criteria.where("followerId").is(userId)
+                                        .and("followedId").is(currentUserId))
+                        ), UserFollow.class);
+            });
+
+            Future<UserAuth> userAuthFuture = executor.submit(() -> {
+                return userAuthMapper.selectOne(Wrappers
+                        .<UserAuth>lambdaQuery()
+                        .select(UserAuth::getUsername)
+                        .eq(UserAuth::getUserId, userId)
+                );
+            });
+
+            UserInfo userInfo = userInfoFuture.get();
+            if (userInfo == null) {
+                throw new IllegalArgumentException(UserMessage.USER_NOT_FOUND.getMessage());
+            }
+            UserInfoOtherVO userInfoOtherVO = BeanUtil.toBean(userInfo, UserInfoOtherVO.class);
+            List<UserFollow> userFollows = userFollowFuture.get();
+            if (userFollows != null && !userFollows.isEmpty()) {
+                if (userFollows.size() == 2) {
+                    userInfoOtherVO.setIsFollowing(true);
+                    userInfoOtherVO.setIsFollower(true);
+                } else if (userFollows.getFirst().getFollowerId().equals(currentUserId)) {
+                    userInfoOtherVO.setIsFollowing(true);
+                    userInfoOtherVO.setIsFollower(false);
+                } else {
+                    userInfoOtherVO.setIsFollowing(false);
+                    userInfoOtherVO.setIsFollower(true);
+                }
+            } else {
+                userInfoOtherVO.setIsFollowing(false);
+                userInfoOtherVO.setIsFollower(false);
+            }
+            userInfoOtherVO.setUsername(userAuthFuture.get().getUsername());
+
+            return userInfoOtherVO;
         }
     }
 

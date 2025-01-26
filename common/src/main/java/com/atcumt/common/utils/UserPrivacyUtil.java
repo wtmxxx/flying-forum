@@ -82,8 +82,10 @@ public class UserPrivacyUtil {
      */
     private boolean isMutualFollower(String currentUserId, String targetUserId) {
         List<UserFollow> userFollows = mongoTemplate.find(
-                new Query(Criteria.where("followerId").is(currentUserId).and("followedId").is(targetUserId)
-                        .orOperator(Criteria.where("followerId").is(targetUserId).and("followedId").is(currentUserId))),
+                new Query(new Criteria().orOperator(
+                        Criteria.where("followerId").is(currentUserId).and("followedId").is(targetUserId),
+                        Criteria.where("followerId").is(targetUserId).and("followedId").is(currentUserId)
+                )),
                 UserFollow.class
         );
 

@@ -3,6 +3,7 @@ package com.atcumt.user.controller.user.v1;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.user.entity.UserStatus;
+import com.atcumt.model.user.vo.UserInfoOtherVO;
 import com.atcumt.model.user.vo.UserInfoVO;
 import com.atcumt.user.service.UserInfoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +34,7 @@ public class UserInfoController {
     public Result<UserInfoVO> getUserInfo() throws ExecutionException, InterruptedException {
         log.info("获取我的信息, userId: {}", UserContext.getUserId());
 
-        UserInfoVO userInfoVO = userInfoService.getUserInfo(UserContext.getUserId());
+        UserInfoVO userInfoVO = userInfoService.getMyUserInfo();
 
         return Result.success(userInfoVO);
     }
@@ -44,12 +45,12 @@ public class UserInfoController {
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "userId", description = "用户ID", in = ParameterIn.QUERY, required = true)
     })
-    public Result<UserInfoVO> getUserInfo(String userId) throws ExecutionException, InterruptedException {
+    public Result<UserInfoOtherVO> getUserInfo(String userId) throws ExecutionException, InterruptedException {
         log.info("获取他人信息, userId: {}", userId);
 
-        UserInfoVO userInfoVO = userInfoService.getUserInfo(userId);
+        UserInfoOtherVO userInfoOtherVO = userInfoService.getOtherUserInfo(userId);
 
-        return Result.success(userInfoVO);
+        return Result.success(userInfoOtherVO);
     }
 
     @PatchMapping("/me/nickname")

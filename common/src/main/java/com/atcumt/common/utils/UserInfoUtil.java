@@ -57,11 +57,19 @@ public class UserInfoUtil {
 
         List<UserInfoSimpleVO> userInfoSimpleVOs = userInfoSimpleRedisTemplate.opsForValue().multiGet(userInfoKeys);
 
+        if (userInfoSimpleVOs == null) {
+            userInfoSimpleVOs = new ArrayList<>();
+        }
+
         Map<String, UserInfoSimpleVO> userInfoPart = new HashMap<>();
 
         for (int i = 0; i < userIds.size(); i++) {
             if (userInfoSimpleVOs.get(i) == null) {
                 String userId = userIds.get(i);
+
+                if (userId == null) {
+                    continue;
+                }
 
                 // 先从Map缓存中获取
                 if (userInfoPart.containsKey(userId)) {

@@ -47,7 +47,7 @@ public class AdminDiscussionServiceImpl implements AdminDiscussionService {
             update.set("tagIds", discussionUpdateDTO.getTagIds());
         }
         // 设置状态为已发布
-        Integer status = PostStatus.PUBLISHED.getCode();
+        String status = PostStatus.PUBLISHED.getCode();
         update.set("status", status);
         update.set("updateTime", LocalDateTime.now());
 

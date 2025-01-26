@@ -14,7 +14,7 @@ public class ApidocApplication {
         SpringApplication.run(ApidocApplication.class, args);
     }
 
-    @GetMapping("/")
+    @GetMapping("")
     public RedirectView redirectToDoc() {
         return new RedirectView("/doc.html"); // 重定向到 /doc 路径
     }

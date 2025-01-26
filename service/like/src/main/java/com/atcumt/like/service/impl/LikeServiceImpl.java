@@ -5,8 +5,10 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONObject;
 import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.utils.UserContext;
+import com.atcumt.common.utils.UserInfoUtil;
 import com.atcumt.common.utils.UserPrivacyUtil;
 import com.atcumt.like.service.LikeService;
+import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.enums.ResultCode;
 import com.atcumt.model.like.constants.LikeAction;
 import com.atcumt.model.like.dto.*;
@@ -14,10 +16,14 @@ import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.like.entity.PostLike;
 import com.atcumt.model.like.enums.LikeMessage;
 import com.atcumt.model.like.vo.PostLikeVO;
+import com.atcumt.model.like.vo.PostUserLikeVO;
+import com.atcumt.model.like.vo.UserLikeVO;
 import com.atcumt.model.like.vo.UserPostLikeVO;
+import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.post.enums.PostStatus;
 import com.atcumt.model.user.enums.PrivacyScope;
 import com.atcumt.model.user.enums.UserMessage;
+import com.atcumt.model.user.vo.UserInfoSimpleVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
@@ -31,9 +37,11 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +55,7 @@ public class LikeServiceImpl implements LikeService {
     private final RocketMQTemplate rocketMQTemplate;
     private final MongoTemplate mongoTemplate;
     private final UserPrivacyUtil userPrivacyUtil;
+    private final UserInfoUtil userInfoUtil;
 
     @Override
     public void likePost(PostLikeDTO postLikeDTO) {
@@ -137,12 +146,14 @@ public class LikeServiceImpl implements LikeService {
     @Override
     public UserPostLikeVO getUserLikes(UserLikeDTO userLikeDTO) throws InterruptedException {
         String userId = userLikeDTO.getUserId();
-        // 检查用户是否有权限访问关注列表
+        // 检查用户是否有权限访问点赞列表
         if (!userId.equals(UserContext.getUserId()) && !userPrivacyUtil.checkPrivacy(userId, PrivacyScope.LIKE)) {
             throw new AuthorizationException(UserMessage.LIKE_PRIVACY_DENIED.getMessage());
         }
 
-        Query query = Query.query(Criteria.where("userId").is(userId));
+        Query query = Query.query(Criteria
+                .where("userId").is(userId)
+                .and("action").is(LikeAction.LIKE));
 
         if (userLikeDTO.getCursor() != null) {
             LocalDateTime cursor;
@@ -197,6 +208,7 @@ public class LikeServiceImpl implements LikeService {
                             .where("_id").in(postIds)
                             .and("status").is(PostStatus.PUBLISHED.getCode())
                     );
+                    postQuery.fields().exclude("content");
 
                     // 查询数据
                     List<JSONObject> posts = mongoTemplate.find(postQuery, JSONObject.class, postType);
@@ -204,6 +216,8 @@ public class LikeServiceImpl implements LikeService {
                     // 按 postId 存储结果
                     posts.forEach(post -> {
                         Long postId = post.getLong("_id");
+                        post.set("createTime", post.getLocalDateTime("createTime", LocalDateTime.now()).atZone(ZoneOffset.systemDefault()));
+                        post.set("updateTime", post.getLocalDateTime("updateTime", LocalDateTime.now()).atZone(ZoneOffset.systemDefault()));
                         postMap.put(postId, post);
                     });
                 } catch (Exception e) {
@@ -251,6 +265,103 @@ public class LikeServiceImpl implements LikeService {
                 .likes(postLikeVOs)
                 .build();
         return userPostLikeVO;
+    }
+
+    @Override
+    public PostUserLikeVO getPostLikes(PostUserLikeDTO postUserLikeDTO) {
+        String userId = UserContext.getUserId();
+
+        // TODO 优化：使用Redis缓存帖子信息
+        // 检查用户是否为帖子作者
+        Query authorQuery = Query.query(Criteria.where("_id").is(postUserLikeDTO.getPostId()));
+        authorQuery.fields().include("userId");
+        JSONObject jsonObject = mongoTemplate.findOne(
+                Query.query(Criteria
+                        .where("_id").is(postUserLikeDTO.getPostId())),
+                JSONObject.class,
+                postUserLikeDTO.getPostType()
+        );
+        if (jsonObject == null) {
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
+        }
+        String authorId = jsonObject.getStr("userId", null);
+        if (!Objects.equals(authorId, userId)) {
+            throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
+        }
+
+        Query query = Query.query(Criteria
+                .where("postType").is(postUserLikeDTO.getPostType())
+                .and("postId").is(postUserLikeDTO.getPostId())
+                .and("action").is(LikeAction.LIKE)
+        );
+
+        if (postUserLikeDTO.getCursor() != null) {
+            LocalDateTime cursor;
+            try {
+                cursor = LocalDateTime.parse(postUserLikeDTO.getCursor());
+            } catch (Exception e) {
+                throw new IllegalArgumentException(LikeMessage.CURSOR_FORMAT_INCORRECT.getMessage());
+            }
+            // 先添加筛选条件，再进行排序
+            query.addCriteria(Criteria.where("createTime").lte(cursor));
+        }
+
+        // 如果有 lastLikeId，添加额外的条件：筛选 likeId 小于 lastLikeId
+        if (postUserLikeDTO.getLastLikeId() != null) {
+            query.addCriteria(Criteria.where("likeId").lt(postUserLikeDTO.getLastLikeId()));
+        }
+
+        // 排序：先按 score 排序，再按 likeId 排序
+        query.with(Sort.by(
+                Sort.Order.desc("createTime"),
+                Sort.Order.desc("likeId")
+        ));
+
+        // 设置分页大小
+        query.limit(postUserLikeDTO.getSize());
+
+        List<PostLike> postLikes = mongoTemplate.find(query, PostLike.class);
+
+        List<String> userIdList = postLikes.stream()
+                .map(PostLike::getUserId)
+                .toList();
+
+        List<UserInfoSimpleVO> userInfoSimpleVOs = userInfoUtil.getUserInfoSimpleBatch(userIdList);
+        Map<String, UserInfoSimpleVO> userInfoSimpleVOMap = userInfoSimpleVOs.stream()
+                .collect(Collectors.toMap(UserInfoSimpleVO::getUserId, userInfoSimpleVO -> userInfoSimpleVO));
+
+        List<UserLikeVO> userLikeVOs = new ArrayList<>();
+
+        for (var postLike : postLikes) {
+            UserLikeVO userLikeVO = UserLikeVO.builder()
+                    .likeId(postLike.getLikeId())
+                    .userId(postLike.getUserId())
+                    .userInfo(userInfoSimpleVOMap.get(postLike.getUserId()))
+                    .createTime(postLike.getCreateTime())
+                    .build();
+
+            if (userLikeVO.getUserInfo() == null) {
+                continue;
+            }
+
+            userLikeVOs.add(userLikeVO);
+        }
+
+        Long lastLikeId = null;
+        String cursor = null;
+        if (!userLikeVOs.isEmpty()) {
+            lastLikeId = postLikes.getLast().getLikeId();
+
+            cursor = postLikes.getLast().getCreateTime().toString();
+        }
+
+        PostUserLikeVO postUserLikeVO = PostUserLikeVO.builder()
+                .size(userLikeVOs.size())
+                .cursor(cursor)
+                .lastLikeId(lastLikeId)
+                .likes(userLikeVOs)
+                .build();
+        return postUserLikeVO;
     }
 
     public void postLike(PostLikeCountDTO postLikeCountDTO) {

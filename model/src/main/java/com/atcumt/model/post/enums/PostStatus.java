@@ -4,26 +4,24 @@ import lombok.Getter;
 
 @Getter
 public enum PostStatus {
-    DELETED(-1, "已删除"),
-    DRAFT(0, "草稿"),
-    UNDER_REVIEW(1, "审核中"),
-    PUBLISHED(2, "已发布"),
-    REJECTED(3, "审核不通过"),
-    PRIVATE(4, "私密");
+    DELETED("DELETED", "已删除"),
+    DRAFT("DRAFT", "草稿"),
+    UNDER_REVIEW("UNDER_REVIEW", "审核中"),
+    PUBLISHED("PUBLISHED", "已发布"),
+    REJECTED("REJECTED", "审核不通过"),
+    PRIVATE("PRIVATE", "私密");
 
-    private final int code;
+    private final String code;
     private final String description;
 
-    // 构造函数
-    PostStatus(int code, String description) {
+    PostStatus(String code, String description) {
         this.code = code;
         this.description = description;
     }
 
-    // 根据状态码获取枚举值
-    public static PostStatus fromCode(int code) {
+    public static PostStatus fromCode(String code) {
         for (PostStatus status : PostStatus.values()) {
-            if (status.getCode() == code) {
+            if (status.getCode().equals(code)) {
                 return status;
             }
         }

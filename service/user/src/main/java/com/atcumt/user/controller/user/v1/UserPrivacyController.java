@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserPrivacyController {
     private final UserPrivacyService userPrivacyService;
 
-    @PatchMapping("/")
+    @PatchMapping("")
     @Operation(summary = "设置隐私级别", description = "设置隐私级别(主页部件可见性)")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)

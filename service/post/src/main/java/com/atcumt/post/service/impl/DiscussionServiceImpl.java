@@ -18,8 +18,12 @@ import com.atcumt.model.post.vo.DiscussionPostVO;
 import com.atcumt.model.post.vo.DiscussionVO;
 import com.atcumt.post.repository.DiscussionRepository;
 import com.atcumt.post.service.DiscussionService;
+import com.atcumt.post.utils.ExcerptUtil;
+import com.atcumt.post.utils.PostReviewUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -29,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -53,6 +58,7 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .discussionId(IdUtil.getSnowflakeNextId())
                 .userId(UserContext.getUserId())
                 .title(discussionDTO.getTitle())
+                .excerpt(ExcerptUtil.getExcerpt(discussionDTO.getContent()))
                 .content(discussionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(discussionDTO.getMediaFiles(), MediaFile.class))
                 .tagIds(discussionDTO.getTagIds())
@@ -61,15 +67,18 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .dislikeCount(0)
                 .viewCount(0L)
                 .score(HeatScoreUtil.getPostHeat(0, 0, 0))
-                .status(PostStatus.UNDER_REVIEW.getCode())
+                .status(PostStatus.PUBLISHED.getCode())
                 .createTime(LocalDateTime.now())
                 .updateTime(LocalDateTime.now())
                 .build();
 
+        // 审核帖子内容
+        PostReviewUtil.review(discussion);
+
         discussionRepository.save(discussion);
 
-        // 消息队列异步审核帖子
-        reviewDiscussion(discussion.getDiscussionId());
+        // 消息队列异步计算标签使用量
+        tagUsageCount(discussionDTO.getTagIds());
 
         return DiscussionPostVO
                 .builder()
@@ -89,6 +98,7 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .discussionId(IdUtil.getSnowflakeNextId())
                 .userId(UserContext.getUserId())
                 .title(discussionDTO.getTitle())
+                .excerpt(ExcerptUtil.getExcerpt(discussionDTO.getContent()))
                 .content(discussionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(discussionDTO.getMediaFiles(), MediaFile.class))
                 .tagIds(discussionDTO.getTagIds())
@@ -159,12 +169,16 @@ public class DiscussionServiceImpl implements DiscussionService {
         if (discussion == null) {
             throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
         }
+        // 帖子已删除
+        if (Objects.equals(discussion.getStatus(), PostStatus.DELETED.getCode())) {
+            throw new IllegalArgumentException(PostMessage.POST_DELETED.getMessage());
+        }
         // 作者可见
         if (discussion.getUserId().equals(UserContext.getUserId())) {
             return BeanUtil.copyProperties(discussion, DiscussionVO.class);
         }
         // 帖子未发布
-        if (discussion.getStatus() != PostStatus.PUBLISHED.getCode()) {
+        if (!Objects.equals(discussion.getStatus(), PostStatus.PUBLISHED.getCode())) {
             throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
         }
         return BeanUtil.copyProperties(discussion, DiscussionVO.class);
@@ -172,10 +186,13 @@ public class DiscussionServiceImpl implements DiscussionService {
 
     @Override
     public DiscussionPostVO updateDiscussion(DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
-        String authorId = discussionRepository.findAuthorIdByDiscussionId(discussionUpdateDTO.getDiscussionId()).getUserId();
+        String authorId = discussionRepository.findUserIdIdByDiscussionId(discussionUpdateDTO.getDiscussionId()).getUserId();
         if (authorId == null || !authorId.equals(UserContext.getUserId())) {
             throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
         }
+
+        // 审核帖子内容
+        PostReviewUtil.review(discussionUpdateDTO.getTitle(), discussionUpdateDTO.getContent());
 
         // 创建Update对象，只更新非null字段
         Update update = new Update();
@@ -185,6 +202,7 @@ public class DiscussionServiceImpl implements DiscussionService {
         }
         if (discussionUpdateDTO.getContent() != null) {
             update.set("content", discussionUpdateDTO.getContent());
+            update.set("excerpt", ExcerptUtil.getExcerpt(discussionUpdateDTO.getContent()));
         }
         if (discussionUpdateDTO.getMediaFiles() != null) {
             update.set("mediaFiles", discussionUpdateDTO.getMediaFiles());
@@ -197,7 +215,7 @@ public class DiscussionServiceImpl implements DiscussionService {
             update.set("tagIds", discussionUpdateDTO.getTagIds());
         }
         // 设置状态为审核中
-        Integer status = PostStatus.UNDER_REVIEW.getCode();
+        String status = PostStatus.PUBLISHED.getCode();
         update.set("status", status);
         update.set("updateTime", LocalDateTime.now());  // 更新修改时间
 
@@ -208,16 +226,12 @@ public class DiscussionServiceImpl implements DiscussionService {
                 Discussion.class
         );
 
-        // 消息队列异步审核帖子
-        reviewDiscussion(discussionUpdateDTO.getDiscussionId());
-
         return DiscussionPostVO
                 .builder()
                 .discussionId(discussionUpdateDTO.getDiscussionId())
                 .status(status)
                 .build();
     }
-
 
     public void reviewDiscussion(Long discussionId) {
         PostReviewDTO postReviewDTO = PostReviewDTO
@@ -226,5 +240,18 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .postType("discussion")
                 .build();
         rocketMQTemplate.convertAndSend("post:postReview", postReviewDTO);
+    }
+
+    public void tagUsageCount(List<Long> tagIds) {
+        rocketMQTemplate.asyncSend("post:tagUsageCount", tagIds, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+            }
+
+            @Override
+            public void onException(Throwable e) {
+                log.error("标签使用量计数消息发送失败e: {}", e.getMessage());
+            }
+        });
     }
 }

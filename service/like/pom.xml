@@ -27,11 +27,6 @@
     <properties>
     </properties>
     <dependencies>
-        <!-- MongoDB -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
         <!-- sensitive-word -->
         <dependency>
             <groupId>com.github.houbb</groupId>

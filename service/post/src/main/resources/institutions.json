@@ -1,0 +1,402 @@
+{
+  "institutions": [
+    {
+      "党群组织": [
+        {
+          "newsSource": "office",
+          "sourceName": "党委办公室",
+          "sourceUrl": "https://office.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jw",
+          "sourceName": "纪委办公室、党委巡察工作办公室",
+          "sourceUrl": "https://jw.cumt.edu.cn"
+        },
+        {
+          "newsSource": "zzb",
+          "sourceName": "党委组织部 党校",
+          "sourceUrl": "https://zzb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "dwxcb",
+          "sourceName": "党委宣传部、精神文明建设办公室、新闻中心",
+          "sourceUrl": "https://dwxcb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "tzb",
+          "sourceName": "党委统战部",
+          "sourceUrl": "https://tzb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "youth",
+          "sourceName": "共青团中国矿业大学委员会",
+          "sourceUrl": "https://youth.cumt.edu.cn"
+        },
+        {
+          "newsSource": "plan",
+          "sourceName": "党委发展规划部",
+          "sourceUrl": "https://plan.cumt.edu.cn"
+        },
+        {
+          "newsSource": "dwjsgzb",
+          "sourceName": "党委教师工作部",
+          "sourceUrl": "https://dwjsgzb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "xgc",
+          "sourceName": "党委学生工作部、党委研究生工作部、党委武装部",
+          "sourceUrl": "https://xgc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "bwc",
+          "sourceName": "党委保卫部",
+          "sourceUrl": "https://bwc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jgdw",
+          "sourceName": "校党政机关党委",
+          "sourceUrl": "https://jgdw.cumt.edu.cn"
+        },
+        {
+          "newsSource": "zsd",
+          "sourceName": "直属业务单位党总支",
+          "sourceUrl": "https://zsd.cumt.edu.cn"
+        },
+        {
+          "newsSource": "kjcy",
+          "sourceName": "资产经营公司党工委",
+          "sourceUrl": "https://kjcy.cumt.edu.cn/dgwbzcyjfg"
+        }
+      ]
+    },
+    {
+      "行政管理": [
+        {
+          "newsSource": "office",
+          "sourceName": "校长办公室",
+          "sourceUrl": "https://office.cumt.edu.cn"
+        },
+        {
+          "newsSource": "plan",
+          "sourceName": "发展规划处、法律事务办公室",
+          "sourceUrl": "https://plan.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jwb",
+          "sourceName": "教务部",
+          "sourceUrl": "https://jwb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "gs",
+          "sourceName": "研究生院",
+          "sourceUrl": "https://gs.cumt.edu.cn"
+        },
+        {
+          "newsSource": "xkc",
+          "sourceName": "学科建设处、校学术委员会秘书处办公室",
+          "sourceUrl": "https://xkc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "hr",
+          "sourceName": "人力资源部",
+          "sourceUrl": "https://hr.cumt.edu.cn"
+        },
+        {
+          "newsSource": "xgc",
+          "sourceName": "学生工作处",
+          "sourceUrl": "https://xgc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "international",
+          "sourceName": "国际合作交流处",
+          "sourceUrl": "https://international.cumt.edu.cn"
+        },
+        {
+          "newsSource": "ecdd",
+          "sourceName": "对外合作与发展处",
+          "sourceUrl": "https://ecdd.cumt.edu.cn"
+        },
+        {
+          "newsSource": "cwb",
+          "sourceName": "财务处",
+          "sourceUrl": "https://cwb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sbc",
+          "sourceName": "实验室与设备管理处",
+          "sourceUrl": "https://sbc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jw",
+          "sourceName": "监察处",
+          "sourceUrl": "https://jw.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sjc",
+          "sourceName": "审计处",
+          "sourceUrl": "https://sjc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jjc",
+          "sourceName": "基建与修缮处",
+          "sourceUrl": "https://jjc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "bwc",
+          "sourceName": "保卫处",
+          "sourceUrl": "https://bwc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "nic",
+          "sourceName": "信息化建设与管理处",
+          "sourceUrl": "https://nic.cumt.edu.cn"
+        },
+        {
+          "newsSource": "ltx",
+          "sourceName": "离退休工作处",
+          "sourceUrl": "https://ltx.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sac",
+          "sourceName": "留学生管理办公室",
+          "sourceUrl": "https://sac.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jwb",
+          "sourceName": "继续教育管理办公室",
+          "sourceUrl": "https://jwb.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jwb",
+          "sourceName": "教学质量管理与评估中心",
+          "sourceUrl": "https://jwb.cumt.edu.cn"
+        }
+      ]
+    },
+    {
+      "学院设置": [
+        {
+          "newsSource": "cese",
+          "sourceName": "矿业工程学院",
+          "sourceUrl": "https://cese.cumt.edu.cn"
+        },
+        {
+          "newsSource": "safe",
+          "sourceName": "安全工程学院",
+          "sourceUrl": "https://safe.cumt.edu.cn"
+        },
+        {
+          "newsSource": "cace",
+          "sourceName": "力学与土木工程学院",
+          "sourceUrl": "https://cace.cumt.edu.cn"
+        },
+        {
+          "newsSource": "cmee",
+          "sourceName": "机电工程学院",
+          "sourceUrl": "https://cmee.cumt.edu.cn"
+        },
+        {
+          "newsSource": "siee",
+          "sourceName": "信息与控制工程学院",
+          "sourceUrl": "https://siee.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sres",
+          "sourceName": "资源与地球科学学院",
+          "sourceUrl": "https://sres.cumt.edu.cn"
+        },
+        {
+          "newsSource": "scet",
+          "sourceName": "化工学院",
+          "sourceUrl": "https://scet.cumt.edu.cn"
+        },
+        {
+          "newsSource": "cesi",
+          "sourceName": "环境与测绘学院",
+          "sourceUrl": "https://cesi.cumt.edu.cn"
+        },
+        {
+          "newsSource": "smsp",
+          "sourceName": "材料与物理学院",
+          "sourceUrl": "https://smsp.cumt.edu.cn"
+        },
+        {
+          "newsSource": "cs",
+          "sourceName": "计算机科学与技术学院",
+          "sourceUrl": "https://cs.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sm",
+          "sourceName": "经济管理学院",
+          "sourceUrl": "https://sm.cumt.edu.cn"
+        },
+        {
+          "newsSource": "cllp",
+          "sourceName": "公共管理学院（应急管理学院）",
+          "sourceUrl": "https://cllp.cumt.edu.cn"
+        },
+        {
+          "newsSource": "mks",
+          "sourceName": "马克思主义学院",
+          "sourceUrl": "https://mks.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sfs",
+          "sourceName": "外国语言文化学院",
+          "sourceUrl": "https://sfs.cumt.edu.cn"
+        },
+        {
+          "newsSource": "art",
+          "sourceName": "建筑与设计学院",
+          "sourceUrl": "https://art.cumt.edu.cn"
+        },
+        {
+          "newsSource": "rwxy",
+          "sourceName": "人文与艺术学院（美育中心）",
+          "sourceUrl": "https://rwxy.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sport",
+          "sourceName": "体育学院",
+          "sourceUrl": "https://sport.cumt.edu.cn"
+        },
+        {
+          "newsSource": "syq",
+          "sourceName": "孙越崎学院",
+          "sourceUrl": "https://syq.cumt.edu.cn"
+        },
+        {
+          "newsSource": "sac",
+          "sourceName": "国际学院",
+          "sourceUrl": "https://sac.cumt.edu.cn"
+        }
+      ]
+    },
+    {
+      "科研机构": [
+        {
+          "newsSource": "gdue",
+          "sourceName": "深地工程智能建造与健康运维全国重点实验室",
+          "sourceUrl": "https://gdue.cumt.edu.cn"
+        },
+        {
+          "newsSource": "skl",
+          "sourceName": "煤炭精细勘探与智能开发全国重点实验室",
+          "sourceUrl": "https://skl.cumt.edu.cn"
+        },
+        {
+          "newsSource": "gczx",
+          "sourceName": "煤矿瓦斯治理国家工程研究中心",
+          "sourceUrl": "https://gczx.cumt.edu.cn"
+        },
+        {
+          "newsSource": "nerccpp",
+          "sourceName": "国家煤加工与洁净化工程技术研究中心",
+          "sourceUrl": "https://nerccpp.cumt.edu.cn"
+        },
+        {
+          "newsSource": "iot",
+          "sourceName": "矿山互联网应用技术国家地方联合工程实验室",
+          "sourceUrl": "https://iot.cumt.edu.cn"
+        },
+        {
+          "newsSource": "ime-xt",
+          "sourceName": "矿山智能采掘装备省部共建协同创新中心",
+          "sourceUrl": "https://ime-xt.cumt.edu.cn"
+        },
+        {
+          "newsSource": "lcei",
+          "sourceName": "碳中和研究院、江苏省煤基温室气体减排与资源化利用重点实验室",
+          "sourceUrl": "https://lcei.cumt.edu.cn"
+        },
+        {
+          "newsSource": "ai",
+          "sourceName": "人工智能研究院",
+          "sourceUrl": "https://ai.cumt.edu.cn"
+        },
+        {
+          "newsSource": "szyjy",
+          "sourceName": "深圳研究院",
+          "sourceUrl": "https://szyjy.cumt.edu.cn"
+        },
+        {
+          "newsSource": "ersd",
+          "sourceName": "能源资源战略发展研究院",
+          "sourceUrl": "https://ersd.cumt.edu.cn"
+        }
+      ]
+    },
+    {
+      "直附属单位": [
+        {
+          "newsSource": "lib",
+          "sourceName": "图书馆",
+          "sourceUrl": "https://lib.cumt.edu.cn"
+        },
+        {
+          "newsSource": "arch",
+          "sourceName": "档案馆",
+          "sourceUrl": "https://arch.cumt.edu.cn"
+        },
+        {
+          "newsSource": "bwg",
+          "sourceName": "校文博中心、中国煤炭科技博物馆、中国矿业安全博物馆",
+          "sourceUrl": "https://bwg.cumt.edu.cn"
+        },
+        {
+          "newsSource": "aacc",
+          "sourceName": "现代分析与计算中心",
+          "sourceUrl": "https://aacc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "gjzx",
+          "sourceName": "公共教学服务中心",
+          "sourceUrl": "https://gjzx.cumt.edu.cn"
+        },
+        {
+          "newsSource": "itc",
+          "sourceName": "大学生创新训练中心",
+          "sourceUrl": "https://itc.cumt.edu.cn"
+        },
+        {
+          "newsSource": "journal",
+          "sourceName": "校期刊中心",
+          "sourceUrl": "https://journal.cumt.edu.cn"
+        },
+        {
+          "newsSource": "xyy",
+          "sourceName": "校医院",
+          "sourceUrl": "https://xyy.cumt.edu.cn"
+        },
+        {
+          "newsSource": "kdfy",
+          "sourceName": "附属幼儿园",
+          "sourceUrl": "https://kdfy.cumt.edu.cn"
+        }
+      ]
+    },
+    {
+      "产业单位": [
+        {
+          "newsSource": "kjcy",
+          "sourceName": "资产经营有限公司",
+          "sourceUrl": "https://kjcy.cumt.edu.cn"
+        }
+      ]
+    },
+    {
+      "其他": [
+        {
+          "newsSource": "xhxy",
+          "sourceName": "徐海学院",
+          "sourceUrl": "https://xhxy.cumt.edu.cn"
+        },
+        {
+          "newsSource": "jysy",
+          "sourceName": "经营实业总公司",
+          "sourceUrl": "https://jysy.cumt.edu.cn"
+        }
+      ]
+    }
+  ]
+}

@@ -1,13 +1,16 @@
 package com.atcumt.user.service;
 
 import com.atcumt.model.user.entity.UserStatus;
+import com.atcumt.model.user.vo.UserInfoOtherVO;
 import com.atcumt.model.user.vo.UserInfoVO;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public interface UserInfoService {
-    UserInfoVO getUserInfo(String userId) throws ExecutionException, InterruptedException;
+    UserInfoVO getMyUserInfo() throws ExecutionException, InterruptedException;
+
+    UserInfoOtherVO getOtherUserInfo(String userId) throws ExecutionException, InterruptedException;
 
     void changeNickname(String nickname);
 

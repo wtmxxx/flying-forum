@@ -101,13 +101,18 @@ public class PostCommentConsumer implements RocketMQListener<PostCommentCountDTO
                     queryPost.fields().include("likeCount", "dislikeCount", "commentCount", "score", "createTime");
                     JSONObject completePost = mongoTemplate.findOne(queryPost, JSONObject.class, post.getPostType());
 
+                    if (completePost == null) {
+                        log.error("未找到对应的帖子，postType: {}, postId: {}", post.getPostType(), post.getPostId());
+                        return;
+                    }
+
                     // 计算评论热度
                     double score;
                     try {
                         log.info("计算帖子热度");
                         score = HeatScoreUtil.getPostHeat(
-                                completePost.getInt("likeCount"),
-                                completePost.getInt("dislikeCount"),
+                                completePost.getInt("likeCount", 0),
+                                completePost.getInt("dislikeCount", 0),
                                 commentCount
                         );
                     } catch (Exception e) {

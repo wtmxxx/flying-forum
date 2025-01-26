@@ -30,9 +30,9 @@ public class Reply {
     @Indexed
     private Long rootCommentId;
     @Indexed
-    private Long postId;
-    @Indexed
     private String postType;
+    @Indexed
+    private Long postId;
     @Indexed
     private String userId;
     private String content;

@@ -15,8 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 public class CommentVO {
     private Long commentId;
-    private Long postId;
     private String postType;
+    private Long postId;
     private String commentToUserId;
     private String userId;
     private String content;

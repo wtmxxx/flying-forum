@@ -30,9 +30,9 @@ import java.util.List;
 public class Comment {
     @MongoId
     private Long commentId;
-    private Long postId;
     @Indexed
     private String postType;
+    private Long postId;
     @Indexed
     private String commentToUserId;
     private String userId;

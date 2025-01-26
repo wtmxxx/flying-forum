@@ -6,7 +6,9 @@ import com.atcumt.like.service.LikeService;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.like.dto.CommentLikeDTO;
 import com.atcumt.model.like.dto.PostLikeDTO;
+import com.atcumt.model.like.dto.PostUserLikeDTO;
 import com.atcumt.model.like.dto.UserLikeDTO;
+import com.atcumt.model.like.vo.PostUserLikeVO;
 import com.atcumt.model.like.vo.UserPostLikeVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -86,7 +88,7 @@ public class LikeController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "cursor", description = "游标", in = ParameterIn.QUERY),
-            @Parameter(name = "lastLikeId", description = "最后一条评论ID", in = ParameterIn.QUERY),
+            @Parameter(name = "lastLikeId", description = "最后一条点赞ID", in = ParameterIn.QUERY),
             @Parameter(name = "size", description = "数量", in = ParameterIn.QUERY),
             @Parameter(name = "userId", description = "用户ID", in = ParameterIn.PATH, required = true)
     })
@@ -111,4 +113,39 @@ public class LikeController {
 
         return Result.success(userPostLikeVO);
     }
+
+    @GetMapping("/post/{postType}/{postId}")
+    @Operation(summary = "获取帖子点赞列表", description = "获取帖子点赞列表")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "cursor", description = "游标", in = ParameterIn.QUERY),
+            @Parameter(name = "lastLikeId", description = "最后一条点赞ID", in = ParameterIn.QUERY),
+            @Parameter(name = "size", description = "数量", in = ParameterIn.QUERY),
+            @Parameter(name = "postType", description = "帖子类型, discussion,etc.", in = ParameterIn.PATH, example = "discussion", required = true),
+            @Parameter(name = "postId", description = "帖子ID", in = ParameterIn.PATH, required = true)
+    })
+    public Result<PostUserLikeVO> getPostLikeList(
+            @RequestParam(name = "cursor", required = false) String cursor,
+            @RequestParam(name = "lastLikeId", required = false) Long lastLikeId,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
+            @PathVariable(name = "postType") String postType,
+            @PathVariable(name = "postId") Long postId
+    ) {
+        log.info("获取帖子点赞列表, postId: {}", postId);
+
+        if (size > 1000 || size < 0) size = 10;
+
+        PostUserLikeDTO postUserLikeDTO = PostUserLikeDTO.builder()
+                .postType(postType)
+                .postId(postId)
+                .cursor(cursor)
+                .lastLikeId(lastLikeId)
+                .size(size)
+                .build();
+
+        PostUserLikeVO postUserLikeVO = likeService.getPostLikes(postUserLikeDTO);
+
+        return Result.success(postUserLikeVO);
+    }
+
 }

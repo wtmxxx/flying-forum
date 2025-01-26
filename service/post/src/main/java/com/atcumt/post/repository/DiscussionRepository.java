@@ -11,15 +11,15 @@ import java.util.List;
 public interface DiscussionRepository extends MongoRepository<Discussion, Long> {
     // 你可以在这里定义自己的查询方法
     // 例如：根据状态查询讨论
-    List<Discussion> findByStatus(Integer status);
+    List<Discussion> findByStatus(String status);
 
     @Query(value = "{ '_id': ?0 }", fields = "{ 'mediaFiles': 1, '_id': 0 }")
         // 投影，仅返回 mediaFiles 字段
     Discussion findMediaFilesByDiscussionId(Long discussionId);
 
-    @Query(value = "{ '_id': ?0 }", fields = "{ 'authorId': 1, '_id': 0 }")
+    @Query(value = "{ '_id': ?0 }", fields = "{ 'userId': 1, '_id': 0 }")
         // 投影，仅返回 mediaFiles 字段
-    Discussion findAuthorIdByDiscussionId(Long discussionId);
+    Discussion findUserIdIdByDiscussionId(Long discussionId);
 
     @Query(value = "{ 'tagIds': ?0 }", fields = "{ '_id': 1 }")
     List<Discussion> findDiscussionIdsInTagIds(Long tagId);
