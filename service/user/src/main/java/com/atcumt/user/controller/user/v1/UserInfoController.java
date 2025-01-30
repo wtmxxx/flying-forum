@@ -74,12 +74,12 @@ public class UserInfoController {
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "file", description = "头像图片", required = true)
     })
-    public Result<Object> changeAvatar(MultipartFile file) {
+    public Result<String> changeAvatar(MultipartFile file) {
         log.info("修改头像, userId: {}", UserContext.getUserId());
 
-        userInfoService.changeAvatar(file);
+        String url = userInfoService.changeAvatar(file);
 
-        return Result.success();
+        return Result.success(url);
     }
 
     @PatchMapping("/me/bio")

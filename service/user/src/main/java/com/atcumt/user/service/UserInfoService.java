@@ -15,7 +15,7 @@ public interface UserInfoService {
 
     void changeNickname(String nickname);
 
-    void changeAvatar(MultipartFile file);
+    String changeAvatar(MultipartFile file);
 
     void changeBio(String bio);
 

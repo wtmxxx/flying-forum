@@ -55,6 +55,7 @@
         <rocketmq-spring.version>2.3.1</rocketmq-spring.version>
         <houbb.sensitive-word.version>0.23.0</houbb.sensitive-word.version>
         <auth0.java-jwt.version>4.4.0</auth0.java-jwt.version>
+        <thumbnailator.version>0.4.20</thumbnailator.version>
     </properties>
     <dependencies>
         <dependency>

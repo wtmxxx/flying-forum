@@ -2,6 +2,7 @@ package com.atcumt.oss.service.impl;
 
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.oss.dto.FileInfoDTO;
@@ -14,25 +15,25 @@ import io.minio.*;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +43,7 @@ public class FileServiceImpl implements FileService {
     private final FileCheckUtil fileCheckUtil;
     private final FileConvertUtil fileConvertUtil;
     private final MongoTemplate mongoTemplate;
+    private final RedisTemplate<String, byte[]> redisTemplate;
 
     @Value("${minio.url}")
     private String url;
@@ -279,20 +281,53 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void getFile(HttpServletResponse response, String bucket, String filename) {
+        int width;
+        int height;
         String contentDisposition = "inline; filename=" + IdUtil.getSnowflakeNextIdStr() + "." + FileNameUtil.extName(filename);
-        String contentType = FileCheckUtil.getMIMEType(filename);
-        readFile(response, bucket, filename, contentDisposition, contentType);
+        String contentType;
+        if (filename.contains("@")) {
+            String whSize = List.of(filename.split("@")).getLast();
+            filename = List.of(filename.split("@")).getFirst();
+            width = Integer.parseInt(List.of(whSize.split("_")).getFirst().replace("w", ""));
+            height = Integer.parseInt(List.of(whSize.split("_")).getLast().replace("h", ""));
+
+            contentDisposition = "inline; filename=" + IdUtil.getSnowflakeNextIdStr() + "." + FileNameUtil.extName(filename);
+            contentType = FileCheckUtil.getMIMEType(filename);
+            readFile(response, bucket, filename, contentDisposition, contentType, width, height);
+        } else {
+            contentType = FileCheckUtil.getMIMEType(filename);
+            readOriginalFile(response, bucket, filename, contentDisposition, contentType);
+        }
     }
 
     @Override
     public void downloadFile(HttpServletResponse response, String bucket, String filename) {
+        int width;
+        int height;
         String contentDisposition = "attachment; filename=" + IdUtil.getSnowflakeNextIdStr() + "." + FileNameUtil.extName(filename);
-        String contentType = "application/octet-stream";
-        readFile(response, bucket, filename, contentDisposition, contentType);
+        String contentType;
+        if (filename.contains("@")) {
+            String whSize = List.of(filename.split("@")).getLast();
+            filename = List.of(filename.split("@")).getFirst();
+            width = Integer.parseInt(List.of(whSize.split("_")).getFirst().replace("w", ""));
+            height = Integer.parseInt(List.of(whSize.split("_")).getLast().replace("h", ""));
+
+            contentDisposition = "attachment; filename=" + IdUtil.getSnowflakeNextIdStr() + "." + FileNameUtil.extName(filename);
+            contentType = FileCheckUtil.getMIMEType(filename);
+            readFile(response, bucket, filename, contentDisposition, contentType, width, height);
+        } else {
+            contentType = FileCheckUtil.getMIMEType(filename);
+            readOriginalFile(response, bucket, filename, contentDisposition, contentType);
+        }
     }
 
-    public void readFile(HttpServletResponse response, String bucket, String filename, String contentDisposition, String contentType) {
+    public void readOriginalFile(HttpServletResponse response, String bucket, String filename, String contentDisposition, String contentType) {
         try {
+            response.addHeader("Content-Disposition", contentDisposition);
+            response.setContentType(contentType);
+
+            OutputStream outputStream = response.getOutputStream();
+
             InputStream fileStream = minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucket)   // 存储桶名称
@@ -300,15 +335,53 @@ public class FileServiceImpl implements FileService {
                             .build()
             );
 
-            response.addHeader("Content-Disposition", contentDisposition);
-            response.setContentType(contentType);
-
-            OutputStream outputStream = response.getOutputStream();
             byte[] buf = new byte[1024];
             int length;
             while ((length = fileStream.read(buf)) > 0) {
                 outputStream.write(buf, 0, length);
             }
+        } catch (Exception e) {
+            log.error("资源获取失败", e);
+            throw new IllegalArgumentException("资源获取失败");
+        }
+    }
+
+    public void readFile(HttpServletResponse response, String bucket, String filename, String contentDisposition, String contentType, Integer width, Integer height) {
+        try {
+            response.addHeader("Content-Disposition", contentDisposition);
+            response.setContentType(contentType);
+
+            OutputStream outputStream = response.getOutputStream();
+
+            byte[] cacheFile = redisTemplate.opsForValue().get("file:" + filename + ":" + width + "w_" + height + "h");
+            if (cacheFile != null && cacheFile.length > 0) {
+                outputStream.write(cacheFile);
+                return;
+            }
+
+            InputStream fileStream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucket)   // 存储桶名称
+                            .object(filename)   // 对象名称（文件名）
+                            .build()
+            );
+
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+            Thumbnails.of(fileStream)
+                    .size(width, height)
+                    .outputFormat(FileNameUtil.extName(filename))
+                    .outputQuality(0.7f)
+                    .toOutputStream(byteArrayOutputStream);
+
+            // 获取字节数组
+            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+
+            if (imageBytes.length <= 1024 * 1024) {
+                redisTemplate.opsForValue().set("file:" + filename + ":" + width + "w_" + height + "h", imageBytes, 168 + RandomUtil.randomInt(0, 30), TimeUnit.HOURS);
+            }
+
+            outputStream.write(imageBytes);
         } catch (Exception e) {
             throw new IllegalArgumentException("资源获取失败");
         }
@@ -340,6 +413,8 @@ public class FileServiceImpl implements FileService {
                             .object(fileInfoDTO.getFileName())   // 对象名称（文件名）
                             .build()
             );
+
+            redisTemplate.delete("file:" + fileInfoDTO.getFileName() + ":*");
         }
     }
 

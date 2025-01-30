@@ -27,6 +27,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,6 +50,7 @@ public class UserInfoServiceImpl implements UserInfoService {
     private final OssClient ossClient;
     private final FileConvertUtil fileConvertUtil;
     private final RocketMQTemplate rocketMQTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public UserInfoVO getMyUserInfo() throws ExecutionException, InterruptedException {
@@ -184,10 +187,11 @@ public class UserInfoServiceImpl implements UserInfoService {
                 Query.query(Criteria.where("userId").is(UserContext.getUserId())),
                 Update.update("nickname", nickname), UserInfo.class
         );
+        removeUserInfoCache(UserContext.getUserId());
     }
 
     @Override
-    public void changeAvatar(MultipartFile file) {
+    public String changeAvatar(MultipartFile file) {
         Result<FileInfoVO> fileInfoResult = ossClient.uploadAvatar(file);
 
         if (fileInfoResult.getData() == null) throw new RuntimeException("头像上传失败");
@@ -214,6 +218,8 @@ public class UserInfoServiceImpl implements UserInfoService {
                     .fileName(userInfo.getAvatar().getFileName())
                     .build());
         }
+        removeUserInfoCache(UserContext.getUserId());
+        return fileInfoVO.getUrl();
     }
 
     @Override
@@ -222,6 +228,7 @@ public class UserInfoServiceImpl implements UserInfoService {
                 Query.query(Criteria.where("userId").is(UserContext.getUserId())),
                 Update.update("bio", bio), UserInfo.class
         );
+        removeUserInfoCache(UserContext.getUserId());
     }
 
     @Override
@@ -279,6 +286,11 @@ public class UserInfoServiceImpl implements UserInfoService {
                 Query.query(Criteria.where("userId").is(UserContext.getUserId())),
                 Update.update("statuses", statuses), UserInfo.class
         );
+    }
+
+    @Async
+    public void removeUserInfoCache(String userId) {
+        redisTemplate.delete("User:info:simple:" + userId);
     }
 
     public void deleteFile(FileInfoDTO fileInfoDTO) {

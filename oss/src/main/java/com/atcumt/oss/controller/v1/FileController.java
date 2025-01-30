@@ -77,7 +77,7 @@ public class FileController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
             @Parameter(name = "bucket", description = "存储桶", required = true),
-            @Parameter(name = "filename", description = "文件名", required = true),
+            @Parameter(name = "filename", description = "文件名", example = "xxx_image.png@100w_100h", required = true),
             @Parameter(name = "download", description = "是否下载")
     })
     public void getFile(HttpServletResponse response,
