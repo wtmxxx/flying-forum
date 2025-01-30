@@ -5,6 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.atcumt.auth.mapper.PermissionMapper;
 import com.atcumt.auth.mapper.RoleMapper;
 import com.atcumt.auth.mapper.RolePermissionMapper;
+import com.atcumt.auth.mapper.UserRoleMapper;
 import com.atcumt.auth.service.PermissionService;
 import com.atcumt.auth.utils.AuthRedisUtil;
 import com.atcumt.common.enums.PermAction;
@@ -15,6 +16,7 @@ import com.atcumt.model.auth.dto.RolePermissionDTO;
 import com.atcumt.model.auth.dto.SortedPermissionDTO;
 import com.atcumt.model.auth.entity.Permission;
 import com.atcumt.model.auth.entity.RolePermission;
+import com.atcumt.model.auth.entity.UserRole;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.SortedPermissionVO;
 import com.atcumt.model.common.dto.PageQueryDTO;
@@ -31,6 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permission> implements PermissionService {
@@ -38,16 +42,18 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     private final RolePermissionMapper rolePermissionMapper;
     private final AuthRedisUtil authRedisUtil;
     private final RoleMapper roleMapper;
+    private final UserRoleMapper userRoleMapper;
 
     public PermissionServiceImpl(
             PermissionMapper permissionMapper,
             RolePermissionMapper rolePermissionMapper,
             AuthRedisUtil authRedisUtil,
-            RoleMapper roleMapper) {
+            RoleMapper roleMapper, UserRoleMapper userRoleMapper) {
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.authRedisUtil = authRedisUtil;
         this.roleMapper = roleMapper;
+        this.userRoleMapper = userRoleMapper;
     }
 
     @Override
@@ -219,7 +225,25 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    public List<PermissionVO> getRolePermissions(String roleId) {
+    public List<PermissionVO> getRolePermissions(String roleId, String userId) {
+        if (userId == null || userId.isEmpty()) {
+            userId = StpUtil.getLoginIdAsString();
+
+            List<UserRole> userRoles = userRoleMapper.selectList(Wrappers
+                    .<UserRole>lambdaQuery()
+                    .eq(UserRole::getUserId, userId)
+            );
+
+            Set<String> roleIds = userRoles.stream().map(UserRole::getRoleId).collect(Collectors.toSet());
+
+            if (!roleIds.contains(roleId)) {
+                throw new IllegalArgumentException("无权查看他人角色权限");
+            }
+        } else {
+            // 权限鉴定
+            StpUtil.checkPermission(PermissionUtil.generate(PermModule.ROLE_PERMISSION, PermAction.READ));
+        }
+
         // 从数据库查询角色权限
         List<Permission> permissions = permissionMapper.selectPermissionsByRoleId(roleId);
 

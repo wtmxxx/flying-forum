@@ -24,7 +24,7 @@ public interface PermissionService extends IService<Permission> {
 
     List<PermissionVO> getUserPermissions(String userId);
 
-    List<PermissionVO> getRolePermissions(String roleId);
+    List<PermissionVO> getRolePermissions(String roleId, String userId);
 
     void updateRolePermission(String roleId, String permissionId);
 

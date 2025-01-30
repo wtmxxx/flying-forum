@@ -36,9 +36,9 @@ public class PermissionController {
     @Operation(summary = "获取用户权限", description = "获取指定用户的权限信息")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
-            @Parameter(name = "userId", description = "用户ID", required = true)
+            @Parameter(name = "userId", description = "用户ID")
     })
-    public Result<List<PermissionVO>> getUserPermissions(@RequestParam String userId) {
+    public Result<List<PermissionVO>> getUserPermissions(String userId) {
         log.info("获取用户权限, userId: {}", userId);
 
         List<PermissionVO> permissionVOs = permissionService.getUserPermissions(userId);
@@ -56,15 +56,13 @@ public class PermissionController {
     @Operation(summary = "获取角色权限", description = "获取指定角色的权限信息")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
-            @Parameter(name = "roleId", description = "角色ID", required = true)
+            @Parameter(name = "roleId", description = "角色ID", required = true),
+            @Parameter(name = "userId", description = "用户ID")
     })
-    public Result<List<PermissionVO>> getRolePermissions(@RequestParam String roleId) {
+    public Result<List<PermissionVO>> getRolePermissions(@RequestParam String roleId, String userId) {
         log.info("获取角色权限, roleId: {}", roleId);
 
-        // 权限鉴定
-        StpUtil.checkPermission(PermissionUtil.generate(PermModule.ROLE_PERMISSION, PermAction.READ));
-
-        List<PermissionVO> permissions = permissionService.getRolePermissions(roleId);
+        List<PermissionVO> permissions = permissionService.getRolePermissions(roleId, userId);
 
         return Result.success(permissions);
     }
