@@ -1,5 +1,7 @@
 package com.atcumt.post.controller.admin.v1;
 
+import cn.hutool.json.JSONObject;
+import com.alibaba.nacos.api.exception.NacosException;
 import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.post.dto.NewsDTO;
@@ -42,6 +44,20 @@ public class NewsController {
         }
 
         adminNewsService.uploadNews(newsDTOs);
+
+        return Result.success();
+    }
+
+    @PostMapping("/newsType")
+    @Operation(summary = "上传新闻类型", description = "上传新闻类型")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
+    })
+    // TODO 检查新闻上传权限Permission
+    public Result<Object> uploadNews(@RequestBody Object newsType) throws AuthorizationException, NacosException {
+        log.info("上传新闻类型");
+
+        adminNewsService.uploadNewsType(new JSONObject(newsType));
 
         return Result.success();
     }

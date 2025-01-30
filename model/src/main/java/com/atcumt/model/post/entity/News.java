@@ -5,7 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.TypeAlias;
-import org.springframework.data.mongodb.core.index.IndexDirection;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
@@ -18,6 +19,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Document(collection = "news")
 @TypeAlias("News")
+@CompoundIndexes({
+        @CompoundIndex(name = "publishTime_id_idx", def = "{'publishTime': -1, '_id': -1}"),
+        @CompoundIndex(name = "score_publishTime_id_idx", def = "{'score': -1, 'publishTime': -1, '_id': -1}")
+})
 public class News {
     @MongoId
     private Long newsId;
@@ -35,8 +40,6 @@ public class News {
     private Long viewCount;  // 观看量
     @Indexed
     private String status;  // 帖子状态
-    @Indexed(direction = IndexDirection.DESCENDING)
     private Double score;  // 帖子评分
-    @Indexed
     private LocalDateTime publishTime; // 发布时间
 }

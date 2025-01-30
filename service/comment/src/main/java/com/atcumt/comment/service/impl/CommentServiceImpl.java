@@ -6,6 +6,7 @@ import cn.hutool.json.JSONObject;
 import com.atcumt.comment.repository.CommentRepository;
 import com.atcumt.comment.service.CommentService;
 import com.atcumt.comment.service.ReplyService;
+import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.common.utils.UserInfoUtil;
@@ -46,6 +47,7 @@ public class CommentServiceImpl implements CommentService {
     private final MongoTemplate mongoTemplate;
     private final UserInfoUtil userInfoUtil;
     private final ReplyService replyService;
+    private final FileConvertUtil fileConvertUtil;
 
     @Override
     public CommentVO postComment(CommentDTO commentDTO) {
@@ -95,7 +97,8 @@ public class CommentServiceImpl implements CommentService {
 
         replyService.changePostComment(postCommentCountDTO);
 
-        CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class);
+        CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class, "mediaFiles");
+        commentVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(comment.getMediaFiles()));
 
         return commentVO;
     }
@@ -106,7 +109,8 @@ public class CommentServiceImpl implements CommentService {
                 () -> new IllegalArgumentException(CommentMessage.COMMENT_NOT_FOUND.getMessage())
         );
 
-        CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class);
+        CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class, "mediaFiles");
+        commentVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(comment.getMediaFiles()));
 
         return commentVO;
     }
@@ -236,7 +240,6 @@ public class CommentServiceImpl implements CommentService {
                 .where("userId").is(UserContext.getUserId())
                 .and("commentId").in(commentIds)
         );
-        likeQuery.fields().include("commentId", "action");
 
         List<CommentLike> likes = mongoTemplate.find(likeQuery, CommentLike.class);
 
@@ -255,21 +258,7 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toMap(UserInfoSimpleVO::getUserId, userInfoSimpleVO -> userInfoSimpleVO));
 
         for (var comment : comments) {
-            List<MediaFileVO> mediaFiles = new ArrayList<>();
-            if (comment.getMediaFiles() != null) {
-                for (var mediaFile : comment.getMediaFiles()) {
-                    MediaFileVO mediaFileVO = MediaFileVO
-                            .builder()
-                            .url(mediaFile.getUrl())
-                            .bucket(mediaFile.getBucket())
-                            .fileName(mediaFile.getFileName())
-                            .customName(mediaFile.getCustomName())
-                            .description(mediaFile.getDescription())
-                            .fileType(mediaFile.getFileType())
-                            .build();
-                    mediaFiles.add(mediaFileVO);
-                }
-            }
+            List<MediaFileVO> mediaFiles = fileConvertUtil.convertToMediaFileVOs(comment.getMediaFiles());
 
             CommentPlusVO commentPlusVO = CommentPlusVO
                     .builder()
@@ -351,7 +340,8 @@ public class CommentServiceImpl implements CommentService {
         List<CommentVO> commentVOS = new ArrayList<>();
 
         for (var comment : comments) {
-            CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class);
+            CommentVO commentVO = BeanUtil.copyProperties(comment, CommentVO.class, "mediaFiles");
+            commentVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(comment.getMediaFiles()));
 
             commentVOS.add(commentVO);
         }

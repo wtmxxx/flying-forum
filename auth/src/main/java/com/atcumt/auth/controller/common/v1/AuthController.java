@@ -63,7 +63,8 @@ public class AuthController {
     public Result<TokenVO> register(@RequestBody RegisterDTO registerDTO) throws Exception {
         log.info("注册, username: {}", registerDTO.getUsername());
 
-        TokenVO tokenVO = authService.register(registerDTO);
+        String sid = authService.registerPreCheck(registerDTO);
+        TokenVO tokenVO = authService.register(registerDTO, sid);
 
         return Result.success(tokenVO);
     }

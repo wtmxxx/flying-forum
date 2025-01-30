@@ -23,9 +23,9 @@ import java.util.List;
 @Document(collection = "comment")
 @TypeAlias("Comment")
 @CompoundIndexes({
-        @CompoundIndex(name = "postId_score_commentId_idx", def = "{'postId': 1, 'score': -1, 'commentId': -1}"),  // 为 postId、score 和 commentId 创建复合索引
-        @CompoundIndex(name = "postId_createTime_commentId_idx", def = "{'postId': 1, 'createTime': -1, 'commentId': -1}"),  // 为 postId、createTime 和 commentId 创建复合索引
-        @CompoundIndex(name = "userId_createTime_commentId_idx", def = "{'userId': 1, 'createTime': -1, 'commentId': -1}")  // 为 userId、createTime 和 commentId 创建复合索引
+        @CompoundIndex(name = "postId_score_commentId_idx", def = "{'postId': 1, 'score': -1, 'commentId': -1}"),
+        @CompoundIndex(name = "postId_createTime_commentId_idx", def = "{'postId': 1, 'createTime': -1, 'commentId': -1}"),
+        @CompoundIndex(name = "userId_createTime_commentId_idx", def = "{'userId': 1, 'createTime': -1, 'commentId': -1}")
 })
 public class Comment {
     @MongoId

@@ -3,6 +3,7 @@ package com.atcumt.post.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import com.atcumt.common.exception.AuthorizationException;
+import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.auth.enums.AuthMessage;
@@ -43,6 +44,7 @@ public class DiscussionServiceImpl implements DiscussionService {
     private final DiscussionRepository discussionRepository;
     private final MongoTemplate mongoTemplate;
     private final RocketMQTemplate rocketMQTemplate;
+    private final FileConvertUtil fileConvertUtil;
 
     @Override
     public DiscussionPostVO postDiscussion(DiscussionDTO discussionDTO) {
@@ -175,13 +177,19 @@ public class DiscussionServiceImpl implements DiscussionService {
         }
         // 作者可见
         if (discussion.getUserId().equals(UserContext.getUserId())) {
-            return BeanUtil.copyProperties(discussion, DiscussionVO.class);
+            DiscussionVO discussionVO = BeanUtil.copyProperties(discussion, DiscussionVO.class, "mediaFiles");
+            discussionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(discussion.getMediaFiles()));
+
+            return discussionVO;
         }
         // 帖子未发布
         if (!Objects.equals(discussion.getStatus(), PostStatus.PUBLISHED.getCode())) {
             throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
         }
-        return BeanUtil.copyProperties(discussion, DiscussionVO.class);
+        DiscussionVO discussionVO = BeanUtil.copyProperties(discussion, DiscussionVO.class, "mediaFiles");
+        discussionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(discussion.getMediaFiles()));
+
+        return discussionVO;
     }
 
     @Override

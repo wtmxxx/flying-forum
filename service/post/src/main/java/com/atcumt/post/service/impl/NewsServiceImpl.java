@@ -38,7 +38,7 @@ import java.util.concurrent.Executor;
 public class NewsServiceImpl implements NewsService {
     private final MongoTemplate mongoTemplate;
     private final NacosConfigManager nacosConfigManager;
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public NewsVO getNews(Long newsId) {
@@ -77,14 +77,21 @@ public class NewsServiceImpl implements NewsService {
 
     @Override
     public NewsListVO getNewsList(NewsListDTO newsListDTO) {
-        Query query = Query.query(
-                Criteria.where("newsCategory").is(newsListDTO.getNewsCategory())
-                        .and("status").is(PostStatus.PUBLISHED.getCode())
-        );
-        query.fields().exclude("content");
+        Query query = new Query();
+        // 如果有 newsCategory，添加额外的条件：筛选 newsCategory
+        if ((newsListDTO.getNewsCategory() != null && !newsListDTO.getNewsCategory().isEmpty())) {
+            // 如果 newsCategory 为 latest，不添加筛选条件
+            if (!newsListDTO.getNewsCategory().equals("最新") && !newsListDTO.getNewsCategory().equals("latest")) {
+                query.addCriteria(Criteria.where("newsCategory").is(newsListDTO.getNewsCategory()));
+            }
+        }
 
-        if (newsListDTO.getNewsType() != null && !newsListDTO.getNewsType().isEmpty()) {
-            query.addCriteria(Criteria.where("newsType").is(newsListDTO.getNewsType()));
+        // 如果有 newsType，添加额外的条件：筛选 newsType
+        if ((newsListDTO.getNewsType() != null && !newsListDTO.getNewsType().isEmpty())) {
+            // 如果 newsType 为 latest，不添加筛选条件
+            if (!newsListDTO.getNewsType().equals("最新") && !newsListDTO.getNewsType().equals("latest")) {
+                query.addCriteria(Criteria.where("newsType").is(newsListDTO.getNewsType()));
+            }
         }
 
         // 如果有 sourceName，添加额外的条件：筛选 sourceName
@@ -149,6 +156,9 @@ public class NewsServiceImpl implements NewsService {
             default -> throw new IllegalArgumentException(CommentMessage.SORT_NOT_SUPPORT.getMessage());
         }
 
+        query.addCriteria(Criteria.where("status").is(PostStatus.PUBLISHED.getCode()));
+
+        query.fields().exclude("content");
         // 设置分页大小
         query.limit(newsListDTO.getSize());
 
@@ -219,7 +229,7 @@ public class NewsServiceImpl implements NewsService {
             redisTemplate.opsForValue().set("post:news:newsType", newsType);
             return newsType;
         } catch (NacosException e) {
-            throw new InternalError("获取新闻类型失败");
+            throw new RuntimeException("获取新闻类型失败");
         }
     }
 

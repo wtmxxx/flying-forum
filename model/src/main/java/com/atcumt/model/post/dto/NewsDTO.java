@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 public class NewsDTO {
     private String newsCategory;  // 新闻分类
     private String newsType;  // 新闻类型
-    private String shortName;  // 简称
     private String sourceName;  // 来源名称
     private String sourceUrl;  // 来源链接
     private String showType;  // 展示类型

@@ -480,14 +480,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    @GlobalTransactional(
-            rollbackFor = Exception.class,
-            name = "register-transaction",
-            lockRetryInterval = 500,
-            lockRetryTimes = 5
-    )
-    @Transactional(rollbackFor = Exception.class)
-    public TokenVO register(RegisterDTO registerDTO) throws Exception {
+    public String registerPreCheck(RegisterDTO registerDTO) {
         validateUsername(registerDTO.getUsername());
         validatePassword(registerDTO.getPassword());
 
@@ -512,7 +505,18 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         if (checkUsernameExists(registerDTO.getUsername())) {
             throw new AuthorizationException(AuthMessage.USERNAME_ALREADY_EXISTS.getMessage());
         }
+        return sid;
+    }
 
+    @Override
+    @GlobalTransactional(
+            rollbackFor = Exception.class,
+            name = "register-transaction",
+            lockRetryInterval = 500,
+            lockRetryTimes = 5
+    )
+    @Transactional(rollbackFor = Exception.class)
+    public TokenVO register(RegisterDTO registerDTO, String sid) throws Exception {
         String userId = IdUtil.simpleUUID();
 
         // 绑定QQ

@@ -3,6 +3,7 @@ package com.atcumt.post.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import com.atcumt.common.exception.AuthorizationException;
+import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.auth.enums.AuthMessage;
@@ -43,6 +44,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionRepository questionRepository;
     private final MongoTemplate mongoTemplate;
     private final RocketMQTemplate rocketMQTemplate;
+    private final FileConvertUtil fileConvertUtil;
 
     @Override
     public QuestionPostVO postQuestion(QuestionDTO questionDTO) {
@@ -175,13 +177,19 @@ public class QuestionServiceImpl implements QuestionService {
         }
         // 作者可见
         if (question.getUserId().equals(UserContext.getUserId())) {
-            return BeanUtil.copyProperties(question, QuestionVO.class);
+            QuestionVO questionVO = BeanUtil.copyProperties(question, QuestionVO.class, "mediaFiles");
+            questionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(question.getMediaFiles()));
+
+            return questionVO;
         }
         // 帖子未发布
         if (!Objects.equals(question.getStatus(), PostStatus.PUBLISHED.getCode())) {
             throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
         }
-        return BeanUtil.copyProperties(question, QuestionVO.class);
+        QuestionVO questionVO = BeanUtil.copyProperties(question, QuestionVO.class, "mediaFiles");
+        questionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(question.getMediaFiles()));
+
+        return questionVO;
     }
 
     @Override

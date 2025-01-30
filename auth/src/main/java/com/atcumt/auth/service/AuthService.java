@@ -49,7 +49,9 @@ public interface AuthService extends IService<UserAuth> {
 
     AuthenticationVO authenticationByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException;
 
-    TokenVO register(RegisterDTO registerDTO) throws Exception;
+    String registerPreCheck(RegisterDTO registerDTO);
+
+    TokenVO register(RegisterDTO registerDTO, String sid) throws Exception;
 
     TokenVO loginByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException;
 

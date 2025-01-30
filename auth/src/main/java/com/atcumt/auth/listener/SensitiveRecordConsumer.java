@@ -26,7 +26,7 @@ public class SensitiveRecordConsumer implements RocketMQListener<SensitiveRecord
     public void onMessage(SensitiveRecord sensitiveRecord) {
         sensitiveRecordMapper.delete(Wrappers
                 .<SensitiveRecord>lambdaQuery()
-                .eq(SensitiveRecord::getUserId, sensitiveRecord.getUserId())
+//                .eq(SensitiveRecord::getUserId, sensitiveRecord.getUserId())
                 .lt(SensitiveRecord::getRecordTime, LocalDateTime.now().minusDays(30))
         );
 

@@ -5,6 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import com.atcumt.comment.repository.CommentRepository;
 import com.atcumt.comment.repository.ReplyRepository;
 import com.atcumt.comment.service.ReplyService;
+import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.common.utils.UserInfoUtil;
@@ -46,6 +47,7 @@ public class ReplyServiceImpl implements ReplyService {
     private final MongoTemplate mongoTemplate;
     private final RocketMQTemplate rocketMQTemplate;
     private final UserInfoUtil userInfoUtil;
+    private final FileConvertUtil fileConvertUtil;
 
     @Override
     public ReplyVO postReply(ReplyDTO replyDTO) {
@@ -117,7 +119,8 @@ public class ReplyServiceImpl implements ReplyService {
 
         String replyToUserId = reply.getReplyToUserId();
 
-        ReplyVO replyVO = BeanUtil.copyProperties(reply, ReplyVO.class);
+        ReplyVO replyVO = BeanUtil.copyProperties(reply, ReplyVO.class, "mediaFiles");
+        replyVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(reply.getMediaFiles()));
         replyVO.setReplyToUserId(replyToUserId);
         replyVO.setReplyToUserInfo(userInfoUtil.getUserInfoSimple(replyToUserId));
 
@@ -130,7 +133,8 @@ public class ReplyServiceImpl implements ReplyService {
                 () -> new IllegalArgumentException(CommentMessage.COMMENT_NOT_FOUND.getMessage())
         );
 
-        ReplyVO replyVO = BeanUtil.copyProperties(reply, ReplyVO.class);
+        ReplyVO replyVO = BeanUtil.copyProperties(reply, ReplyVO.class, "mediaFiles");
+        replyVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(reply.getMediaFiles()));
 
         return replyVO;
     }
@@ -214,7 +218,6 @@ public class ReplyServiceImpl implements ReplyService {
                 .where("userId").is(UserContext.getUserId())
                 .and("commentId").in(replyIds)
         );
-        likeQuery.fields().include("commentId", "isLike");
 
         List<CommentLike> likes = mongoTemplate.find(likeQuery, CommentLike.class);
 
@@ -233,21 +236,7 @@ public class ReplyServiceImpl implements ReplyService {
                 .collect(Collectors.toMap(UserInfoSimpleVO::getUserId, userInfoSimpleVO -> userInfoSimpleVO));
 
         for (var reply : replies) {
-            List<MediaFileVO> mediaFiles = new ArrayList<>();
-            if (reply.getMediaFiles() != null) {
-                for (var mediaFile : reply.getMediaFiles()) {
-                    MediaFileVO mediaFileVO = MediaFileVO
-                            .builder()
-                            .url(mediaFile.getUrl())
-                            .bucket(mediaFile.getBucket())
-                            .fileName(mediaFile.getFileName())
-                            .customName(mediaFile.getCustomName())
-                            .description(mediaFile.getDescription())
-                            .fileType(mediaFile.getFileType())
-                            .build();
-                    mediaFiles.add(mediaFileVO);
-                }
-            }
+            List<MediaFileVO> mediaFiles = fileConvertUtil.convertToMediaFileVOs(reply.getMediaFiles());
 
             ReplyPlusVO replyPlusVO = ReplyPlusVO
                     .builder()
@@ -327,7 +316,9 @@ public class ReplyServiceImpl implements ReplyService {
         userIdSet.add(userReplyDTO.getUserId());
 
         for (var reply : replies) {
-            replyVOs.add(BeanUtil.copyProperties(reply, ReplyVO.class));
+            ReplyVO replyVO = BeanUtil.copyProperties(reply, ReplyVO.class, "mediaFiles");
+            replyVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(reply.getMediaFiles()));
+            replyVOs.add(replyVO);
 
             userIdSet.add(reply.getReplyToUserId());
         }

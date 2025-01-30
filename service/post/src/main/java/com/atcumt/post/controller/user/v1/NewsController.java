@@ -42,8 +42,8 @@ public class NewsController {
     @Operation(summary = "获取新闻列表", description = "获取新闻列表")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
-            @Parameter(name = "newsCategory", description = "新闻分类", in = ParameterIn.QUERY, required = true),
-            @Parameter(name = "newsType", description = "新闻类型", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "newsCategory", description = "新闻分类", in = ParameterIn.QUERY),
+            @Parameter(name = "newsType", description = "新闻类型", in = ParameterIn.QUERY),
             @Parameter(name = "sourceName", description = "来源名称", in = ParameterIn.QUERY),
             @Parameter(name = "cursor", description = "游标", in = ParameterIn.QUERY),
             @Parameter(name = "lastNewsId", description = "最后一条新闻ID", in = ParameterIn.QUERY),
@@ -51,8 +51,8 @@ public class NewsController {
             @Parameter(name = "sort", description = "排序", in = ParameterIn.QUERY)
     })
     public Result<NewsListVO> getNewsList(
-            @RequestParam(name = "newsCategory", defaultValue = "校园") String newsCategory,
-            @RequestParam(name = "newsType", defaultValue = "新闻网") String newsType,
+            @RequestParam(name = "newsCategory", required = false) String newsCategory,
+            @RequestParam(name = "newsType", required = false) String newsType,
             @RequestParam(name = "sourceName", required = false) String sourceName,
             @RequestParam(name = "cursor", required = false) String cursor,
             @RequestParam(name = "lastNewsId", required = false) Long lastNewsId,
