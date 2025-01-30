@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -71,12 +72,12 @@ public class UserInfoController {
     @Operation(summary = "修改头像", description = "修改用户头像")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
-            @Parameter(name = "avatar", description = "头像URL", required = true)
+            @Parameter(name = "file", description = "头像图片", required = true)
     })
-    public Result<Object> changeAvatar(@RequestParam String avatar) {
+    public Result<Object> changeAvatar(MultipartFile file) {
         log.info("修改头像, userId: {}", UserContext.getUserId());
 
-        userInfoService.changeAvatar(avatar);
+        userInfoService.changeAvatar(file);
 
         return Result.success();
     }

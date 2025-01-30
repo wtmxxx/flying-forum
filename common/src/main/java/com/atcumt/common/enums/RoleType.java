@@ -8,6 +8,7 @@ public enum RoleType {
     ADMIN("admin", "管理员"),        // 系统管理员
     USER("user", "用户"),            // 普通用户
     EXAMINER("examiner", "审查员"),  // 审查员
+    NEWS_PUBLISHER("news_publisher", "新闻发布者"),  // 新闻发布者
     GUEST("guest", "访客");         // 访客
 
     private final String code;

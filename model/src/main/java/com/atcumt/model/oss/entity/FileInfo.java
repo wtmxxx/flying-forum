@@ -4,22 +4,25 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.TypeAlias;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "file")
+@Document(collection = "file_info")
+@TypeAlias("FileInfo")
 public class FileInfo {
     @MongoId
-    private Long fileId;
+    private String filename;
+    @Indexed
     private String bucket;
-    private String fileName;
-    private String contentType;
+    private Integer version;
     private Long size;
-    private LocalDateTime uploadTime;
+    private List<FileUser> users;
 }

@@ -1,24 +1,34 @@
 package com.atcumt.user.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.auth.entity.UserAuth;
+import com.atcumt.model.common.entity.MediaFile;
+import com.atcumt.model.common.entity.Result;
+import com.atcumt.model.oss.dto.FileInfoDTO;
+import com.atcumt.model.oss.vo.FileInfoVO;
 import com.atcumt.model.user.entity.UserFollow;
 import com.atcumt.model.user.entity.UserInfo;
 import com.atcumt.model.user.entity.UserStatus;
 import com.atcumt.model.user.enums.UserMessage;
 import com.atcumt.model.user.vo.UserInfoOtherVO;
 import com.atcumt.model.user.vo.UserInfoVO;
+import com.atcumt.user.api.client.OssClient;
 import com.atcumt.user.mapper.UserAuthMapper;
 import com.atcumt.user.service.UserInfoService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,6 +45,9 @@ import java.util.concurrent.Future;
 public class UserInfoServiceImpl implements UserInfoService {
     private final MongoTemplate mongoTemplate;
     private final UserAuthMapper userAuthMapper;
+    private final OssClient ossClient;
+    private final FileConvertUtil fileConvertUtil;
+    private final RocketMQTemplate rocketMQTemplate;
 
     @Override
     public UserInfoVO getMyUserInfo() throws ExecutionException, InterruptedException {
@@ -79,7 +92,8 @@ public class UserInfoServiceImpl implements UserInfoService {
             if (userInfo == null) {
                 throw new IllegalArgumentException(UserMessage.USER_NOT_FOUND.getMessage());
             }
-            UserInfoVO userInfoVO = BeanUtil.toBean(userInfo, UserInfoVO.class);
+            UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class, "avatar");
+            userInfoVO.setAvatar(fileConvertUtil.convertToUrl(userInfo.getAvatar()));
             userInfoVO.setUsername(userAuthFuture.get().getUsername());
 
             return userInfoVO;
@@ -140,7 +154,8 @@ public class UserInfoServiceImpl implements UserInfoService {
             if (userInfo == null) {
                 throw new IllegalArgumentException(UserMessage.USER_NOT_FOUND.getMessage());
             }
-            UserInfoOtherVO userInfoOtherVO = BeanUtil.toBean(userInfo, UserInfoOtherVO.class);
+            UserInfoOtherVO userInfoOtherVO = BeanUtil.copyProperties(userInfo, UserInfoOtherVO.class, "avatar");
+            userInfoOtherVO.setAvatar(fileConvertUtil.convertToUrl(userInfo.getAvatar()));
             List<UserFollow> userFollows = userFollowFuture.get();
             if (userFollows != null && !userFollows.isEmpty()) {
                 if (userFollows.size() == 2) {
@@ -172,11 +187,33 @@ public class UserInfoServiceImpl implements UserInfoService {
     }
 
     @Override
-    public void changeAvatar(String avatar) {
-        mongoTemplate.updateFirst(
-                Query.query(Criteria.where("userId").is(UserContext.getUserId())),
-                Update.update("avatar", avatar), UserInfo.class
+    public void changeAvatar(MultipartFile file) {
+        Result<FileInfoVO> fileInfoResult = ossClient.uploadAvatar(file);
+
+        if (fileInfoResult.getData() == null) throw new RuntimeException("头像上传失败");
+        FileInfoVO fileInfoVO = fileInfoResult.getData();
+
+        MediaFile mediaFile = MediaFile
+                .builder()
+                .bucket(fileInfoVO.getBucket())
+                .fileName(fileInfoVO.getFileName())
+                .fileType(fileInfoVO.getContentType())
+                .build();
+
+        Query avatarQuery = new Query(Criteria.where("userId").is(UserContext.getUserId()));
+        avatarQuery.fields().include("avatar");
+        UserInfo userInfo = mongoTemplate.findAndModify(
+                avatarQuery,
+                Update.update("avatar", mediaFile), UserInfo.class
         );
+        // 删除原头像
+        if (userInfo != null && userInfo.getAvatar() != null) {
+            deleteFile(FileInfoDTO
+                    .builder()
+                    .bucket(userInfo.getAvatar().getBucket())
+                    .fileName(userInfo.getAvatar().getFileName())
+                    .build());
+        }
     }
 
     @Override
@@ -242,5 +279,18 @@ public class UserInfoServiceImpl implements UserInfoService {
                 Query.query(Criteria.where("userId").is(UserContext.getUserId())),
                 Update.update("statuses", statuses), UserInfo.class
         );
+    }
+
+    public void deleteFile(FileInfoDTO fileInfoDTO) {
+        rocketMQTemplate.asyncSend("oss:file-delete", fileInfoDTO, new SendCallback() {
+            @Override
+            public void onSuccess(SendResult sendResult) {
+            }
+
+            @Override
+            public void onException(Throwable e) {
+                log.error("文件删除消息发送失败e: {}", e.getMessage());
+            }
+        });
     }
 }

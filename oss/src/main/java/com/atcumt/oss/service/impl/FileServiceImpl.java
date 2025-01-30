@@ -1,20 +1,32 @@
 package com.atcumt.oss.service.impl;
 
 import cn.hutool.core.io.file.FileNameUtil;
+import cn.hutool.core.util.IdUtil;
+import com.atcumt.common.utils.FileConvertUtil;
+import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.oss.dto.FileInfoDTO;
+import com.atcumt.model.oss.entity.FileInfo;
+import com.atcumt.model.oss.entity.FileUser;
 import com.atcumt.model.oss.vo.FileInfoVO;
 import com.atcumt.oss.service.FileService;
 import com.atcumt.oss.utils.FileCheckUtil;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import io.minio.*;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -28,6 +40,8 @@ import java.util.Optional;
 public class FileServiceImpl implements FileService {
     private final MinioClient minioClient;
     private final FileCheckUtil fileCheckUtil;
+    private final FileConvertUtil fileConvertUtil;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${minio.url}")
     private String url;
@@ -36,8 +50,16 @@ public class FileServiceImpl implements FileService {
     private String bucketName;
 
     public static String generateSHA1Hash(MultipartFile file) throws IOException, NoSuchAlgorithmException {
+        return generateHash(file, "SHA-1");
+    }
+
+    public static String generateSHA3256Hash(MultipartFile file) throws IOException, NoSuchAlgorithmException {
+        return generateHash(file, "SHA3-256");
+    }
+
+    public static String generateHash(MultipartFile file, String algorithm) throws IOException, NoSuchAlgorithmException {
         // 创建 MessageDigest 对象，指定 SHA-1 算法
-        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        MessageDigest digest = MessageDigest.getInstance(algorithm);
 
         // 使用 BufferedInputStream 来提高读取性能
         try (BufferedInputStream bis = new BufferedInputStream(file.getInputStream())) {
@@ -97,43 +119,199 @@ public class FileServiceImpl implements FileService {
         return fileInfoVOs;
     }
 
+    @Override
+    public FileInfoVO uploadAvatar(MultipartFile file) throws Exception {
+        // 审查文件合法性
+        fileCheckUtil.reviewAvatar(file);
+
+        return uploadFile(file);
+    }
+
     public FileInfoVO uploadFile(MultipartFile file) throws Exception {
         // 上传文件
-        String fileName = file.getOriginalFilename();
-        String extension = Optional.ofNullable(fileName)
+        String filename = file.getOriginalFilename();
+        String extension = Optional.ofNullable(filename)
                 .filter(f -> f.contains(".")) // 过滤掉没有扩展名的文件名
                 .map(FileNameUtil::extName) // 提取扩展名
                 .orElse(null); // 如果没有扩展名，返回空字符串
 
+        String fileHash = generateSHA3256Hash(file);
+
         if (extension == null) {
-            fileName = generateSHA1Hash(file);
+            filename = fileHash;
         } else {
-            fileName = generateSHA1Hash(file) + "." + extension;
+            filename = fileHash + "." + extension;
         }
 
         String contentType = file.getContentType();
         long size = file.getSize();
-        PutObjectArgs putObjectArgs = PutObjectArgs
-                .builder()
-                .bucket(bucketName)
-                .object(fileName)
-                .contentType(contentType)
-                .stream(file.getInputStream(), size, -1)
+
+        FileInfo fileInfo = mongoTemplate.findOne(
+                Query.query(Criteria
+                        .where("filename").is(filename)
+                        .and("bucket").is(bucketName)
+                ),
+                FileInfo.class
+        );
+
+        FileUser fileUser = FileUser.builder()
+                .userId(UserContext.getUserId())
+                .originalFilename(file.getOriginalFilename())
+                .uploadTime(LocalDateTime.now())
                 .build();
-        minioClient.putObject(putObjectArgs);
+
+        if (fileInfo == null) {
+            PutObjectArgs putObjectArgs = PutObjectArgs
+                    .builder()
+                    .bucket(bucketName)
+                    .object(filename)
+                    .contentType(contentType)
+                    .stream(file.getInputStream(), size, -1)
+                    .build();
+            minioClient.putObject(putObjectArgs);
+
+            fileInfo = FileInfo.builder()
+                    .filename(filename)
+                    .bucket(bucketName)
+                    .version(1)
+                    .size(size)
+                    .users(List.of(fileUser))
+                    .build();
+
+            updateFileInfo(fileInfo);
+        } else {
+            updateFileInfo(fileInfo, fileUser, 1);
+        }
 
         // 创建文件信息对象
 
         return FileInfoVO
                 .builder()
-                .url(url + "/" + bucketName + "/" + fileName)
+                .url(fileConvertUtil.convertToUrl(bucketName, filename))
                 .bucket(bucketName)
-                .fileName(fileName)
+                .fileName(filename)
                 .originalName(file.getOriginalFilename())
                 .contentType(contentType)
                 .size(size)
                 .uploadTime(LocalDateTime.now())
                 .build();
+    }
+
+    @Async
+    public void updateFileInfo(FileInfo fileInfo) {
+        mongoTemplate.insert(fileInfo);
+    }
+
+    @Async
+    public void updateFileInfo(FileInfo fileInfo, FileUser fileUser, Integer updateCount) {
+        if (updateCount > 3) {
+            return;
+        }
+
+        try {
+            minioClient.statObject(StatObjectArgs
+                    .builder()
+                    .bucket(fileInfo.getBucket())
+                    .object(fileInfo.getFilename())
+                    .build());
+        } catch (Exception e) {
+            mongoTemplate.remove(new Query(Criteria
+                    .where("filename").is(fileInfo.getFilename())
+                    .and("bucket").is(bucketName)
+            ), FileInfo.class);
+            return;
+        }
+
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("filename").is(fileInfo.getFilename())
+                        .and("bucket").is(bucketName)
+                ),
+                new Update()
+                        .inc("version", 1)
+                        .push("users")
+                        .slice(100)
+                        .atPosition(Update.Position.FIRST)
+                        .value(fileUser),
+                FileInfo.class
+        );
+
+//        Map<String, FileUser> userMap = fileInfo.getUsers().stream()
+//                .collect(Collectors.toMap(
+//                        FileUser::getUserId,
+//                        user -> user,
+//                        (oldUser, newUser) -> oldUser.getUploadTime().isAfter(newUser.getUploadTime()) ? oldUser : newUser,
+//                        HashMap::new
+//                ));
+//
+//        userMap.put(fileUser.getUserId(), fileUser);
+//
+//        List<FileUser> users = userMap.values().stream()
+//                .sorted(Comparator.comparing(FileUser::getUploadTime).reversed())
+//                .limit(100).toList();
+//        long modifiedCount = mongoTemplate.updateFirst(
+//                Query.query(Criteria
+//                        .where("filename").is(fileInfo.getFilename())
+//                        .and("bucket").is(bucketName)
+//                        .and("version").is(fileInfo.getVersion())
+//                ),
+//                new Update()
+//                        .inc("version", 1)
+//                        .set("users", users),
+//                FileInfo.class
+//        ).getModifiedCount();
+//
+//        if (modifiedCount == 0) {
+//            FileInfo fileInfoV2 = mongoTemplate.findOne(
+//                    Query.query(Criteria
+//                            .where("filename").is(fileInfo.getFilename())
+//                            .and("bucket").is(bucketName)
+//                    ),
+//                    FileInfo.class
+//            );
+//
+//            if (fileInfoV2 == null) {
+//                return;
+//            }
+//            updateFileInfo(fileInfoV2, fileUser, updateCount + 1);
+//        }
+    }
+
+    @Override
+    public void getFile(HttpServletResponse response, String bucket, String filename) {
+        String contentDisposition = "inline; filename=" + IdUtil.getSnowflakeNextIdStr() + "." + FileNameUtil.extName(filename);
+        String contentType = FileCheckUtil.getMIMEType(filename);
+        readFile(response, bucket, filename, contentDisposition, contentType);
+    }
+
+    @Override
+    public void downloadFile(HttpServletResponse response, String bucket, String filename) {
+        String contentDisposition = "attachment; filename=" + IdUtil.getSnowflakeNextIdStr() + "." + FileNameUtil.extName(filename);
+        String contentType = "application/octet-stream";
+        readFile(response, bucket, filename, contentDisposition, contentType);
+    }
+
+    public void readFile(HttpServletResponse response, String bucket, String filename, String contentDisposition, String contentType) {
+        try {
+            InputStream fileStream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucket)   // 存储桶名称
+                            .object(filename)   // 对象名称（文件名）
+                            .build()
+            );
+
+            response.addHeader("Content-Disposition", contentDisposition);
+            response.setContentType(contentType);
+
+            OutputStream outputStream = response.getOutputStream();
+            byte[] buf = new byte[1024];
+            int length;
+            while ((length = fileStream.read(buf)) > 0) {
+                outputStream.write(buf, 0, length);
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("资源获取失败");
+        }
     }
 
     @Override
@@ -143,14 +321,26 @@ public class FileServiceImpl implements FileService {
             return;
         }
 
-        minioClient.removeObject(
-                io.minio.RemoveObjectArgs.builder()
-                        .bucket(fileInfoDTO.getBucket())   // 存储桶名称
-                        .object(fileInfoDTO.getFileName())   // 对象名称（文件名）
-                        .build()
+        // 删除文件
+        Query fileQuery = Query.query(Criteria
+                .where("filename").is(fileInfoDTO.getFileName())
+                .and("bucket").is(fileInfoDTO.getBucket())
         );
+        FileInfo fileInfo = mongoTemplate.findAndModify(
+                fileQuery,
+                new Update().inc("version", -1),
+                FileInfo.class
+        );
+        if (fileInfo != null && fileInfo.getVersion() <= 1) {
+            mongoTemplate.remove(fileQuery, FileInfo.class);
 
-        log.info("成功删除文件, {}", fileInfoDTO.getFileName());
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(fileInfoDTO.getBucket())   // 存储桶名称
+                            .object(fileInfoDTO.getFileName())   // 对象名称（文件名）
+                            .build()
+            );
+        }
     }
 
     @Override

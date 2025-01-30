@@ -15,9 +15,12 @@ public enum PermModule {
     TRADE("trade", "交易"),                          // 交易模块
     HELP("help", "互助"),                            // 互助模块
     ACTIVITY("activity", "活动"),                    // 活动模块
+    NEWS("news", "新闻"),                            // 新闻模块
     COMMENT("comment", "评论"),                      // 评论模块
     TAG("tag", "标签"),                              // 标签模块
-    USER("user", "用户");                            // 用户模块
+    USER("user", "用户"),                            // 用户模块
+    FILE("file", "文件"),                            // 文件模块
+    ;
 
     private final String value;
     private final String description;

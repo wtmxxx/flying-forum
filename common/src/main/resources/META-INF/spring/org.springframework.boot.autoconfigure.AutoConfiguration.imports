@@ -10,3 +10,4 @@ com.atcumt.common.config.MongoTransactionConfiguration
 com.atcumt.common.utils.UserInfoUtil
 com.atcumt.common.config.SentinelConfiguration
 com.atcumt.common.utils.UserPrivacyUtil
+com.atcumt.common.utils.FileConvertUtil

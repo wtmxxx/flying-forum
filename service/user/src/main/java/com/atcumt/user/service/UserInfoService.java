@@ -3,6 +3,7 @@ package com.atcumt.user.service;
 import com.atcumt.model.user.entity.UserStatus;
 import com.atcumt.model.user.vo.UserInfoOtherVO;
 import com.atcumt.model.user.vo.UserInfoVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -14,7 +15,7 @@ public interface UserInfoService {
 
     void changeNickname(String nickname);
 
-    void changeAvatar(String avatar);
+    void changeAvatar(MultipartFile file);
 
     void changeBio(String bio);
 

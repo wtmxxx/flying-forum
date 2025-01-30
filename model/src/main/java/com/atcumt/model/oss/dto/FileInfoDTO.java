@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FileInfoDTO {
-    private String url;
     private String bucket;
     private String fileName;
 }

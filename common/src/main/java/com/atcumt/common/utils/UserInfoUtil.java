@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class UserInfoUtil {
     private final MongoTemplate mongoTemplate;
     private final RedisTemplate<String, UserInfoSimpleVO> userInfoSimpleRedisTemplate;
+    private final FileConvertUtil fileConvertUtil;
 
     public UserInfoSimpleVO getUserInfoSimple(String userId) {
         // 获取用户信息
@@ -35,8 +36,10 @@ public class UserInfoUtil {
 
         // 2. 从数据库中获取用户信息
         UserInfo userInfo = mongoTemplate.findById(userId, UserInfo.class);
+        if (userInfo == null) return null;
         // 3. 保存到缓存中
-        userInfoSimpleVO = BeanUtil.copyProperties(userInfo, UserInfoSimpleVO.class);
+        userInfoSimpleVO = BeanUtil.copyProperties(userInfo, UserInfoSimpleVO.class, "avatar");
+        userInfoSimpleVO.setAvatar(fileConvertUtil.convertToUrl(userInfo.getAvatar()));
         userInfoSimpleRedisTemplate.opsForValue().set(userInfoKey, userInfoSimpleVO, 7, TimeUnit.DAYS);
 
         return userInfoSimpleVO;
@@ -79,7 +82,13 @@ public class UserInfoUtil {
 
                 // 从数据库中获取
                 UserInfo userInfo = mongoTemplate.findById(userId, UserInfo.class);
-                UserInfoSimpleVO userInfoSimpleVO = BeanUtil.copyProperties(userInfo, UserInfoSimpleVO.class);
+                if (userInfo == null) {
+                    userInfoSimpleVOs.set(i, null);
+                    userInfoPart.put(userId, null);
+                    continue;
+                }
+                UserInfoSimpleVO userInfoSimpleVO = BeanUtil.copyProperties(userInfo, UserInfoSimpleVO.class, "avatar");
+                userInfoSimpleVO.setAvatar(fileConvertUtil.convertToUrl(userInfo.getAvatar()));
                 userInfoSimpleRedisTemplate.opsForValue().set(userInfoKey + userId, userInfoSimpleVO, 7, TimeUnit.DAYS);
                 userInfoSimpleVOs.set(i, userInfoSimpleVO);
                 userInfoPart.put(userId, userInfoSimpleVO);

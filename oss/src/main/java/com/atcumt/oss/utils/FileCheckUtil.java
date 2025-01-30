@@ -12,6 +12,7 @@ import java.security.InvalidParameterException;
 public class FileCheckUtil {
     // 限制文件的最大大小 (以字节为单位)
     private static final long MAX_FILE_SIZE = 5368709120L; // 5GB
+    private static final long MAX_AVATAR_SIZE = 10485760L; // 10MB
     // 定义不支持的扩展名常量
     private static final String[] UNSUPPORTED_EXTENSIONS = {
             "exe",  // 可执行文件
@@ -66,6 +67,18 @@ public class FileCheckUtil {
 //                || mime.startsWith("video/")
 //                || mime.startsWith("audio/")
                 ;
+    }
+
+    private static boolean isAvatarMIME(String mime) {
+        if (mime == null || mime.isEmpty()) return false;
+        return mime.startsWith("image/png")
+                || mime.startsWith("image/jpeg")
+                || mime.startsWith("image/gif")
+                ;
+    }
+
+    public static String getMIMEType(String extension) {
+        return tika.detect(extension);
     }
 
     // 检查文件是否支持
@@ -142,4 +155,22 @@ public class FileCheckUtil {
         // 可以用MQ异步审查
     }
 
+    public void reviewAvatar(MultipartFile file) throws IOException {
+        // 检查文件是否为空
+        if (file.isEmpty()) {
+            throw new InvalidParameterException("文件不能为空");
+        }
+
+        // 检查文件大小
+        if (file.getSize() > MAX_AVATAR_SIZE) {
+            throw new InvalidParameterException("文件大小不能超过 10MB");
+        }
+
+        // 检查文件类型
+        String mime = validateFile(file);
+
+        if (!isAvatarMIME(mime)) {
+            throw new InvalidParameterException("文件类型错误");
+        }
+    }
 }

@@ -1,4 +1,4 @@
-package com.atcumt.model.oss.vo;
+package com.atcumt.model.oss.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,12 +11,8 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FileInfoVO {
-    private String url;
-    private String bucket;
-    private String fileName;
-    private String originalName;
-    private String contentType;
-    private Long size;
+public class FileUser {
+    private String userId;
+    private String originalFilename;
     private LocalDateTime uploadTime;
 }

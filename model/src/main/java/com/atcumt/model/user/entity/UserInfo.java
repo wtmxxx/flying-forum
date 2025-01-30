@@ -1,5 +1,6 @@
 package com.atcumt.model.user.entity;
 
+import com.atcumt.model.common.entity.MediaFile;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +21,7 @@ public class UserInfo {
     @MongoId
     private String userId;
     private String nickname;
-    private String avatar;
+    private MediaFile avatar;
     private String bio;
     private Integer gender;
     private String hometown;

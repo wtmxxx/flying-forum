@@ -10,10 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MediaFileDTO {
-    private String url;          // 文件链接
-    private String bucket;       // 文件桶
-    private String fileName;     // 文件名
-    private String customName;   // 自定义文件名
-    private String description;  // 文件描述（可选）
-    private String fileType;     // 文件类型 (例如: image/jpeg, video/mp4, application/pdf)
+    private String bucket;
+    private String fileName;
+    private String fileType;
 }
