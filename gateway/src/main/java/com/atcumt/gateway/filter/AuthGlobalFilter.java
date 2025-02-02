@@ -56,9 +56,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 3.sa-token自动获取请求头中的Token
         // 4.校验并解析Token
         String userId;
-        String tokenName = StpUtil.getTokenName();
+        String tokenName;
         String tokenValue;
         try {
+            tokenName = StpUtil.getTokenName();
             tokenValue = request.getHeaders().getFirst("Authorization");
 
             Object loginId = StpUtil.getLoginIdByToken(Objects
@@ -74,7 +75,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             // 如果无效，拦截
             ServerHttpResponse response = exchange.getResponse();
 
-            // 构造 JSON 响应体
+            // 构造 JSON 响应体 (未授权)
             JSONObject errorResponse = JSONUtil
                     .createObj(new JSONConfig().setIgnoreNullValue(false))
                     .set("code", ResultCode.UNAUTHORIZED.getCode())
@@ -124,6 +125,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     @Override
     public int getOrder() {
         // 最高次序
-        return Ordered.HIGHEST_PRECEDENCE;
+        return Ordered.HIGHEST_PRECEDENCE + 1;
     }
 }

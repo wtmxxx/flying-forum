@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.atcumt</groupId>
-        <artifactId>cumt-forum</artifactId>
+        <artifactId>flying-forum</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>oss</artifactId>
@@ -55,10 +55,6 @@
             <version>0.0.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
-                    <groupId>cn.dev33</groupId>
-                    <artifactId>sa-token-spring-boot3-starter</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.springframework.cloud</groupId>
                     <artifactId>spring-cloud-starter-openfeign</artifactId>
                 </exclusion>
@@ -68,12 +64,6 @@
             <groupId>com.atcumt</groupId>
             <artifactId>model</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <!--文档生成knife4j-->
-        <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
-            <version>${knife4j.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>

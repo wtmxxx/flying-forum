@@ -8,32 +8,45 @@
         <version>3.3.8</version>
     </parent>
     <modules>
-        <module>auth</module>
         <module>apidoc</module>
-        <module>service</module>
         <module>model</module>
-        <module>gateway</module>
         <module>common</module>
+        <module>gateway</module>
+        <module>auth</module>
         <module>oss</module>
+        <module>service</module>
     </modules>
     <groupId>com.atcumt</groupId>
-    <artifactId>cumt-forum</artifactId>
+    <artifactId>flying-forum</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>cumt-forum</name>
-    <description>cumt-forum</description>
-    <url/>
+    <name>flying-forum</name>
+    <description>FlyingForum is a Java-based backend system for the FlyingKxq community</description>
+    <url>https://github.com/wtmxxx/flying-forum</url>
     <licenses>
-        <license/>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
     <developers>
-        <developer/>
+        <developer>
+            <id>wtmxxx</id>
+            <name>Wotemo</name>
+            <email>wotemo@qq.com</email>
+            <url>https://github.com/wtmxxx</url>
+            <roles>
+                <role>Lead Developer</role>
+            </roles>
+            <timezone>+8</timezone>
+        </developer>
     </developers>
     <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
+        <connection>scm:git:git://github.com/wtmxxx/flying-forum.git</connection>
+        <developerConnection>scm:git:ssh://github.com/wtmxxx/flying-forum.git</developerConnection>
+        <url>https://github.com/wtmxxx/flying-forum</url>
+        <tag>HEAD</tag>
     </scm>
     <properties>
         <java.version>21</java.version>
@@ -42,19 +55,18 @@
         <spring-cloud.version>2023.0.5</spring-cloud.version>
         <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
         <mybatis-plus.version>3.5.10.1</mybatis-plus.version>
-        <!--        <mybatis.version>3.0.4</mybatis.version>-->
         <hutool.version>5.8.35</hutool.version>
         <knife4j.version>4.5.0</knife4j.version>
         <gson.version>2.11.0</gson.version>
-        <druid.version>1.2.23</druid.version>
-        <sa-token.version>1.39.0</sa-token.version>
-        <minio.version>8.5.14</minio.version>
-        <tika.version>3.0.0</tika.version>
-        <jsoup.version>1.18.1</jsoup.version>
+        <druid.version>1.2.24</druid.version>
+        <sa-token.version>1.40.0</sa-token.version>
+        <minio.version>8.5.17</minio.version>
+        <tika.version>3.1.0</tika.version>
+        <jsoup.version>1.18.3</jsoup.version>
         <rocketmq.version>5.3.1</rocketmq.version>
         <rocketmq-spring.version>2.3.1</rocketmq-spring.version>
-        <houbb.sensitive-word.version>0.23.0</houbb.sensitive-word.version>
-        <auth0.java-jwt.version>4.4.0</auth0.java-jwt.version>
+        <houbb.sensitive-word.version>0.24.0</houbb.sensitive-word.version>
+        <auth0.java-jwt.version>4.5.0</auth0.java-jwt.version>
         <thumbnailator.version>0.4.20</thumbnailator.version>
     </properties>
     <dependencies>
@@ -63,9 +75,15 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-properties-migrator</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Cloud 版本管理器 -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -81,6 +99,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Mybatis Plus 版本管理器 -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-bom</artifactId>

@@ -34,6 +34,24 @@ public class SentinelConfiguration {
 
     private BlockExceptionHandler getBlockExceptionHandler() {
         return new BlockExceptionHandler() {
+//            @Override
+//            public void handle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, String s, BlockException e) throws Exception {
+//                // 打印日志
+//                log.warn("限流异常 -> SentinelBlockException { Blocked by Sentinel (flow limiting) }");
+//
+//                httpServletResponse.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+//                httpServletResponse.setContentType("application/json;charset=UTF-8");
+//
+//                // 构造 JSON 响应体
+//                JSONObject errorResponse = JSONUtil
+//                        .createObj(new JSONConfig().setIgnoreNullValue(false))
+//                        .set("code", HttpStatus.TOO_MANY_REQUESTS.value())
+//                        .set("msg", "请求过于频繁，请稍后再试")
+//                        .set("data", null);
+//
+//                httpServletResponse.getWriter().write(errorResponse.toString());
+//            }
+
             @Override
             public void handle(HttpServletRequest request, HttpServletResponse response, BlockException e) throws Exception {
                 // 打印日志

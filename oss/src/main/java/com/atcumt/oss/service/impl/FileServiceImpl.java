@@ -378,7 +378,7 @@ public class FileServiceImpl implements FileService {
             byte[] imageBytes = byteArrayOutputStream.toByteArray();
 
             if (imageBytes.length <= 1024 * 1024) {
-                redisTemplate.opsForValue().set("file:" + filename + ":" + width + "w_" + height + "h", imageBytes, 168 + RandomUtil.randomInt(0, 30), TimeUnit.HOURS);
+                redisTemplate.opsForValue().set("file:" + filename + ":" + width + "w_" + height + "h", imageBytes, 888 + RandomUtil.randomInt(-8, 30), TimeUnit.HOURS);
             }
 
             outputStream.write(imageBytes);
