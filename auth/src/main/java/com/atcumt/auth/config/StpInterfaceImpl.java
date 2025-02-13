@@ -10,13 +10,16 @@ import com.atcumt.model.auth.entity.Role;
 import com.atcumt.model.auth.entity.RolePermission;
 import com.atcumt.model.auth.entity.UserRole;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.apache.dubbo.common.logger.FluentLogger;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -56,6 +59,8 @@ public class StpInterfaceImpl implements StpInterface {
         String roleNames = redisTemplate.opsForValue().get(roleKey);
         List<String> permissionNames = new ArrayList<>();
 
+        Set<String> roleNameSet = new HashSet<>();
+
         if (roleNames != null && !roleNames.isEmpty()) {
             // 如果缓存命中，尝试从缓存中获取权限
             boolean isCached = true;
@@ -65,6 +70,7 @@ public class StpInterfaceImpl implements StpInterface {
                 if (permissionName == null || permissionName.isEmpty()) {
                     isCached = false;
                 } else {
+                    roleNameSet.add(roleName);
                     permissionNames.addAll(List.of(permissionName.split(",")));
                 }
             }
@@ -88,6 +94,9 @@ public class StpInterfaceImpl implements StpInterface {
 
         // 从数据库获取权限
         for (Role role : roles) {
+            if (roleNameSet.contains(role.getRoleName())) {
+                continue;
+            }
             List<String> partPermissionIds = rolePermissionMapper.selectList(Wrappers
                     .<RolePermission>lambdaQuery()
                     .eq(RolePermission::getRoleId, role.getRoleId())
@@ -108,11 +117,11 @@ public class StpInterfaceImpl implements StpInterface {
             permissionNames.addAll(partPermissionNames);
 
             String permissionKey = "Authorization:rolePermission:" + role.getRoleName();
-            redisTemplate.opsForValue().set(permissionKey, String.join(",", partPermissionNames), 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(permissionKey, String.join(",", partPermissionNames), 7, TimeUnit.DAYS);
         }
 
         // 更新用户角色缓存
-        redisTemplate.opsForValue().set(roleKey, String.join(",", roles.stream().map(Role::getRoleName).toList()), 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(roleKey, String.join(",", roles.stream().map(Role::getRoleName).toList()), 7, TimeUnit.DAYS);
 
         return permissionNames;
     }
@@ -142,7 +151,7 @@ public class StpInterfaceImpl implements StpInterface {
             );
 
             // 更新缓存并返回
-            redisTemplate.opsForValue().set(roleKey, String.join(",", roleNameList), 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(roleKey, String.join(",", roleNameList), 7, TimeUnit.DAYS);
             return roleNameList;
         } else {
             // 如果缓存命中，直接返回

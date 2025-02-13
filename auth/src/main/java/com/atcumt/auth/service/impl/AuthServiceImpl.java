@@ -50,6 +50,7 @@ import io.seata.spring.annotation.GlobalTransactional;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.K;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -282,10 +283,10 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                         "本验证码有效期为15分钟，请及时完成操作。\n\n" +
                         "祝您生活愉快！\n\n" +
                         "此致\n" +
-                        "矿大论坛服务团队";
+                        "矿小圈服务团队";
 
         try {
-            emailUtil.sendEmail(email, "矿大论坛验证码", emailContent, false);
+            emailUtil.sendEmail(email, "矿小圈验证码", emailContent, false);
         } catch (MessagingException e) {
             throw new Exception(AuthMessage.VERIFICATION_CODE_SEND_FAILURE.getMessage());
         }

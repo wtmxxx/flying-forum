@@ -1,0 +1,6 @@
+FlyingForum Gateway -- FlyingStudio member, Wotemo Support${AnsiStyle.BOLD}${AnsiColor.MAGENTA}
+ _      ______  ____________  _______
+| | /| / / __ \\/_  __/ __/  |/  / __ \\
+| |/ |/ / /_/ / / / / _// /|_/ / /_/ / /
+|__/|__/\\____/ /_/ /___/_/  /_/\\____/
+${AnsiColor.DEFAULT}${AnsiStyle.NORMAL}https://www.wotemo.com ${AnsiColor.GREEN}(v1.0.0)${AnsiColor.DEFAULT}

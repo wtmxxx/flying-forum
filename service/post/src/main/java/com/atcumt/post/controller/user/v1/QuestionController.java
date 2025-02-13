@@ -97,6 +97,36 @@ public class QuestionController {
         return Result.success();
     }
 
+//    @PatchMapping("/pin")
+    @Operation(summary = "置顶问答", description = "置顶问答")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "discussionId", description = "问答ID", required = true)
+    })
+    public Result<Object> pinDiscussion(Long questionId) throws AuthorizationException {
+        log.info("置顶问答, userId: {}", UserContext.getUserId());
+
+        // 置顶帖子
+        questionService.pinQuestion(questionId);
+
+        return Result.success();
+    }
+
+//    @PatchMapping("/unpin")
+    @Operation(summary = "取消置顶问答", description = "取消置顶问答")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "questionId", description = "问答ID", required = true)
+    })
+    public Result<Object> unpinQuestion(Long questionId) throws AuthorizationException {
+        log.info("取消置顶问答, userId: {}", UserContext.getUserId());
+
+        // 取消置顶帖子
+        questionService.unpinQuestion(questionId);
+
+        return Result.success();
+    }
+
     @GetMapping("")
     @Operation(summary = "获取问答", description = "获取问答")
     @Parameters({

@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ import java.util.List;
 public class AdminNewsServiceImpl implements AdminNewsService {
     private final MongoTemplate mongoTemplate;
     private final NacosConfigManager nacosConfigManager;
+    private String imageRegex = "!\\[.*?]\\(\\s*(https?://[^\\s)]+?\\.(?:jpe?g|png|gif|jpeg)(?:[?#][^\\s)]*)?)\\s*\\)";
 
     @Override
     public void uploadNews(List<NewsDTO> newsDTOs) {
@@ -40,6 +43,15 @@ public class AdminNewsServiceImpl implements AdminNewsService {
         for (var newsDTO : newsDTOs) {
             News news = BeanUtil.copyProperties(newsDTO, News.class);
             news.setNewsId(IdUtil.getSnowflakeNextId());
+            // 从内容中提取图片
+            Pattern pattern = Pattern.compile(imageRegex, Pattern.CASE_INSENSITIVE);
+            if (news.getContent() != null) {
+                Matcher matcher = pattern.matcher(news.getContent());
+
+                if (matcher.find()) {
+                    news.setImages(List.of(matcher.group(1)));
+                }
+            }
             news.setCommentCount(0);
             news.setViewCount(0L);
             news.setStatus(PostStatus.PUBLISHED.getCode());

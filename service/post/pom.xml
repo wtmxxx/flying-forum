@@ -27,12 +27,6 @@
     <properties>
     </properties>
     <dependencies>
-        <!-- sensitive-word -->
-        <dependency>
-            <groupId>com.github.houbb</groupId>
-            <artifactId>sensitive-word</artifactId>
-            <version>${houbb.sensitive-word.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>

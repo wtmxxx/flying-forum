@@ -6,11 +6,12 @@ import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
+import com.atcumt.common.utils.UserInfoUtil;
 import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.entity.MediaFile;
-import com.atcumt.model.post.dto.PostReviewDTO;
 import com.atcumt.model.post.dto.QuestionDTO;
 import com.atcumt.model.post.dto.QuestionUpdateDTO;
+import com.atcumt.model.post.dto.PostReviewDTO;
 import com.atcumt.model.post.entity.Question;
 import com.atcumt.model.post.entity.Tag;
 import com.atcumt.model.post.enums.PostMessage;
@@ -19,6 +20,7 @@ import com.atcumt.model.post.vo.QuestionPostVO;
 import com.atcumt.model.post.vo.QuestionVO;
 import com.atcumt.post.repository.QuestionRepository;
 import com.atcumt.post.service.QuestionService;
+import com.atcumt.post.service.TagService;
 import com.atcumt.post.utils.ExcerptUtil;
 import com.atcumt.post.utils.PostReviewUtil;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,9 @@ public class QuestionServiceImpl implements QuestionService {
     private final MongoTemplate mongoTemplate;
     private final RocketMQTemplate rocketMQTemplate;
     private final FileConvertUtil fileConvertUtil;
+    private final PostReviewUtil postReviewUtil;
+    private final TagService tagService;
+    private final UserInfoUtil userInfoUtil;
 
     @Override
     public QuestionPostVO postQuestion(QuestionDTO questionDTO) {
@@ -75,7 +80,7 @@ public class QuestionServiceImpl implements QuestionService {
                 .build();
 
         // 审核帖子内容
-        PostReviewUtil.review(question);
+        postReviewUtil.review(question);
 
         questionRepository.save(question);
 
@@ -125,19 +130,13 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public void deleteQuestion(Long questionId) throws AuthorizationException {
         String loginId = UserContext.getUserId();
-        Question question = questionRepository.findById(questionId).orElse(null);
-
-        if (question == null || question.getUserId() == null) {
-            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
-        }
-        if (!loginId.equals(question.getUserId())) {
-            throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
-        }
-
         Update update = new Update();
         update.set("status", PostStatus.DELETED.getCode());  // 软删除
         mongoTemplate.updateFirst(
-                Query.query(Criteria.where("questionId").is(questionId)),
+                Query.query(Criteria
+                        .where("questionId").is(questionId)
+                        .and("userId").is(loginId)
+                ),
                 update,
                 Question.class
         );
@@ -145,6 +144,50 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public void privateQuestion(Long questionId) throws AuthorizationException {
+        String loginId = UserContext.getUserId();
+        Update update = new Update();
+        update.set("status", PostStatus.PRIVATE.getCode());  // 私密
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("questionId").is(questionId)
+                        .and("userId").is(loginId)
+                ),
+                update,
+                Question.class
+        );
+    }
+
+    @Override
+    public QuestionVO getQuestion(Long questionId) {
+        Question question = mongoTemplate.findOne(
+                Query.query(Criteria.where("questionId").is(questionId)),
+                Question.class
+        );
+        // 无此帖子
+        if (question == null) {
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
+        }
+        // 帖子已删除
+        if (Objects.equals(question.getStatus(), PostStatus.DELETED.getCode())) {
+            throw new IllegalArgumentException(PostMessage.POST_DELETED.getMessage());
+        }
+        QuestionVO questionVO = BeanUtil.copyProperties(question, QuestionVO.class, "mediaFiles", "tags");
+        questionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(question.getMediaFiles()));
+        questionVO.setTags(tagService.getSimpleTags(question.getTagIds()));
+        questionVO.setUserInfo(userInfoUtil.getUserInfoSimple(question.getUserId()));
+        // 作者可见
+        if (question.getUserId().equals(UserContext.getUserId())) {
+            return questionVO;
+        }
+        // 帖子未发布
+        if (!Objects.equals(question.getStatus(), PostStatus.PUBLISHED.getCode())) {
+            throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
+        }
+        return questionVO;
+    }
+
+    @Override
+    public void pinQuestion(Long questionId) {
         String loginId = UserContext.getUserId();
         Question question = questionRepository.findById(questionId).orElse(null);
 
@@ -156,7 +199,7 @@ public class QuestionServiceImpl implements QuestionService {
         }
 
         Update update = new Update();
-        update.set("status", PostStatus.PRIVATE.getCode());  // -1 软删除
+        update.set("pinnedTime", LocalDateTime.now());
         mongoTemplate.updateFirst(
                 Query.query(Criteria.where("questionId").is(questionId)),
                 update,
@@ -165,42 +208,22 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public QuestionVO getQuestion(Long questionId) {
-        Question question = questionRepository.findById(questionId).orElse(null);
-        // 无此帖子
-        if (question == null) {
-            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
-        }
-        // 帖子已删除
-        if (Objects.equals(question.getStatus(), PostStatus.DELETED.getCode())) {
-            throw new IllegalArgumentException(PostMessage.POST_DELETED.getMessage());
-        }
-        // 作者可见
-        if (question.getUserId().equals(UserContext.getUserId())) {
-            QuestionVO questionVO = BeanUtil.copyProperties(question, QuestionVO.class, "mediaFiles");
-            questionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(question.getMediaFiles()));
-
-            return questionVO;
-        }
-        // 帖子未发布
-        if (!Objects.equals(question.getStatus(), PostStatus.PUBLISHED.getCode())) {
-            throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
-        }
-        QuestionVO questionVO = BeanUtil.copyProperties(question, QuestionVO.class, "mediaFiles");
-        questionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(question.getMediaFiles()));
-
-        return questionVO;
+    public void unpinQuestion(Long questionId) {
+        String loginId = UserContext.getUserId();
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("questionId").is(questionId)
+                        .and("userId").is(loginId)
+                ),
+                new Update().unset("pinnedTime"),
+                Question.class
+        );
     }
 
     @Override
     public QuestionPostVO updateQuestion(QuestionUpdateDTO questionUpdateDTO) throws AuthorizationException {
-        String authorId = questionRepository.findUserIdIdByQuestionId(questionUpdateDTO.getQuestionId()).getUserId();
-        if (authorId == null || !authorId.equals(UserContext.getUserId())) {
-            throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
-        }
-
         // 审核帖子内容
-        PostReviewUtil.review(questionUpdateDTO.getTitle(), questionUpdateDTO.getContent());
+        postReviewUtil.review(questionUpdateDTO.getTitle(), questionUpdateDTO.getContent());
 
         // 创建Update对象，只更新非null字段
         Update update = new Update();
@@ -229,7 +252,10 @@ public class QuestionServiceImpl implements QuestionService {
 
         // 使用MongoTemplate执行部分更新
         mongoTemplate.updateFirst(
-                Query.query(Criteria.where("questionId").is(questionUpdateDTO.getQuestionId())),
+                Query.query(Criteria
+                        .where("questionId").is(questionUpdateDTO.getQuestionId())
+                        .and("userId").is(UserContext.getUserId())
+                ),
                 update,
                 Question.class
         );
@@ -239,15 +265,6 @@ public class QuestionServiceImpl implements QuestionService {
                 .questionId(questionUpdateDTO.getQuestionId())
                 .status(status)
                 .build();
-    }
-
-    public void reviewQuestion(Long questionId) {
-        PostReviewDTO postReviewDTO = PostReviewDTO
-                .builder()
-                .postId(questionId)
-                .postType("question")
-                .build();
-        rocketMQTemplate.convertAndSend("post:postReview", postReviewDTO);
     }
 
     public void tagUsageCount(List<Long> tagIds) {

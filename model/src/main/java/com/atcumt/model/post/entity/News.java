@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -36,6 +37,7 @@ public class News {
     private String showType;  // 展示类型
     private String title;  // 帖子标题
     private String content; // 帖子内容
+    private List<String> images;  // 图片列表
     private Integer commentCount; // 评论数
     private Long viewCount;  // 观看量
     @Indexed

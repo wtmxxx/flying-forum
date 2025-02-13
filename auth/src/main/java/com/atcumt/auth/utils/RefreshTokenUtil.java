@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RefreshTokenUtil {
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final int TOKEN_LENGTH = 128; // Token长度
+    private static final int TOKEN_LENGTH = 256; // Token长度
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // 随机用序列码
 
     private final RedisTemplate<String, String> saRedisTemplate;
@@ -47,6 +47,10 @@ public class RefreshTokenUtil {
     public TokenVO getAccessToken(String refreshToken) throws UnauthorizedException {
         String userId = StpUtil.getLoginIdAsString();
         String loginDevice = StpUtil.getLoginDevice();
+
+        String oldToken = StpUtil.getTokenValue();
+        String oldTokenKey = "Authorization:login:old-access-token:" + oldToken;
+        saRedisTemplate.opsForValue().set(oldTokenKey, userId, 1, TimeUnit.MINUTES);
 
         String refreshKey = "Authorization:login:refresh-token:" + userId + ":" + loginDevice;
         if (!refreshToken.equals(saRedisTemplate.opsForValue().get(refreshKey))) {

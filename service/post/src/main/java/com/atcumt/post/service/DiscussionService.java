@@ -18,4 +18,8 @@ public interface DiscussionService {
     void privateDiscussion(Long discussionId) throws AuthorizationException;
 
     DiscussionVO getDiscussion(Long discussionId);
+
+    void pinDiscussion(Long discussionId);
+
+    void unpinDiscussion(Long discussionId);
 }

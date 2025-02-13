@@ -18,4 +18,8 @@ public interface QuestionService {
     void privateQuestion(Long questionId) throws AuthorizationException;
 
     QuestionVO getQuestion(Long questionId);
+
+    void pinQuestion(Long questionId);
+
+    void unpinQuestion(Long questionId);
 }

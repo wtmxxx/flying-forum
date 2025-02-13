@@ -2,14 +2,19 @@ package com.atcumt.post.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
+import com.atcumt.common.api.forum.sensitive.SensitiveWordDubboService;
 import com.atcumt.model.post.dto.NewTagDTO;
 import com.atcumt.model.post.entity.Tag;
 import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.post.vo.TagListVO;
+import com.atcumt.model.post.vo.TagSimpleVO;
 import com.atcumt.model.post.vo.TagVO;
 import com.atcumt.post.repository.TagRepository;
 import com.atcumt.post.service.TagService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,6 +28,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TagServiceImpl implements TagService {
     private final TagRepository tagRepository;
+    private final MongoTemplate mongoTemplate;
+    private final SensitiveWordDubboService sensitiveWordDubboService;
 
     @Override
     public TagListVO newTag(NewTagDTO newTagDTO) {
@@ -58,6 +65,13 @@ public class TagServiceImpl implements TagService {
 
         // 批量插入不存在的标签
         if (!newTags.isEmpty()) {
+            String newTagNameStr = newTags.stream()
+                    .map(Tag::getTagName)
+                    .collect(Collectors.joining(","));
+            if (sensitiveWordDubboService.contains(newTagNameStr)) {
+                throw new IllegalArgumentException(PostMessage.TAG_CONTAINS_SENSITIVE_WORD.getMessage());
+            }
+
             tagRepository.saveAll(newTags);
         }
 
@@ -91,4 +105,10 @@ public class TagServiceImpl implements TagService {
         return BeanUtil.copyProperties(tag, TagVO.class);
     }
 
+    @Override
+    public List<TagSimpleVO> getSimpleTags(List<Long> tagIds) {
+        List<Tag> tags = mongoTemplate.find(new Query(Criteria.where("tagId").in(tagIds)), Tag.class);
+        List<TagSimpleVO> tagSimpleVOs = BeanUtil.copyToList(tags, TagSimpleVO.class);
+        return tagSimpleVOs;
+    }
 }

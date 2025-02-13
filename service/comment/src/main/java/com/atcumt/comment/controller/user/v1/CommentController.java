@@ -68,6 +68,34 @@ public class CommentController {
         return Result.success();
     }
 
+    @PatchMapping("/pin/{commentId}")
+    @Operation(summary = "置顶评论", description = "置顶评论")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "commentId", description = "评论ID", in = ParameterIn.PATH, required = true)
+    })
+    public Result<Object> pinComment(@PathVariable("commentId") Long commentId) throws AuthorizationException {
+        log.info("置顶评论, userId: {}", UserContext.getUserId());
+
+        commentService.pinComment(commentId);
+
+        return Result.success();
+    }
+
+    @PatchMapping("/unpin/{commentId}")
+    @Operation(summary = "取消置顶评论", description = "取消置顶评论")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "commentId", description = "评论ID", in = ParameterIn.PATH, required = true)
+    })
+    public Result<Object> unpinComment(@PathVariable("commentId") Long commentId) throws AuthorizationException {
+        log.info("取消置顶评论, userId: {}", UserContext.getUserId());
+
+        commentService.unpinComment(commentId);
+
+        return Result.success();
+    }
+
     @GetMapping("/post/{postType}/{postId}")
     @Operation(summary = "获取帖子评论", description = "获取帖子评论")
     @Parameters({

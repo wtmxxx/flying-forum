@@ -44,5 +44,7 @@ public class Comment {
     @Indexed(direction = IndexDirection.DESCENDING)
     private Double score;
     @Indexed
+    private LocalDateTime pinnedTime;  // 置顶时间
+    @Indexed
     private LocalDateTime createTime;
 }

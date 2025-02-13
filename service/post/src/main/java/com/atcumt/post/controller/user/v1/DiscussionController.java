@@ -97,6 +97,36 @@ public class DiscussionController {
         return Result.success();
     }
 
+//    @PatchMapping("/pin")
+    @Operation(summary = "置顶杂谈", description = "置顶杂谈")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "discussionId", description = "杂谈ID", required = true)
+    })
+    public Result<Object> pinDiscussion(Long discussionId) throws AuthorizationException {
+        log.info("置顶杂谈, userId: {}", UserContext.getUserId());
+
+        // 置顶帖子
+        discussionService.pinDiscussion(discussionId);
+
+        return Result.success();
+    }
+
+//    @PatchMapping("/unpin")
+    @Operation(summary = "取消置顶杂谈", description = "取消置顶杂谈")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "discussionId", description = "杂谈ID", required = true)
+    })
+    public Result<Object> unpinDiscussion(Long discussionId) throws AuthorizationException {
+        log.info("取消置顶杂谈, userId: {}", UserContext.getUserId());
+
+        // 取消置顶帖子
+        discussionService.unpinDiscussion(discussionId);
+
+        return Result.success();
+    }
+
     @GetMapping("")
     @Operation(summary = "获取杂谈", description = "获取杂谈")
     @Parameters({

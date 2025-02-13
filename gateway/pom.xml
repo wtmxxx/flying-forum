@@ -113,6 +113,15 @@
                     <groupId>cn.dev33</groupId>
                     <artifactId>sa-token-spring-boot3-starter</artifactId>
                 </exclusion>
+                <!-- Dubbo -->
+                <exclusion>
+                    <groupId>org.apache.dubbo</groupId>
+                    <artifactId>dubbo-spring-boot-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.dubbo</groupId>
+                    <artifactId>dubbo-nacos-spring-boot-starter</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

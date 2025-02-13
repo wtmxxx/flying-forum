@@ -17,4 +17,8 @@ public interface CommentService {
     PostCommentVO getPostComments(PostCommentDTO postCommentDTO);
 
     UserCommentVO getUserComments(UserCommentDTO userCommentDTO);
+
+    void pinComment(Long commentId);
+
+    void unpinComment(Long commentId);
 }

@@ -14,6 +14,7 @@
         <module>gpt</module>
         <module>user</module>
         <module>search</module>
+        <module>forum</module>
         <module>rag</module>
     </modules>
     <artifactId>service</artifactId>

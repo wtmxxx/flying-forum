@@ -14,9 +14,11 @@ import java.util.List;
 public class PostCommentVO {
     private String postType;
     private Long postId;
+    private Integer pinnedSize;
     private Integer size;
     private String sort;
     private String cursor;
     private Long lastCommentId;
+    private List<CommentPlusVO> pinnedComments;
     private List<CommentPlusVO> comments;
 }

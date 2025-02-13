@@ -45,6 +45,8 @@ public class Question {
     private String rejectReason;  // 帖子审核不通过原因
     @Indexed(direction = IndexDirection.DESCENDING)
     private Double score;  // 帖子评分
+    @Indexed
+    private LocalDateTime pinnedTime;  // 置顶时间
     private LocalDateTime createTime; // 创建时间
     @Indexed
     private LocalDateTime updateTime; // 更新时间

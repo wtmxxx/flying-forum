@@ -298,7 +298,7 @@ public class AuthController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", required = true)
     })
-    public Result<TokenVO> refreshToken(@RequestHeader("Authorization") String accessToken, @RequestBody RefreshTokenDTO refreshTokenDTO) throws Exception {
+    public Result<TokenVO> refreshToken(@RequestHeader("Authorization") String accessToken, @RequestBody RefreshTokenDTO refreshTokenDTO) {
         log.info("使用RefreshToken刷新accessToken, 原accessToken: {}", accessToken);
 
         TokenVO tokenVO = authService.refreshToken(refreshTokenDTO.getRefreshToken());

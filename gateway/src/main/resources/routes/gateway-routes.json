@@ -92,6 +92,19 @@
     "uri": "lb://oss-service"
   },
   {
+    "id": "forum-service",
+    "predicates": [
+      {
+        "name": "Path",
+        "args": {
+          "_genkey_0": "/api/forum/**"
+        }
+      }
+    ],
+    "filters": [],
+    "uri": "lb://forum-service"
+  },
+  {
     "id": "gpt-service",
     "predicates": [
       {

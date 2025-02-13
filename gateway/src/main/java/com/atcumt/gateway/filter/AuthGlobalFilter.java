@@ -10,11 +10,13 @@ import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.gateway.property.AuthProperty;
 import com.atcumt.model.common.enums.ResultCode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -34,9 +36,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final AuthProperty authProperty;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
+    private final RedisTemplate<String, String> saRedisTemplate;
     @Autowired
-    AuthGlobalFilter(AuthProperty authProperty) {
+    AuthGlobalFilter(AuthProperty authProperty,
+                     @Qualifier("saRedisTemplate") RedisTemplate<String, String> saRedisTemplate
+    ) {
         this.authProperty = authProperty;
+        this.saRedisTemplate = saRedisTemplate;
     }
 
     @Override
@@ -62,15 +68,22 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             tokenName = StpUtil.getTokenName();
             tokenValue = request.getHeaders().getFirst("Authorization");
 
-            Object loginId = StpUtil.getLoginIdByToken(Objects
+            String tokenValueWithoutPrefix = Objects
                     .requireNonNull(tokenValue, ResultCode.UNAUTHORIZED.getMessage())
-                    .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length())
-            );
-            if (loginId == null || !StpUtil.isLogin(loginId)) {
-                throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
-            }
+                    .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length());
 
-            userId = String.valueOf(loginId);
+            Object loginId = StpUtil.getLoginIdByToken(tokenValueWithoutPrefix);
+            if (loginId == null || !StpUtil.isLogin(loginId)) {
+                // 新老Token切换
+                String oldTokenKey = "Authorization:login:old-access-token:" + tokenValueWithoutPrefix;
+                userId = saRedisTemplate.opsForValue().get(oldTokenKey);
+
+                if (userId == null) {
+                    throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
+                }
+            } else {
+                userId = String.valueOf(loginId);
+            }
         } catch (Exception e) {
             // 如果无效，拦截
             ServerHttpResponse response = exchange.getResponse();

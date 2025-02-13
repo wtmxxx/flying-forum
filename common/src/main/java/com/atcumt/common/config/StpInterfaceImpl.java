@@ -1,29 +1,28 @@
 package com.atcumt.common.config;
 
-import cn.dev33.satoken.same.SaSameUtil;
 import cn.dev33.satoken.stp.StpInterface;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
+import com.atcumt.common.api.auth.PermissionDubboService;
+import com.atcumt.common.api.auth.RoleDubboService;
 import com.atcumt.model.auth.entity.Role;
 import com.atcumt.model.auth.vo.PermissionVO;
 import com.atcumt.model.auth.vo.RoleVO;
-import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.common.enums.ResultCode;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
-import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -36,38 +35,23 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @ConditionalOnClass(StpUtil.class)
-@ConditionalOnMissingBean(StpInterface.class)
+@ConditionalOnMissingBean({StpInterface.class})
+@ConditionalOnMissingClass("com.atcumt.gateway.GatewayApplication")
 @Slf4j
 public class StpInterfaceImpl implements StpInterface {
     private final RedisTemplate<String, String> redisTemplate;
-    private final LoadBalancerClient loadBalancerClient;
-    private final WebClient.Builder webClientBuilder;
-    private WebClient webClient;
+
+    @DubboReference
+    private RoleDubboService roleDubboService;
+    @DubboReference
+    private final PermissionDubboService permissionDubboService;
 
     @Autowired
     public StpInterfaceImpl(
             @Qualifier("saRedisTemplate") RedisTemplate<String, String> redisTemplate,
-            LoadBalancerClient loadBalancerClient,
-            WebClient.Builder webClientBuilder
-    ) {
+            PermissionDubboService permissionDubboService) {
         this.redisTemplate = redisTemplate;
-        this.loadBalancerClient = loadBalancerClient;
-        this.webClientBuilder = webClientBuilder;
-    }
-
-    @PostConstruct
-    public void init() {
-        ServiceInstance instance = loadBalancerClient.choose("auth-service");
-
-        if (instance != null) {
-//            System.out.println("instance = " + instance.getUri());
-
-            webClient = webClientBuilder
-                    .baseUrl(instance.getUri() + "/api/auth/admin")
-                    .build();
-        } else {
-            log.warn("未找到 auth-service 服务实例");
-        }
+        this.permissionDubboService = permissionDubboService;
     }
 
     /**
@@ -81,6 +65,8 @@ public class StpInterfaceImpl implements StpInterface {
         String roleNames = redisTemplate.opsForValue().get(roleKey);
         List<String> permissionNames = new ArrayList<>();
 
+        Set<String> roleNameSet = new HashSet<>();
+
         if (roleNames != null && !roleNames.isEmpty()) {
             // 如果缓存命中，尝试从缓存中获取权限
             boolean isCached = true;
@@ -90,6 +76,7 @@ public class StpInterfaceImpl implements StpInterface {
                 if (permissionName == null || permissionName.isEmpty()) {
                     isCached = false;
                 } else {
+                    roleNameSet.add(roleName);
                     permissionNames.addAll(List.of(permissionName.split(",")));
                 }
             }
@@ -102,14 +89,17 @@ public class StpInterfaceImpl implements StpInterface {
 
         // 如果缓存没有，查询数据库并更新缓存
         List<Role> roles = BeanUtil.copyToList(
-                this.getRole(loginId.toString()).getData(),
+                this.getRole(loginId.toString()),
                 Role.class
         );
 
         // 从数据库获取权限
         for (Role role : roles) {
+            if (roleNameSet.contains(role.getRoleName())) {
+                continue;
+            }
             List<PermissionVO> partPermissionVOs = BeanUtil.copyToList(
-                    this.getPermission(role.getRoleId()).getData(),
+                    this.getPermission(role.getRoleId()),
                     PermissionVO.class
             );
 
@@ -124,11 +114,11 @@ public class StpInterfaceImpl implements StpInterface {
             permissionNames.addAll(partPermissionNames);
 
             String permissionKey = "Authorization:rolePermission:" + role.getRoleName();
-            redisTemplate.opsForValue().set(permissionKey, String.join(",", partPermissionNames), 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(permissionKey, String.join(",", partPermissionNames), 7, TimeUnit.DAYS);
         }
 
         // 更新用户角色缓存
-        redisTemplate.opsForValue().set(roleKey, String.join(",", roles.stream().map(Role::getRoleName).toList()), 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(roleKey, String.join(",", roles.stream().map(Role::getRoleName).toList()), 7, TimeUnit.DAYS);
 
         return permissionNames;
     }
@@ -145,11 +135,11 @@ public class StpInterfaceImpl implements StpInterface {
 
         if (roleNames == null || roleNames.isEmpty()) {
             // 缓存未命中，用OpenFeign查询角色
-            List<RoleVO> roleVOs = this.getRole(loginId.toString()).getData();
+            List<RoleVO> roleVOs = this.getRole(loginId.toString());
             List<String> roleNameList = roleVOs.stream().map(RoleVO::getRoleName).toList();
 
             // 更新缓存并返回
-            redisTemplate.opsForValue().set(roleKey, String.join(",", roleNameList), 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(roleKey, String.join(",", roleNameList), 7, TimeUnit.DAYS);
             return roleNameList;
         } else {
             // 如果缓存命中，直接返回
@@ -157,42 +147,20 @@ public class StpInterfaceImpl implements StpInterface {
         }
     }
 
-    public Result<List<RoleVO>> getRole(String userId) {
-        init();
-        // 使用 ParameterizedTypeReference 来指定泛型类型
+    public List<RoleVO> getRole(String userId) {
         try {
-            return webClient.get()
-                    .uri("/role/v1/user")
-                    .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
-                    .header(StpUtil.getTokenName(), StpUtil.getTokenValueNotCut())
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Result<List<RoleVO>>>() {
-                    })
-                    .doOnError(e ->
-                            log.error("远程调用AuthClient#getRole方法出现异常，参数：{}", userId, e)
-                    )
-                    .block(); // 使用 block() 来阻塞等待结果
+            return roleDubboService.getUserRole(userId);
         } catch (Exception e) {
+            log.error("获取用户角色失败", e);
             throw new RuntimeException(ResultCode.INTERNAL_SERVER_ERROR.getMessage());
         }
     }
 
-    public Result<List<PermissionVO>> getPermission(String roleId) {
-        init();
-        // 使用 ParameterizedTypeReference 来指定泛型类型
+    public List<PermissionVO> getPermission(String roleId) {
         try {
-            return webClient.get()
-                    .uri("/permission/v1/role?roleId={roleId}", roleId)
-                    .header(SaSameUtil.SAME_TOKEN, SaSameUtil.getToken())
-                    .header(StpUtil.getTokenName(), StpUtil.getTokenValueNotCut())
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Result<List<PermissionVO>>>() {
-                    })
-                    .doOnError(e ->
-                            log.error("远程调用AuthClient#getPermission方法出现异常，参数：{}", roleId, e)
-                    )
-                    .block(); // 使用 block() 来阻塞等待结果
+            return permissionDubboService.getRolePermissions(roleId);
         } catch (Exception e) {
+            log.error("获取角色权限失败", e);
             throw new RuntimeException(ResultCode.INTERNAL_SERVER_ERROR.getMessage());
         }
     }

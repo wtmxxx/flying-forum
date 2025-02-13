@@ -1,6 +1,7 @@
 package com.atcumt.post.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.nacos.api.config.listener.Listener;
@@ -17,6 +18,7 @@ import com.atcumt.post.service.NewsService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.common.logger.FluentLogger;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -29,8 +31,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -164,9 +167,34 @@ public class NewsServiceImpl implements NewsService {
 
         List<News> newsList = mongoTemplate.find(query, News.class);
 
+        Set<Object> newsTypes = new HashSet<>();
+
         List<NewsSimpleVO> newsVOs = newsList.stream()
-                .map(news -> BeanUtil.toBean(news, NewsSimpleVO.class))
+                .map(news -> {
+                    NewsSimpleVO newsSimpleVO = BeanUtil.toBean(news, NewsSimpleVO.class);
+                    newsTypes.add(news.getNewsType());
+                    return newsSimpleVO;
+                })
                 .toList();
+
+        List<Object> distinctNewsTypes = newsTypes.stream().toList();
+        List<Object> shortNames = redisTemplate.opsForHash().multiGet("post:news:newsTypeShortName", distinctNewsTypes);
+        Map<String, String> shortNameMap = new HashMap<>();
+        for (int i = 0; i < distinctNewsTypes.size(); i++) {
+            if (shortNames.get(i) != null) {
+                shortNameMap.put(String.valueOf(distinctNewsTypes.get(i)), String.valueOf(shortNames.get(i)));
+            }
+        }
+
+        for (NewsSimpleVO newsVO : newsVOs) {
+            String shortName = shortNameMap.get(newsVO.getNewsType());
+
+            if (shortName != null) {
+                newsVO.setShortName(shortName);
+            } else {
+                newsVO.setShortName(newsVO.getNewsType());
+            }
+        }
 
         Long lastNewsId = null;
         String cursor = null;
@@ -198,7 +226,9 @@ public class NewsServiceImpl implements NewsService {
                         @Override
                         public void receiveConfigInfo(String configInfo) {
                             log.info("新闻类型配置更新");
-                            redisTemplate.opsForValue().set("post:news:newsType", new JSONObject(configInfo));
+                            JSONObject newsType = new JSONObject(configInfo);
+                            redisTemplate.opsForValue().set("post:news:newsType", newsType);
+                            redisTemplate.opsForHash().putAll("post:news:newsTypeShortName", getNewsTypeShortNames(newsType));
                         }
 
                         @Override
@@ -208,9 +238,37 @@ public class NewsServiceImpl implements NewsService {
                     });
             JSONObject newsType = new JSONObject(configInfo);
             redisTemplate.opsForValue().set("post:news:newsType", newsType);
+            redisTemplate.opsForHash().putAll("post:news:newsTypeShortName", getNewsTypeShortNames(newsType));
         } catch (NacosException e) {
             log.error("监听新闻类型配置失败");
         }
+    }
+
+    public Map<String, String> getNewsTypeShortNames(JSONObject jsonObject) {
+        Map<String, String> result = new HashMap<>();
+
+        // 获取"newsCategory"节点中的数据
+        JSONArray newsCategories = jsonObject.getJSONArray("newsCategory");
+
+        // 遍历所有的categoryName (校园、学院等)
+        for (int i = 0; i < newsCategories.size(); i++) {
+            JSONObject categoryObj = newsCategories.getJSONObject(i);
+
+            // 获取每个categoryName下的categoryList
+            JSONArray categoryList = categoryObj.getJSONArray("categoryList");
+
+            // 遍历每个categoryList中的条目
+            for (int j = 0; j < categoryList.size(); j++) {
+                JSONObject categoryItem = categoryList.getJSONObject(j);
+                String newsTypeName = categoryItem.getStr("newsType");
+                String shortName = categoryItem.getStr("shortName");
+
+                // 将所有条目直接放入result Map中，不区分类别
+                result.put(newsTypeName, shortName);
+            }
+        }
+
+        return result;
     }
 
     @Override

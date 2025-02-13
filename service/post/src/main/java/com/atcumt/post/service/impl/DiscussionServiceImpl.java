@@ -6,6 +6,7 @@ import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
+import com.atcumt.common.utils.UserInfoUtil;
 import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.post.dto.DiscussionDTO;
@@ -19,6 +20,7 @@ import com.atcumt.model.post.vo.DiscussionPostVO;
 import com.atcumt.model.post.vo.DiscussionVO;
 import com.atcumt.post.repository.DiscussionRepository;
 import com.atcumt.post.service.DiscussionService;
+import com.atcumt.post.service.TagService;
 import com.atcumt.post.utils.ExcerptUtil;
 import com.atcumt.post.utils.PostReviewUtil;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,9 @@ public class DiscussionServiceImpl implements DiscussionService {
     private final MongoTemplate mongoTemplate;
     private final RocketMQTemplate rocketMQTemplate;
     private final FileConvertUtil fileConvertUtil;
+    private final PostReviewUtil postReviewUtil;
+    private final TagService tagService;
+    private final UserInfoUtil userInfoUtil;
 
     @Override
     public DiscussionPostVO postDiscussion(DiscussionDTO discussionDTO) {
@@ -75,7 +80,7 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .build();
 
         // 审核帖子内容
-        PostReviewUtil.review(discussion);
+        postReviewUtil.review(discussion);
 
         discussionRepository.save(discussion);
 
@@ -125,19 +130,13 @@ public class DiscussionServiceImpl implements DiscussionService {
     @Override
     public void deleteDiscussion(Long discussionId) throws AuthorizationException {
         String loginId = UserContext.getUserId();
-        Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
-
-        if (discussion == null || discussion.getUserId() == null) {
-            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
-        }
-        if (!loginId.equals(discussion.getUserId())) {
-            throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
-        }
-
         Update update = new Update();
         update.set("status", PostStatus.DELETED.getCode());  // 软删除
         mongoTemplate.updateFirst(
-                Query.query(Criteria.where("discussionId").is(discussionId)),
+                Query.query(Criteria
+                        .where("discussionId").is(discussionId)
+                        .and("userId").is(loginId)
+                ),
                 update,
                 Discussion.class
         );
@@ -145,6 +144,50 @@ public class DiscussionServiceImpl implements DiscussionService {
 
     @Override
     public void privateDiscussion(Long discussionId) throws AuthorizationException {
+        String loginId = UserContext.getUserId();
+        Update update = new Update();
+        update.set("status", PostStatus.PRIVATE.getCode());  // 私密
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("discussionId").is(discussionId)
+                        .and("userId").is(loginId)
+                ),
+                update,
+                Discussion.class
+        );
+    }
+
+    @Override
+    public DiscussionVO getDiscussion(Long discussionId) {
+        Discussion discussion = mongoTemplate.findOne(
+                Query.query(Criteria.where("discussionId").is(discussionId)),
+                Discussion.class
+        );
+        // 无此帖子
+        if (discussion == null) {
+            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
+        }
+        // 帖子已删除
+        if (Objects.equals(discussion.getStatus(), PostStatus.DELETED.getCode())) {
+            throw new IllegalArgumentException(PostMessage.POST_DELETED.getMessage());
+        }
+        DiscussionVO discussionVO = BeanUtil.copyProperties(discussion, DiscussionVO.class, "mediaFiles", "tags");
+        discussionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(discussion.getMediaFiles()));
+        discussionVO.setTags(tagService.getSimpleTags(discussion.getTagIds()));
+        discussionVO.setUserInfo(userInfoUtil.getUserInfoSimple(discussion.getUserId()));
+        // 作者可见
+        if (discussion.getUserId().equals(UserContext.getUserId())) {
+            return discussionVO;
+        }
+        // 帖子未发布
+        if (!Objects.equals(discussion.getStatus(), PostStatus.PUBLISHED.getCode())) {
+            throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
+        }
+        return discussionVO;
+    }
+
+    @Override
+    public void pinDiscussion(Long discussionId) {
         String loginId = UserContext.getUserId();
         Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
 
@@ -156,7 +199,7 @@ public class DiscussionServiceImpl implements DiscussionService {
         }
 
         Update update = new Update();
-        update.set("status", PostStatus.PRIVATE.getCode());  // -1 软删除
+        update.set("pinnedTime", LocalDateTime.now());
         mongoTemplate.updateFirst(
                 Query.query(Criteria.where("discussionId").is(discussionId)),
                 update,
@@ -165,42 +208,22 @@ public class DiscussionServiceImpl implements DiscussionService {
     }
 
     @Override
-    public DiscussionVO getDiscussion(Long discussionId) {
-        Discussion discussion = discussionRepository.findById(discussionId).orElse(null);
-        // 无此帖子
-        if (discussion == null) {
-            throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
-        }
-        // 帖子已删除
-        if (Objects.equals(discussion.getStatus(), PostStatus.DELETED.getCode())) {
-            throw new IllegalArgumentException(PostMessage.POST_DELETED.getMessage());
-        }
-        // 作者可见
-        if (discussion.getUserId().equals(UserContext.getUserId())) {
-            DiscussionVO discussionVO = BeanUtil.copyProperties(discussion, DiscussionVO.class, "mediaFiles");
-            discussionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(discussion.getMediaFiles()));
-
-            return discussionVO;
-        }
-        // 帖子未发布
-        if (!Objects.equals(discussion.getStatus(), PostStatus.PUBLISHED.getCode())) {
-            throw new IllegalArgumentException(PostMessage.POST_UNPUBLISHED.getMessage());
-        }
-        DiscussionVO discussionVO = BeanUtil.copyProperties(discussion, DiscussionVO.class, "mediaFiles");
-        discussionVO.setMediaFiles(fileConvertUtil.convertToMediaFileVOs(discussion.getMediaFiles()));
-
-        return discussionVO;
+    public void unpinDiscussion(Long discussionId) {
+        String loginId = UserContext.getUserId();
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("discussionId").is(discussionId)
+                        .and("userId").is(loginId)
+                ),
+                new Update().unset("pinnedTime"),
+                Discussion.class
+        );
     }
 
     @Override
     public DiscussionPostVO updateDiscussion(DiscussionUpdateDTO discussionUpdateDTO) throws AuthorizationException {
-        String authorId = discussionRepository.findUserIdIdByDiscussionId(discussionUpdateDTO.getDiscussionId()).getUserId();
-        if (authorId == null || !authorId.equals(UserContext.getUserId())) {
-            throw new AuthorizationException(AuthMessage.PERMISSION_MISMATCH.getMessage());
-        }
-
         // 审核帖子内容
-        PostReviewUtil.review(discussionUpdateDTO.getTitle(), discussionUpdateDTO.getContent());
+        postReviewUtil.review(discussionUpdateDTO.getTitle(), discussionUpdateDTO.getContent());
 
         // 创建Update对象，只更新非null字段
         Update update = new Update();
@@ -229,7 +252,10 @@ public class DiscussionServiceImpl implements DiscussionService {
 
         // 使用MongoTemplate执行部分更新
         mongoTemplate.updateFirst(
-                Query.query(Criteria.where("discussionId").is(discussionUpdateDTO.getDiscussionId())),
+                Query.query(Criteria
+                        .where("discussionId").is(discussionUpdateDTO.getDiscussionId())
+                        .and("userId").is(UserContext.getUserId())
+                ),
                 update,
                 Discussion.class
         );
@@ -239,15 +265,6 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .discussionId(discussionUpdateDTO.getDiscussionId())
                 .status(status)
                 .build();
-    }
-
-    public void reviewDiscussion(Long discussionId) {
-        PostReviewDTO postReviewDTO = PostReviewDTO
-                .builder()
-                .postId(discussionId)
-                .postType("discussion")
-                .build();
-        rocketMQTemplate.convertAndSend("post:postReview", postReviewDTO);
     }
 
     public void tagUsageCount(List<Long> tagIds) {

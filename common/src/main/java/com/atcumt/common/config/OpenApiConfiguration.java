@@ -16,7 +16,7 @@ public class OpenApiConfiguration {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info().title("矿小圈")
-                        .description("矿大论坛--矿小圈 API文档")
+                        .description("FlyingForum--矿小圈 API文档")
                         .contact(
                                 new Contact().name("Wotemo").email("wotemo@qq.com")
                         )
@@ -24,7 +24,7 @@ public class OpenApiConfiguration {
                         .license(new License().name("Apache 2.0").url("https://www.apache.org/licenses/LICENSE-2.0")))
                 .externalDocs(new ExternalDocumentation()
                         .description("Github")
-                        .url("https://github.com/wtmxxx/cumt_forum"))
+                        .url("https://github.com/wtmxxx/flying-forum"))
                 ;
     }
 }

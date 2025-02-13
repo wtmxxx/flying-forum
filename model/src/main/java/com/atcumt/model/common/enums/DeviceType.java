@@ -83,6 +83,7 @@ public enum DeviceType {
     // 获取当前请求的 HttpServletRequest
     private static HttpServletRequest getCurrentHttpRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
         return (attributes != null) ? attributes.getRequest() : null;
     }
 

@@ -20,6 +20,7 @@ public enum PermModule {
     TAG("tag", "标签"),                              // 标签模块
     USER("user", "用户"),                            // 用户模块
     FILE("file", "文件"),                            // 文件模块
+    SENSITIVE_WORD("sensitive_word", "敏感词")       // 敏感词模块
     ;
 
     private final String value;

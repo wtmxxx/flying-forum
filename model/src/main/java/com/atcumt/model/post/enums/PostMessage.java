@@ -18,7 +18,9 @@ public enum PostMessage {
     // 标签相关
     TAG_NOT_FOUND("无此标签"),
     TAG_LIST_EMPTY("标签列表不能为空"),
-    TAG_COUNT_TOO_MANY("标签数量过多");
+    TAG_COUNT_TOO_MANY("标签数量过多"),
+    TAG_CONTAINS_SENSITIVE_WORD("标签包含敏感词"),
+    ;
 
     private final String message;
 

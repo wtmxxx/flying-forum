@@ -45,3 +45,4 @@ application-prod.yaml
 *.p8
 *.yaml
 /auth/src/main/resources/apple/
+/src/main/resources/

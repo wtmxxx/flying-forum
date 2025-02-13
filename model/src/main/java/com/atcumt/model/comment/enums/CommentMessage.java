@@ -8,7 +8,9 @@ public enum CommentMessage {
     COMMENT_NOT_FOUND("评论不存在"),
     MEDIA_FILE_LIMIT("评论图片数量超过限制"),
     SORT_NOT_SUPPORT("不支持的排序方式"),
-    CURSOR_FORMAT_INCORRECT("游标格式不正确");
+    CURSOR_FORMAT_INCORRECT("游标格式不正确"),
+    PINNED_COMMENT_LIMIT("置顶评论数量超过限制"),
+    ;
 
     private final String message;
 

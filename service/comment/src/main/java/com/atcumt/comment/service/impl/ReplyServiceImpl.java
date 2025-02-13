@@ -5,6 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import com.atcumt.comment.repository.CommentRepository;
 import com.atcumt.comment.repository.ReplyRepository;
 import com.atcumt.comment.service.ReplyService;
+import com.atcumt.common.api.forum.sensitive.SensitiveWordDubboService;
 import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
@@ -22,9 +23,9 @@ import com.atcumt.model.common.vo.MediaFileVO;
 import com.atcumt.model.like.constants.LikeAction;
 import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.user.vo.UserInfoSimpleVO;
-import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
@@ -48,10 +49,12 @@ public class ReplyServiceImpl implements ReplyService {
     private final RocketMQTemplate rocketMQTemplate;
     private final UserInfoUtil userInfoUtil;
     private final FileConvertUtil fileConvertUtil;
+    @DubboReference
+    private SensitiveWordDubboService sensitiveWordDubboService;
 
     @Override
     public ReplyVO postReply(ReplyDTO replyDTO) {
-        if (SensitiveWordHelper.contains(replyDTO.getContent())) {
+        if (sensitiveWordDubboService.contains(replyDTO.getContent())) {
             throw new RuntimeException(CommentMessage.SENSITIVE_WORD.getMessage());
         }
 

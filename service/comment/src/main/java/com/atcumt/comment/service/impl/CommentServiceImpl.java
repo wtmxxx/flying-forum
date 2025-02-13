@@ -6,6 +6,7 @@ import cn.hutool.json.JSONObject;
 import com.atcumt.comment.repository.CommentRepository;
 import com.atcumt.comment.service.CommentService;
 import com.atcumt.comment.service.ReplyService;
+import com.atcumt.common.api.forum.sensitive.SensitiveWordDubboService;
 import com.atcumt.common.utils.FileConvertUtil;
 import com.atcumt.common.utils.HeatScoreUtil;
 import com.atcumt.common.utils.UserContext;
@@ -26,17 +27,28 @@ import com.atcumt.model.like.constants.LikeAction;
 import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.user.vo.UserInfoSimpleVO;
-import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
+import com.mongodb.client.model.Variable;
+import com.mongodb.client.result.UpdateResult;
+import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
+import org.bson.Document;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.VariableOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,10 +60,12 @@ public class CommentServiceImpl implements CommentService {
     private final UserInfoUtil userInfoUtil;
     private final ReplyService replyService;
     private final FileConvertUtil fileConvertUtil;
+    @DubboReference
+    private SensitiveWordDubboService sensitiveWordDubboService;
 
     @Override
     public CommentVO postComment(CommentDTO commentDTO) {
-        if (SensitiveWordHelper.contains(commentDTO.getContent())) {
+        if (sensitiveWordDubboService.contains(commentDTO.getContent())) {
             throw new RuntimeException(CommentMessage.SENSITIVE_WORD.getMessage());
         }
 
@@ -140,7 +154,28 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public PostCommentVO getPostComments(PostCommentDTO postCommentDTO) {
-        Query query = Query.query(Criteria.where("postId").is(postCommentDTO.getPostId()));
+        Query query = Query.query(Criteria
+                .where("postId").is(postCommentDTO.getPostId())
+                .and("pinnedTime").exists(false)
+        );
+
+        Future<List<Comment>> pinnedCommentsFuture = null;
+        if (postCommentDTO.getLastCommentId() == null) {
+            @Cleanup
+            ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+            pinnedCommentsFuture = executorService.submit(() -> {
+                Query pinnedCommentsQuery = Query.query(Criteria
+                        .where("postId").is(postCommentDTO.getPostId())
+                        .and("pinnedTime").exists(true)
+                );
+                pinnedCommentsQuery.with(Sort.by(
+                        Sort.Order.desc("pinnedTime"),
+                        Sort.Order.desc("createTime"),
+                        Sort.Order.desc("commentId")
+                ));
+                return mongoTemplate.find(pinnedCommentsQuery, Comment.class);
+            });
+        }
 
         // 游标条件：score、commentIds 大于（等于）传入的游标
         switch (postCommentDTO.getSort()) {
@@ -221,7 +256,14 @@ public class CommentServiceImpl implements CommentService {
 
         List<Comment> comments = mongoTemplate.find(query, Comment.class);
 
-        List<CommentPlusVO> commentPlusVOs = new ArrayList<>();
+        List<Comment> pinnedComments = null;
+        if (pinnedCommentsFuture != null) {
+            try {
+                pinnedComments = pinnedCommentsFuture.get();
+            } catch (Exception e) {
+                log.error("获取置顶评论失败", e);
+            }
+        }
 
         List<Long> commentIds = new ArrayList<>();
 
@@ -231,6 +273,13 @@ public class CommentServiceImpl implements CommentService {
         for (var comment : comments) {
             commentIds.add(comment.getCommentId());
             userIdSet.add(comment.getUserId());
+        }
+
+        if (pinnedComments != null) {
+            for (var pinnedComment : pinnedComments) {
+                commentIds.add(pinnedComment.getCommentId());
+                userIdSet.add(pinnedComment.getUserId());
+            }
         }
 
         userIdSet.remove(null);
@@ -257,6 +306,7 @@ public class CommentServiceImpl implements CommentService {
         Map<String, UserInfoSimpleVO> userInfoSimpleVOMap = userInfoSimpleVOs.stream()
                 .collect(Collectors.toMap(UserInfoSimpleVO::getUserId, userInfoSimpleVO -> userInfoSimpleVO));
 
+        List<CommentPlusVO> commentPlusVOs = new ArrayList<>();
         for (var comment : comments) {
             List<MediaFileVO> mediaFiles = fileConvertUtil.convertToMediaFileVOs(comment.getMediaFiles());
 
@@ -279,6 +329,31 @@ public class CommentServiceImpl implements CommentService {
             commentPlusVOs.add(commentPlusVO);
         }
 
+        List<CommentPlusVO> pinnedCommentPlusVOs = new ArrayList<>();
+        if (pinnedComments != null) {
+            for (var pinnedComment : pinnedComments) {
+                List<MediaFileVO> mediaFiles = fileConvertUtil.convertToMediaFileVOs(pinnedComment.getMediaFiles());
+
+                CommentPlusVO commentPlusVO = CommentPlusVO
+                        .builder()
+                        .commentId(pinnedComment.getCommentId())
+                        .commentToUserId(pinnedComment.getCommentToUserId())
+                        .userInfo(userInfoSimpleVOMap.get(pinnedComment.getUserId()))
+                        .content(pinnedComment.getContent())
+                        .mediaFiles(mediaFiles)
+                        .likeCount(pinnedComment.getLikeCount())
+                        .dislikeCount(pinnedComment.getDislikeCount())
+                        .liked(likeCommentIds.contains(pinnedComment.getCommentId()))
+                        .disliked(dislikeCommentIds.contains(pinnedComment.getCommentId()))
+                        .replyCount(pinnedComment.getReplyCount())
+                        .score(pinnedComment.getScore())
+                        .createTime(pinnedComment.getCreateTime())
+                        .build();
+
+                pinnedCommentPlusVOs.add(commentPlusVO);
+            }
+        }
+
         Long lastCommentId = null;
         String cursor = null;
         if (!commentPlusVOs.isEmpty()) {
@@ -291,12 +366,15 @@ public class CommentServiceImpl implements CommentService {
             };
         }
 
+        int pinnedSize = pinnedComments == null ? 0 : pinnedComments.size();
         PostCommentVO postCommentVO = PostCommentVO.builder()
                 .postId(postCommentDTO.getPostId())
                 .postType(postCommentDTO.getPostType())
+                .pinnedSize(pinnedSize)
                 .size(comments.size())
                 .sort(postCommentDTO.getSort())
                 .cursor(cursor)
+                .pinnedComments(pinnedCommentPlusVOs)
                 .lastCommentId(lastCommentId)
                 .comments(commentPlusVOs)
                 .build();
@@ -363,5 +441,52 @@ public class CommentServiceImpl implements CommentService {
                 .build();
 
         return userCommentVO;
+    }
+
+    @Override
+    public void pinComment(Long commentId) {
+        if (getPinnedCommentsCount(commentId) >= 3) {
+            throw new IllegalArgumentException(CommentMessage.PINNED_COMMENT_LIMIT.getMessage());
+        }
+
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("_id").is(commentId)
+                        .and("commentToUserId").is(UserContext.getUserId())
+                ),
+                new Update().set("pinnedTime", LocalDateTime.now()),
+                Comment.class
+        );
+    }
+
+    public long getPinnedCommentsCount(Long commentId) {
+        Query query = new Query(Criteria.where("_id").is(commentId));
+        query.fields().include("postId", "postType");
+        Comment comment = mongoTemplate.findOne(query, Comment.class);
+
+        if (comment == null) {
+            throw new IllegalArgumentException(CommentMessage.COMMENT_NOT_FOUND.getMessage());
+        }
+
+        return mongoTemplate.count(
+                Query.query(Criteria
+                        .where("postId").is(comment.getPostId())
+                        .and("postType").is(comment.getPostType())
+                        .and("pinnedTime").exists(true)
+                ),
+                Comment.class
+        );
+    }
+
+    @Override
+    public void unpinComment(Long commentId) {
+        mongoTemplate.updateFirst(
+                Query.query(Criteria
+                        .where("_id").is(commentId)
+                        .and("commentToUserId").is(UserContext.getUserId())
+                ),
+                new Update().unset("pinnedTime"),
+                Comment.class
+        );
     }
 }

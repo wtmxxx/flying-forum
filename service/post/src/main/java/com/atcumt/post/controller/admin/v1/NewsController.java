@@ -53,7 +53,6 @@ public class NewsController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    // TODO 检查新闻上传权限Permission
     public Result<Object> uploadNews(@RequestBody Object newsType) throws AuthorizationException, NacosException {
         log.info("上传新闻类型");
 
