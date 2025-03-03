@@ -1,4 +1,5 @@
 com.atcumt.common.advice.GlobalExceptionAdvice
+
 com.atcumt.common.config.MyBatisPlusConfiguration
 com.atcumt.common.config.OpenApiConfiguration
 com.atcumt.common.config.RedisConfiguration
@@ -7,7 +8,8 @@ com.atcumt.common.config.SaTokenConfiguration
 com.atcumt.common.config.StpInterfaceImpl
 com.atcumt.common.config.WebClientConfiguration
 com.atcumt.common.config.MongoTransactionConfiguration
-com.atcumt.common.utils.UserInfoUtil
 com.atcumt.common.config.SentinelConfiguration
+
+com.atcumt.common.utils.UserInfoUtil
 com.atcumt.common.utils.UserPrivacyUtil
 com.atcumt.common.utils.FileConvertUtil

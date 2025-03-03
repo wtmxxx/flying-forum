@@ -118,6 +118,19 @@
             <artifactId>javassist</artifactId>
             <version>${javassist.version}</version>
         </dependency>
+        <!-- RocketMQ Client -->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+            <version>${rocketmq-spring.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-client</artifactId>
+            <version>${rocketmq.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

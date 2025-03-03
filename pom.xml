@@ -64,12 +64,14 @@
         <tika.version>3.1.0</tika.version>
         <jsoup.version>1.18.3</jsoup.version>
         <rocketmq.version>5.3.1</rocketmq.version>
-        <rocketmq-spring.version>2.3.1</rocketmq-spring.version>
-        <houbb.sensitive-word.version>0.24.2</houbb.sensitive-word.version>
+        <rocketmq-spring.version>2.3.2</rocketmq-spring.version>
+        <houbb.sensitive-word.version>0.25.0</houbb.sensitive-word.version>
         <auth0.java-jwt.version>4.5.0</auth0.java-jwt.version>
         <thumbnailator.version>0.4.20</thumbnailator.version>
         <dubbo.version>3.3.3</dubbo.version>
         <javassist.version>3.30.2-GA</javassist.version>
+        <redisson.version>3.45.0</redisson.version>
+        <caffeine.version>3.2.0</caffeine.version>
     </properties>
     <dependencies>
         <dependency>
