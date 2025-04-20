@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SuggestionEsVO {
-    private Long suggestionId;
+    private String suggestionId;
     private String suggestion;
     private String type;
 }

@@ -1,11 +1,10 @@
 package com.atcumt.common.utils;
 
-import cn.hutool.json.JSONObject;
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.nacos.api.config.listener.Listener;
-import com.alibaba.nacos.api.exception.NacosException;
 import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.common.vo.MediaFileVO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +21,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 public class FileConvertUtil {
     private final NacosConfigManager nacosConfigManager;
+    private final ObjectMapper objectMapper;
     public String urlPrefix = "https://kxq.wotemo.com/oss";
 
     @PostConstruct
@@ -34,7 +34,11 @@ public class FileConvertUtil {
                         @Override
                         public void receiveConfigInfo(String configInfo) {
                             log.info("新闻类型配置更新");
-                            urlPrefix = new JSONObject(configInfo).getStr("urlPrefix");
+                            try {
+                                urlPrefix = objectMapper.readTree(configInfo).get("urlPrefix").asText();
+                            } catch (Exception e) {
+                                log.error("监听新闻类型配置失败", e);
+                            }
                         }
 
                         @Override
@@ -42,9 +46,9 @@ public class FileConvertUtil {
                             return null;
                         }
                     });
-            urlPrefix = new JSONObject(configInfo).getStr("urlPrefix");
-        } catch (NacosException e) {
-            log.error("监听新闻类型配置失败");
+            urlPrefix = objectMapper.readTree(configInfo).get("urlPrefix").asText();
+        } catch (Exception e) {
+            log.error("监听新闻类型配置失败", e);
         }
     }
 

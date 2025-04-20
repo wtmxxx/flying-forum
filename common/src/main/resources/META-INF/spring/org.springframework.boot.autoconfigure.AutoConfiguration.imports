@@ -9,6 +9,7 @@ com.atcumt.common.config.StpInterfaceImpl
 com.atcumt.common.config.WebClientConfiguration
 com.atcumt.common.config.MongoTransactionConfiguration
 com.atcumt.common.config.SentinelConfiguration
+com.atcumt.common.config.JacksonConfiguration
 
 com.atcumt.common.utils.UserInfoUtil
 com.atcumt.common.utils.UserPrivacyUtil

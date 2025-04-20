@@ -3,8 +3,8 @@ package com.atcumt.forum.controller.admin.v1;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.forum.service.admin.SensitiveWordAdminService;
 import com.atcumt.model.common.entity.Result;
-import com.atcumt.model.forum.sensitive.entity.SensitiveWordConfig;
 import com.atcumt.model.forum.sensitive.dto.SensitiveWordListDTO;
+import com.atcumt.model.forum.sensitive.entity.SensitiveWordConfig;
 import com.atcumt.model.forum.sensitive.vo.SensitiveWordVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController("sensitiveWordControllerAdminV1")
 @RequestMapping("/api/forum/admin/sensitive-word/v1")
@@ -93,5 +94,19 @@ public class SensitiveWordController {
         SensitiveWordConfig sensitiveWordConfig = sensitiveWordAdminService.getSensitiveWordConfig();
 
         return Result.success(sensitiveWordConfig);
+    }
+
+    @GetMapping("/tags")
+    @Operation(summary = "获取敏感词标签", description = "获取敏感词标签")
+    @Parameters({
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "word", description = "敏感词", in = ParameterIn.QUERY)
+    })
+    public Result<Set<String>> getSensitiveWordTags(@RequestParam(name = "word") String word) {
+        log.info("获取敏感词标签, userId: {}", UserContext.getUserId());
+
+        Set<String> sensitiveWordTags = sensitiveWordAdminService.getSensitiveWordTags(word);
+
+        return Result.success(sensitiveWordTags);
     }
 }

@@ -8,10 +8,10 @@ import com.atcumt.forum.mapper.SensitiveWordMapper;
 import com.atcumt.forum.repository.WordAllow;
 import com.atcumt.forum.repository.WordDeny;
 import com.atcumt.forum.service.admin.SensitiveWordAdminService;
-import com.atcumt.model.forum.sensitive.entity.SensitiveWordConfig;
 import com.atcumt.model.forum.sensitive.dto.SensitiveWordDTO;
 import com.atcumt.model.forum.sensitive.dto.SensitiveWordListDTO;
 import com.atcumt.model.forum.sensitive.entity.SensitiveWord;
+import com.atcumt.model.forum.sensitive.entity.SensitiveWordConfig;
 import com.atcumt.model.forum.sensitive.vo.SensitiveWordVO;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -149,9 +150,13 @@ public class SensitiveWordAdminServiceImpl extends ServiceImpl<SensitiveWordMapp
                 .enableIpv4Check(sensitiveWordConfig.getEnableIpv4Check())
                 .enableWordCheck(sensitiveWordConfig.getEnableWordCheck())
                 .numCheckLen(sensitiveWordConfig.getNumCheckLen())
-                .wordTag(WordTags.none())
+                .wordTag(WordTags.defaults())
                 .charIgnore(SensitiveWordCharIgnores.specialChars())
-                .wordResultCondition(WordResultConditions.englishWordMatch())
+                .wordResultCondition(WordResultConditions.chains(
+                        WordResultConditions.englishWordMatch(),
+                        // 0. 政治 1. 毒品 2. 色情 3. 赌博 4. 违法
+                        WordResultConditions.wordTags(sensitiveWordConfig.getWordTags())
+                ))
                 .wordAllow(WordAllows.chains(WordAllows.defaults(), wordAllow))
                 .wordDeny(WordDenys.chains(WordDenys.defaults(), wordDeny))
                 // 各种其他配置
@@ -171,5 +176,13 @@ public class SensitiveWordAdminServiceImpl extends ServiceImpl<SensitiveWordMapp
         }
 
         return sensitiveWordConfig;
+    }
+
+    @Override
+    public Set<String> getSensitiveWordTags(String word) {
+        // 权限鉴定
+        StpUtil.checkPermission(PermissionUtil.generate(PermModule.SENSITIVE_WORD, PermAction.READ));
+
+        return sensitiveWordBs.tags(word);
     }
 }

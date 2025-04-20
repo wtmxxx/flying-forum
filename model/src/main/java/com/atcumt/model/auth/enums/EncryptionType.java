@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum EncryptionType {
-    BCRYPT("bcrypt"),
     ARGON2("argon2"),
+    BCRYPT("bcrypt"),
     SHA256("sha256");
 
     private final String typeName;

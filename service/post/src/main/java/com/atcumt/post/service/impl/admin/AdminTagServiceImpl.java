@@ -5,14 +5,19 @@ import com.atcumt.common.enums.PermAction;
 import com.atcumt.common.enums.PermModule;
 import com.atcumt.common.utils.PermissionUtil;
 import com.atcumt.model.post.entity.Discussion;
+import com.atcumt.model.post.entity.Tag;
+import com.atcumt.model.search.dto.SearchSuggestionDTO;
+import com.atcumt.model.search.enums.SuggestionAction;
+import com.atcumt.model.search.enums.SuggestionType;
 import com.atcumt.post.repository.DiscussionRepository;
-import com.atcumt.post.repository.TagRepository;
 import com.atcumt.post.service.admin.AdminTagService;
 import lombok.RequiredArgsConstructor;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +26,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AdminTagServiceImpl implements AdminTagService {
-    private final TagRepository tagRepository;
     private final DiscussionRepository discussionRepository;
     private final MongoTemplate mongoTemplate;
+    private final RocketMQTemplate rocketMQTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class,
@@ -33,7 +38,7 @@ public class AdminTagServiceImpl implements AdminTagService {
         // 检查权限
         StpUtil.checkPermission(PermissionUtil.generate(PermModule.TAG, PermAction.DELETE));
 
-        tagRepository.deleteById(tagId);
+        Tag tag = mongoTemplate.findAndRemove(new Query(Criteria.where("tagId").is(tagId)), Tag.class);
 
         List<Long> postIds = discussionRepository
                 .findDiscussionIdsInTagIds(tagId)
@@ -44,5 +49,20 @@ public class AdminTagServiceImpl implements AdminTagService {
         Query query = new Query(Criteria.where("discussionId").in(postIds));
         Update update = new Update().pull("tagIds", tagId);
         mongoTemplate.updateMulti(query, update, Discussion.class);
+
+        if (tag != null) {
+            deleteTagSuggestion(tag);
+        }
+    }
+
+    @Async
+    public void deleteTagSuggestion(Tag tag) {
+        SearchSuggestionDTO searchSuggestionDTO = SearchSuggestionDTO
+                .builder()
+                .action(SuggestionAction.DELETE)
+                .suggestion(tag.getTagName())
+                .type(SuggestionType.TAG.getValue())
+                .build();
+        rocketMQTemplate.convertAndSend("search:searchSuggestion", searchSuggestionDTO);
     }
 }

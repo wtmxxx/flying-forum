@@ -10,11 +10,8 @@ import org.springframework.cloud.openfeign.FallbackFactory;
 public class SchoolYktClientFallback implements FallbackFactory<SchoolYktClient> {
     @Override
     public SchoolYktClient create(Throwable cause) {
-        return new SchoolYktClient() {
-            @Override
-            public String getSchoolCard(String token) throws UnauthorizedException {
-                throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
-            }
+        return token -> {
+            throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
         };
     }
 }

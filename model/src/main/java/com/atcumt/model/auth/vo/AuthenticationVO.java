@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthenticationVO {
-    String type;
-    String token;
-    Long expiresIn;
+    private String type;
+    private String token;
+    private Long expiresIn;
 }

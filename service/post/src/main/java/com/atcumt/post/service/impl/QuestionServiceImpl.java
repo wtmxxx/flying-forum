@@ -11,7 +11,6 @@ import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.post.dto.QuestionDTO;
 import com.atcumt.model.post.dto.QuestionUpdateDTO;
-import com.atcumt.model.post.dto.PostReviewDTO;
 import com.atcumt.model.post.entity.Question;
 import com.atcumt.model.post.entity.Tag;
 import com.atcumt.model.post.enums.PostMessage;
@@ -21,7 +20,6 @@ import com.atcumt.model.post.vo.QuestionVO;
 import com.atcumt.post.repository.QuestionRepository;
 import com.atcumt.post.service.QuestionService;
 import com.atcumt.post.service.TagService;
-import com.atcumt.post.utils.ExcerptUtil;
 import com.atcumt.post.utils.PostReviewUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +63,6 @@ public class QuestionServiceImpl implements QuestionService {
                 .questionId(IdUtil.getSnowflakeNextId())
                 .userId(UserContext.getUserId())
                 .title(questionDTO.getTitle())
-                .excerpt(ExcerptUtil.getExcerpt(questionDTO.getContent()))
                 .content(questionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(questionDTO.getMediaFiles(), MediaFile.class))
                 .tagIds(questionDTO.getTagIds())
@@ -105,7 +102,6 @@ public class QuestionServiceImpl implements QuestionService {
                 .questionId(IdUtil.getSnowflakeNextId())
                 .userId(UserContext.getUserId())
                 .title(questionDTO.getTitle())
-                .excerpt(ExcerptUtil.getExcerpt(questionDTO.getContent()))
                 .content(questionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(questionDTO.getMediaFiles(), MediaFile.class))
                 .tagIds(questionDTO.getTagIds())
@@ -233,7 +229,6 @@ public class QuestionServiceImpl implements QuestionService {
         }
         if (questionUpdateDTO.getContent() != null) {
             update.set("content", questionUpdateDTO.getContent());
-            update.set("excerpt", ExcerptUtil.getExcerpt(questionUpdateDTO.getContent()));
         }
         if (questionUpdateDTO.getMediaFiles() != null) {
             update.set("mediaFiles", questionUpdateDTO.getMediaFiles());

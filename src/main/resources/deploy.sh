@@ -11,7 +11,14 @@ export LC_ALL="en_US.UTF-8"
 SOURCE_ROOT="G:/FLYING_FORUM/flying-forum"
 DEST_ROOT="G:/FLYING_FORUM/部署/生产/flying-forum/service"
 TYPE1_SERVICES=("apidoc" "auth" "gateway" "oss")
-TYPE2_SERVICES=("comment" "like" "post" "rag" "search" "user" "forum")
+TYPE2_SERVICES=("comment" "like" "post" "rag" "search" "user" "forum" "ai")
+
+# 远程服务器配置
+export PATH="/usr/bin:/bin:$PATH"
+REMOTE_USER="ubuntu"                   # 远程服务器用户名
+REMOTE_HOST="119.45.93.228"           # 远程服务器 IP 或域名
+REMOTE_PATH="/home/ubuntu/flying-forum/service/"  # 远程同步目录
+CYG_DEST_ROOT="/cygdrive/g/FLYING_FORUM/部署/生产/flying-forum/service/" # Cygwin 本地同步路径
 
 # 主处理函数
 process_service() {
@@ -59,6 +66,34 @@ done
 # 清理 Maven 缓存
 cd G:/FLYING_FORUM/flying-forum || exit
 mvn clean
+
+# ==== 使用 rsync 同步到远程服务器 ====
+echo -e "\n[远程同步] 开始同步文件到 $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
+
+rsync -avz --delete --rsync-path="sudo rsync" "$CYG_DEST_ROOT" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
+
+if [[ $? -eq 0 ]]; then
+    echo -e "\n[成功] 文件已成功同步到远程服务器"
+else
+    echo -e "\n[错误] 文件同步失败，请检查 SSH 连接"
+    exit 1
+fi
+
+# ==== 在远程服务器上重启 Docker Compose ====
+echo -e "\n[远程重启] 重新启动 Docker Compose 服务"
+
+ssh "$REMOTE_USER@$REMOTE_HOST" <<EOF
+    cd
+    sudo docker compose down
+    sudo docker compose up -d
+EOF
+
+if [[ $? -eq 0 ]]; then
+    echo -e "\n[成功] Docker Compose 服务已重启"
+else
+    echo -e "\n[错误] 远程 Docker Compose 重启失败，请检查服务器状态"
+    exit 1
+fi
 
 echo -e "\n====== 所有操作已完成 ======"
 echo -e "\n按 Enter 键退出..."

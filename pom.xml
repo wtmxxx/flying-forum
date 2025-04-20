@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.8</version>
+        <version>3.3.10</version>
     </parent>
     <modules>
         <module>apidoc</module>
@@ -52,32 +52,44 @@
         <java.version>21</java.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-cloud.version>2023.0.5</spring-cloud.version>
         <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
-        <mybatis-plus.version>3.5.10.1</mybatis-plus.version>
-        <hutool.version>5.8.35</hutool.version>
-        <knife4j.version>4.5.0</knife4j.version>
-        <gson.version>2.11.0</gson.version>
-        <druid.version>1.2.24</druid.version>
-        <sa-token.version>1.40.0</sa-token.version>
-        <minio.version>8.5.17</minio.version>
-        <tika.version>3.1.0</tika.version>
-        <jsoup.version>1.18.3</jsoup.version>
-        <rocketmq.version>5.3.1</rocketmq.version>
-        <rocketmq-spring.version>2.3.2</rocketmq-spring.version>
-        <houbb.sensitive-word.version>0.25.0</houbb.sensitive-word.version>
+        <spring-ai.version>1.0.0-M7</spring-ai.version>
+        <spring-ai-alibaba.version>1.0.0-M6.1</spring-ai-alibaba.version>
+        <argon2.version>2.12</argon2.version>
         <auth0.java-jwt.version>4.5.0</auth0.java-jwt.version>
-        <thumbnailator.version>0.4.20</thumbnailator.version>
-        <dubbo.version>3.3.3</dubbo.version>
-        <javassist.version>3.30.2-GA</javassist.version>
-        <redisson.version>3.45.0</redisson.version>
         <caffeine.version>3.2.0</caffeine.version>
+        <druid.version>1.2.24</druid.version>
+        <dubbo.version>3.3.3</dubbo.version>
+        <houbb.sensitive-word.version>0.25.0</houbb.sensitive-word.version>
+        <hutool.version>5.8.36</hutool.version>
+        <javassist.version>3.30.2-GA</javassist.version>
+        <jackson.version>2.18.3</jackson.version>
+        <jsoup.version>1.19.1</jsoup.version>
+        <knife4j.version>4.5.0</knife4j.version>
+        <langchain4j.version>1.0.0-beta3</langchain4j.version>
+        <minio.version>8.5.17</minio.version>
+        <mybatis-plus.version>3.5.11</mybatis-plus.version>
+        <redisson.version>3.45.0</redisson.version>
+        <rocketmq-spring.version>2.3.2</rocketmq-spring.version>
+        <rocketmq.version>5.3.1</rocketmq.version>
+        <sa-token.version>1.42.0</sa-token.version>
+        <thumbnailator.version>0.4.20</thumbnailator.version>
+        <tika.version>3.1.0</tika.version>
+        <webp-imageio.version>0.1.6</webp-imageio.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
@@ -95,6 +107,22 @@
                 <groupId>com.alibaba.cloud</groupId>
                 <artifactId>spring-cloud-alibaba-dependencies</artifactId>
                 <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring AI 版本管理器 -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- LangChain4j 版本管理器 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

@@ -2,7 +2,6 @@ package com.atcumt.comment.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.json.JSONObject;
 import com.atcumt.comment.repository.CommentRepository;
 import com.atcumt.comment.service.CommentService;
 import com.atcumt.comment.service.ReplyService;
@@ -27,18 +26,13 @@ import com.atcumt.model.like.constants.LikeAction;
 import com.atcumt.model.like.entity.CommentLike;
 import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.user.vo.UserInfoSimpleVO;
-import com.mongodb.client.model.Variable;
-import com.mongodb.client.result.UpdateResult;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.bson.Document;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.aggregation.VariableOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -76,7 +70,7 @@ public class CommentServiceImpl implements CommentService {
         // 判断帖子是否存在
         Query query = Query.query(Criteria.where("_id").is(commentDTO.getPostId()));
         query.fields().include("userId");
-        JSONObject post = mongoTemplate.findOne(query, JSONObject.class, commentDTO.getPostType());
+        JsonNode post = mongoTemplate.findOne(query, JsonNode.class, commentDTO.getPostType());
 
         if (post == null) {
             throw new IllegalArgumentException(PostMessage.POST_NOT_FOUND.getMessage());
@@ -90,7 +84,7 @@ public class CommentServiceImpl implements CommentService {
                 .commentId(IdUtil.getSnowflakeNextId())
                 .postId(commentDTO.getPostId())
                 .postType(commentDTO.getPostType())
-                .commentToUserId(post.getStr("userId"))
+                .commentToUserId(post.get("userId").asText())
                 .userId(UserContext.getUserId())
                 .content(commentDTO.getContent())
                 .mediaFiles(mediaFiles)

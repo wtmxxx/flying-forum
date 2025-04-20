@@ -1,7 +1,7 @@
 package com.atcumt.auth.listener;
 
 import cn.dev33.satoken.listener.SaTokenListenerForSimple;
-import cn.dev33.satoken.stp.SaLoginModel;
+import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import com.atcumt.auth.utils.IpUtil;
 import com.atcumt.model.auth.entity.SensitiveRecord;
 import com.atcumt.model.auth.enums.SensitiveRecordType;
@@ -29,7 +29,7 @@ public class MySaTokenListener extends SaTokenListenerForSimple {
      * 每次登录时触发
      */
     @Override
-    public void doLogin(String loginType, Object loginId, String tokenValue, SaLoginModel loginModel) {
+    public void doLogin(String loginType, Object loginId, String tokenValue, SaLoginParameter loginParameter) {
         String userId = loginId.toString();
         String ip = ipUtil.getRemoteAddr();
         String region = ipUtil.getRegionByIp(ip);

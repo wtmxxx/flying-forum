@@ -25,7 +25,7 @@ public class SaSameTokenRefreshTask {
     }
 
     // 每隔 10 分钟刷新一次 Same-Token
-    @Scheduled(cron = "0 0/10 * * * ?")
+    @Scheduled(cron = "0 */10 * * * ?")
     public void refreshToken() {
         if (redisLockUtil.tryLock(LOCK_KEY)) {
             SaSameUtil.refreshToken();

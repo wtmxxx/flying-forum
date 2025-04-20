@@ -8,14 +8,13 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modules>
-        <module>post</module>
+        <module>ai</module>
         <module>comment</module>
-        <module>like</module>
-        <module>gpt</module>
-        <module>user</module>
-        <module>search</module>
         <module>forum</module>
-        <module>rag</module>
+        <module>like</module>
+        <module>post</module>
+        <module>search</module>
+        <module>user</module>
     </modules>
     <artifactId>service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -84,11 +83,6 @@
             <version>${hutool.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${gson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
@@ -132,11 +126,6 @@
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <!--读取bootstrap文件-->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
         <!--seata-->
         <dependency>
@@ -191,6 +180,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>${redisson.version}</version>
         </dependency>
     </dependencies>
 

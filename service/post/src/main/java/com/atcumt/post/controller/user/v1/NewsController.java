@@ -1,11 +1,11 @@
 package com.atcumt.post.controller.user.v1;
 
-import cn.hutool.json.JSONObject;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.post.dto.NewsListDTO;
 import com.atcumt.model.post.vo.NewsListVO;
 import com.atcumt.model.post.vo.NewsVO;
 import com.atcumt.post.service.NewsService;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -81,11 +81,11 @@ public class NewsController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public Result<JSONObject> getNewsType() {
+    public Result<JsonNode> getNewsType() {
         log.info("获取新闻类型");
 
         // 获取新闻类型
-        JSONObject newsType = newsService.getNewsType();
+        JsonNode newsType = newsService.getNewsType();
 
         return Result.success(newsType);
     }

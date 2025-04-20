@@ -1,6 +1,6 @@
 package com.atcumt.auth.utils;
 
-import cn.hutool.json.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -56,27 +56,27 @@ public class BaiduIp2Region {
                 queryString.deleteCharAt(queryString.length() - 1);
             }
 
-            JSONObject response = webClient.get()
+            JsonNode response = webClient.get()
                     .uri(queryString.toString())
                     .retrieve()
-                    .bodyToMono(JSONObject.class)
+                    .bodyToMono(JsonNode.class)
                     .block();
 
             // Parse response and check status
-            if (response == null || !response.containsKey("status")) {
+            if (response == null || !response.has("status")) {
                 return null;
             }
 
-            int status = (int) response.get("status");
+            int status = response.get("status").asInt();
             if (status != 0) {
                 return null;
             }
 
-            if (response.get("address", String.class).contains("CN")) {
-                return "中国" + response.getByPath("content.address", String.class);
+            if (response.get("address").asText().contains("CN")) {
+                return "中国" + response.path("content.address").asText();
             }
 
-            return response.getByPath("content.address", String.class);
+            return response.path("content.address").asText();
 
         } catch (Exception e) {
             return null;

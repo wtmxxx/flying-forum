@@ -9,12 +9,20 @@ import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.model.post.vo.TagListVO;
 import com.atcumt.model.post.vo.TagSimpleVO;
 import com.atcumt.model.post.vo.TagVO;
+import com.atcumt.model.search.dto.SearchSuggestionDTO;
+import com.atcumt.model.search.enums.SuggestionAction;
+import com.atcumt.model.search.enums.SuggestionType;
 import com.atcumt.post.repository.TagRepository;
 import com.atcumt.post.service.TagService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,11 +33,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class TagServiceImpl implements TagService {
     private final TagRepository tagRepository;
     private final MongoTemplate mongoTemplate;
     private final SensitiveWordDubboService sensitiveWordDubboService;
+    private final RocketMQTemplate rocketMQTemplate;
 
     @Override
     public TagListVO newTag(NewTagDTO newTagDTO) {
@@ -72,6 +82,7 @@ public class TagServiceImpl implements TagService {
                 throw new IllegalArgumentException(PostMessage.TAG_CONTAINS_SENSITIVE_WORD.getMessage());
             }
 
+            // 保存新标签
             tagRepository.saveAll(newTags);
         }
 
@@ -95,6 +106,11 @@ public class TagServiceImpl implements TagService {
         // 封装返回结果为 VO
         TagListVO tagListVO = new TagListVO();
         tagListVO.setTags(BeanUtil.copyToList(allTags, TagVO.class));
+
+        // 发送新标签的搜索建议
+        if (!newTags.isEmpty()) {
+            newTagSuggestions(newTags);
+        }
         return tagListVO;
     }
 
@@ -110,5 +126,21 @@ public class TagServiceImpl implements TagService {
         List<Tag> tags = mongoTemplate.find(new Query(Criteria.where("tagId").in(tagIds)), Tag.class);
         List<TagSimpleVO> tagSimpleVOs = BeanUtil.copyToList(tags, TagSimpleVO.class);
         return tagSimpleVOs;
+    }
+
+    @Async
+    public void newTagSuggestions(List<Tag> tags) {
+        List<Message<SearchSuggestionDTO>> messages = new ArrayList<>();
+        for (Tag tag : tags) {
+            SearchSuggestionDTO searchSuggestionDTO = SearchSuggestionDTO
+                    .builder()
+                    .action(SuggestionAction.TAG)
+                    .suggestion(tag.getTagName())
+                    .type(SuggestionType.TAG.getValue())
+                    .build();
+            messages.add(new GenericMessage<>(searchSuggestionDTO));
+        }
+
+        rocketMQTemplate.syncSend("search:searchSuggestion", messages);
     }
 }

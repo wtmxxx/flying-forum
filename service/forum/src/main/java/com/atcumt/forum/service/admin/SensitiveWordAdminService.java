@@ -7,6 +7,7 @@ import com.atcumt.model.forum.sensitive.vo.SensitiveWordVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
+import java.util.Set;
 
 public interface SensitiveWordAdminService extends IService<SensitiveWord> {
     void addSensitiveWord(SensitiveWordListDTO sensitiveWordListDTO);
@@ -18,4 +19,6 @@ public interface SensitiveWordAdminService extends IService<SensitiveWord> {
     void configSensitiveWord(SensitiveWordConfig sensitiveWordConfig);
 
     SensitiveWordConfig getSensitiveWordConfig();
+
+    Set<String> getSensitiveWordTags(String word);
 }

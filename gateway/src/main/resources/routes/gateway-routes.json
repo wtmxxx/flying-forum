@@ -105,16 +105,16 @@
     "uri": "lb://forum-service"
   },
   {
-    "id": "gpt-service",
+    "id": "ai-service",
     "predicates": [
       {
         "name": "Path",
         "args": {
-          "_genkey_0": "/api/gpt/**"
+          "_genkey_0": "/api/ai/**"
         }
       }
     ],
     "filters": [],
-    "uri": "lb://gpt-service"
+    "uri": "lb://ai-service"
   }
 ]

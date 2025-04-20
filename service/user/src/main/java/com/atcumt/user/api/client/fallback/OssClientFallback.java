@@ -15,7 +15,7 @@ public class OssClientFallback implements FallbackFactory<OssClient> {
             @Override
             public Result<FileInfoVO> uploadAvatar(MultipartFile file) {
                 log.error("远程调用OssClient#uploadAvatar方法出现异常", cause);
-                throw new RuntimeException(cause);
+                return Result.failure("服务器内部异常");
             }
         };
     }

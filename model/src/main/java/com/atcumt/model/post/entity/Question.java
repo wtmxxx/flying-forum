@@ -31,7 +31,6 @@ public class Question {
     @Indexed  // 为authorId创建单字段索引
     private String userId;  // 作者ID
     private String title;  // 帖子标题
-    private String excerpt; // 帖子摘要
     private String content; // 帖子内容
     private List<MediaFile> mediaFiles; // 动态存储附件数据：图片、视频、文档等，每个媒体文件包含文件类型、URL等信息
     @Indexed

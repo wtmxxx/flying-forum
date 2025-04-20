@@ -1,5 +1,6 @@
 package com.atcumt.user.listener;
 
+import com.atcumt.common.utils.ExecutorUtil;
 import com.atcumt.model.user.dto.UserFollowCountDTO;
 import com.atcumt.model.user.entity.UserFollow;
 import com.atcumt.model.user.entity.UserInfo;
@@ -7,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RocketMQMessageListener(
@@ -34,7 +33,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> {
     // 消息堆积触发阈值
-    private static final int BATCH_SIZE = 20;
+    private final int BATCH_SIZE = 20;
+    private final int CONSUME_SIZE = BATCH_SIZE + (BATCH_SIZE >> 1);
     private final MongoTemplate mongoTemplate;
     private final ConcurrentLinkedQueue<String> followerCounts = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<String> followedCounts = new ConcurrentLinkedQueue<>();
@@ -42,16 +42,16 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
     @Override
     public void onMessage(UserFollowCountDTO userFollowCountDTO) {
         // 缓存消息
-        followerCounts.add(userFollowCountDTO.getFollowerId());
-        followedCounts.add(userFollowCountDTO.getFollowedId());
+        followerCounts.offer(userFollowCountDTO.getFollowerId());
+        followedCounts.offer(userFollowCountDTO.getFollowedId());
 
         // 如果消息堆积到 BATCH_SIZE，触发批量消费
         if (followerCounts.size() >= BATCH_SIZE) {
-            log.info("消息堆积达到阈值，触发批量消费...");
+            log.info("{}: 消息堆积达到阈值，触发批量消费...", "用户关注量");
             batchFollowingCount();
         }
         if (followedCounts.size() >= BATCH_SIZE) {
-            log.info("消息堆积达到阈值，触发批量消费...");
+            log.info("{}: 消息堆积达到阈值，触发批量消费...", "用户粉丝量");
             batchFollowersCount();
         }
     }
@@ -69,11 +69,9 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
     }
 
     private void batchFollowingCount() {
-        log.info("正在批量计算关注量...");
-
         Set<String> followers = new HashSet<>();
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < CONSUME_SIZE; i++) {
             String follower = followerCounts.poll();
             if (follower == null) {
                 break;
@@ -90,10 +88,6 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
         for (var follower : followers) {
             executor.submit(() -> {
                 try {
-                    log.info("计算关注量，follower: {}", follower);
-
-                    long start = System.currentTimeMillis();
-
                     Integer followerCount = (int) mongoTemplate.count(
                             Query.query(Criteria.where("followerId").is(follower)),
                             UserFollow.class
@@ -103,10 +97,6 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
                             Query.query(Criteria.where("_id").is(follower)),
                             new Update().set("followingsCount", followerCount)
                     );
-
-                    long end = System.currentTimeMillis();
-
-                    log.info("计算关注量耗时：{}ms", end - start);
                 } catch (Exception e) {
                     log.error("计算关注量时发生错误，followerId: {}", follower, e);
                 }
@@ -114,9 +104,7 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
         }
 
         // 等待所有任务完成
-        shutdownExecutor(executor);
-
-        long start = System.currentTimeMillis();
+        ExecutorUtil.shutdown(executor);
 
         // 执行所有批量操作
         try {
@@ -124,18 +112,12 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
         } catch (Exception e) {
             log.error("批量更新用户关注量时发生错误", e);
         }
-
-        long end = System.currentTimeMillis();
-
-        log.info("批量更新用户关注量耗时：{}ms", end - start);
     }
 
     private void batchFollowersCount() {
-        log.info("正在批量计算粉丝量...");
-
         Set<String> followeds = new HashSet<>();
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < CONSUME_SIZE; i++) {
             String followed = followedCounts.poll();
             if (followed == null) {
                 break;
@@ -152,10 +134,6 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
         for (var followed : followeds) {
             executor.submit(() -> {
                 try {
-                    log.info("计算粉丝量，followed: {}", followed);
-
-                    long start = System.currentTimeMillis();
-
                     Integer followerCount = (int) mongoTemplate.count(
                             Query.query(Criteria.where("followedId").is(followed)),
                             UserFollow.class
@@ -165,10 +143,6 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
                             Query.query(Criteria.where("_id").is(followed)),
                             new Update().set("followersCount", followerCount)
                     );
-
-                    long end = System.currentTimeMillis();
-
-                    log.info("计算粉丝量耗时：{}ms", end - start);
                 } catch (Exception e) {
                     log.error("计算粉丝量时发生错误，followedId: {}", followed, e);
                 }
@@ -176,34 +150,13 @@ public class UserFollowConsumer implements RocketMQListener<UserFollowCountDTO> 
         }
 
         // 等待所有任务完成
-        shutdownExecutor(executor);
-
-        long start = System.currentTimeMillis();
+        ExecutorUtil.shutdown(executor);
 
         // 执行所有批量操作
         try {
             bulkOps.execute();
         } catch (Exception e) {
             log.error("批量更新用户粉丝量时发生错误", e);
-        }
-
-        long end = System.currentTimeMillis();
-
-        log.info("批量更新用户粉丝量耗时：{}ms", end - start);
-    }
-
-    private void shutdownExecutor(@NotNull ExecutorService executor) {
-        // 等待所有任务完成
-        try {
-            // 关闭线程池之前等待任务完成
-            executor.shutdown();
-            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
-                log.warn("任务未能在指定时间内完成，强制关闭线程池");
-                executor.shutdownNow(); // 超时后强制关闭
-            }
-        } catch (InterruptedException e) {
-            log.error("等待线程池关闭时发生异常", e);
-            executor.shutdownNow(); // 中断时强制关闭线程池
         }
     }
 }

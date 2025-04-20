@@ -15,14 +15,16 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RefreshTokenUtil {
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final int TOKEN_LENGTH = 256; // Token长度
+    private static final int TOKEN_LENGTH = 512; // Token长度
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // 随机用序列码
 
     private final RedisTemplate<String, String> saRedisTemplate;
+    private final AuthUtil authUtil;
 
     @Autowired
-    public RefreshTokenUtil(@Qualifier("saRedisTemplate") RedisTemplate<String, String> saRedisTemplate) {
+    public RefreshTokenUtil(@Qualifier("saRedisTemplate") RedisTemplate<String, String> saRedisTemplate, AuthUtil authUtil) {
         this.saRedisTemplate = saRedisTemplate;
+        this.authUtil = authUtil;
     }
 
     public String generateRefreshToken() {
@@ -36,7 +38,7 @@ public class RefreshTokenUtil {
         // 生成Redis存储的Key
         String refreshKey = "Authorization:login:refresh-token:"
                 + StpUtil.getLoginIdAsString()
-                + ":" + StpUtil.getLoginDevice();
+                + ":" + StpUtil.getLoginDeviceType();
 
         // 设置Token有效期为当前时间的三个月后
         saRedisTemplate.opsForValue().set(refreshKey, refreshToken.toString(), 180, TimeUnit.DAYS);
@@ -46,7 +48,7 @@ public class RefreshTokenUtil {
 
     public TokenVO getAccessToken(String refreshToken) throws UnauthorizedException {
         String userId = StpUtil.getLoginIdAsString();
-        String loginDevice = StpUtil.getLoginDevice();
+        String loginDevice = StpUtil.getLoginDeviceType();
 
         String oldToken = StpUtil.getTokenValue();
         String oldTokenKey = "Authorization:login:old-access-token:" + oldToken;
@@ -58,7 +60,7 @@ public class RefreshTokenUtil {
         }
 
         StpUtil.logout();
-        StpUtil.login(userId, loginDevice);
+        authUtil.login(userId);
         return TokenVO
                 .builder()
                 .accessToken(StpUtil.getTokenValue())
@@ -70,7 +72,7 @@ public class RefreshTokenUtil {
 
     public void deleteRefreshToken() {
         String userId = StpUtil.getLoginIdAsString();
-        String loginDevice = StpUtil.getLoginDevice();
+        String loginDevice = StpUtil.getLoginDeviceType();
 
         String refreshKey = "Authorization:login:refresh-token:" + userId + ":" + loginDevice;
 

@@ -1,8 +1,8 @@
 package com.atcumt.auth.utils;
 
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.atcumt.common.utils.WebUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
 public class IpUtil {
     private final BaiduIp2Region baiduIp2Region;
     private final WebClient webClient;
+    private final ObjectMapper objectMapper;
 
     public static boolean isValidIp(String ip) {
         try {
@@ -121,13 +122,13 @@ public class IpUtil {
             }
 
             response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
-            JSONObject jsonObject = JSONUtil.parseObj(response);
+            JsonNode jsonNode = objectMapper.readTree(response);
 
-            if (jsonObject.get("code").equals(200)) {
-                String country = jsonObject.get("country").toString();
-                String province = jsonObject.get("province").toString();
-                String city = jsonObject.get("city").toString();
-                String isp = jsonObject.get("isp").toString();
+            if (jsonNode.get("code").asInt(400) == 200) {
+                String country = jsonNode.get("country").asText();
+                String province = jsonNode.get("province").asText();
+                String city = jsonNode.get("city").asText();
+                String isp = jsonNode.get("isp").asText();
 
                 if ("保留地址".equals(country)) {
                     return "";
@@ -148,7 +149,7 @@ public class IpUtil {
             ip = convertToIpv4(ip);
             if (ip == null || ip.isEmpty()) return null;
             String finalIp = ip;
-            JSONObject response = webClient.get()
+            JsonNode response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .scheme("https")
                             .host("opendata.baidu.com")
@@ -158,14 +159,14 @@ public class IpUtil {
                             .queryParam("oe", "utf8")
                             .build())
                     .retrieve()
-                    .bodyToMono(JSONObject.class)
+                    .bodyToMono(JsonNode.class)
                     .block();
 
-            if (response == null || response.isEmpty() || !response.get("status").equals("0")) {
+            if (response == null || response.isEmpty() || !response.get("status").asText().equals("0")) {
                 return null;
             }
 
-            String region = response.getByPath("data[0].location", String.class);
+            String region = response.path("data[0].location").asText();
 
             if (region.contains("移动") || region.contains("联通") || region.contains("电信")) {
                 return "中国" + region;

@@ -91,6 +91,27 @@ public class RedisLockUtil {
     }
 
     /**
+     * 强制续期锁
+     *
+     * @param lockKey 锁的 Key
+     * @param expireTime 过期时间（秒）
+     * @return 是否续期成功
+     */
+    public boolean forceRenewLock(String lockKey, long expireTime) {
+        return Boolean.TRUE.equals(redisTemplate.expire(lockKey, expireTime, LOCK_EXPIRE_TIME_UNIT));
+    }
+
+    /**
+     * 强制续期锁（默认过期时间）
+     *
+     * @param lockKey 锁的 Key
+     * @return 是否续期成功
+     */
+    public boolean forceRenewLock(String lockKey) {
+        return Boolean.TRUE.equals(redisTemplate.expire(lockKey, LOCK_EXPIRE_TIME, LOCK_EXPIRE_TIME_UNIT));
+    }
+
+    /**
      * 释放锁（确保是自己加的锁才能删除）
      * @param lockKey 锁的 Key
      * @param requestId 请求标识

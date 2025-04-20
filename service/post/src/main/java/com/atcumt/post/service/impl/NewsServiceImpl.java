@@ -1,8 +1,6 @@
 package com.atcumt.post.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -15,10 +13,12 @@ import com.atcumt.model.post.vo.NewsListVO;
 import com.atcumt.model.post.vo.NewsSimpleVO;
 import com.atcumt.model.post.vo.NewsVO;
 import com.atcumt.post.service.NewsService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.common.logger.FluentLogger;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -33,7 +33,6 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +40,8 @@ import java.util.stream.Collectors;
 public class NewsServiceImpl implements NewsService {
     private final MongoTemplate mongoTemplate;
     private final NacosConfigManager nacosConfigManager;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public NewsVO getNews(Long newsId) {
@@ -221,12 +221,11 @@ public class NewsServiceImpl implements NewsService {
         String dataId = "news-type.json";
         String group = "DEFAULT_GROUP";
         try {
-            String configInfo = nacosConfigManager.getConfigService()
+            String newsType = nacosConfigManager.getConfigService()
                     .getConfigAndSignListener(dataId, group, 5000, new Listener() {
                         @Override
-                        public void receiveConfigInfo(String configInfo) {
+                        public void receiveConfigInfo(String newsType) {
                             log.info("新闻类型配置更新");
-                            JSONObject newsType = new JSONObject(configInfo);
                             redisTemplate.opsForValue().set("post:news:newsType", newsType);
                             redisTemplate.opsForHash().putAll("post:news:newsTypeShortName", getNewsTypeShortNames(newsType));
                         }
@@ -236,32 +235,29 @@ public class NewsServiceImpl implements NewsService {
                             return null;
                         }
                     });
-            JSONObject newsType = new JSONObject(configInfo);
             redisTemplate.opsForValue().set("post:news:newsType", newsType);
             redisTemplate.opsForHash().putAll("post:news:newsTypeShortName", getNewsTypeShortNames(newsType));
-        } catch (NacosException e) {
+        } catch (Exception e) {
             log.error("监听新闻类型配置失败");
         }
     }
 
-    public Map<String, String> getNewsTypeShortNames(JSONObject jsonObject) {
+    @SneakyThrows
+    public Map<String, String> getNewsTypeShortNames(String jsonString) {
         Map<String, String> result = new HashMap<>();
 
         // 获取"newsCategory"节点中的数据
-        JSONArray newsCategories = jsonObject.getJSONArray("newsCategory");
+        JsonNode newsCategories = objectMapper.readTree(jsonString).get("newsCategory");
 
         // 遍历所有的categoryName (校园、学院等)
-        for (int i = 0; i < newsCategories.size(); i++) {
-            JSONObject categoryObj = newsCategories.getJSONObject(i);
-
+        for (var newsCategory : newsCategories) {
             // 获取每个categoryName下的categoryList
-            JSONArray categoryList = categoryObj.getJSONArray("categoryList");
+            JsonNode categoryList = newsCategory.get("categoryList");
 
             // 遍历每个categoryList中的条目
-            for (int j = 0; j < categoryList.size(); j++) {
-                JSONObject categoryItem = categoryList.getJSONObject(j);
-                String newsTypeName = categoryItem.getStr("newsType");
-                String shortName = categoryItem.getStr("shortName");
+            for (var categoryItem : categoryList) {
+                String newsTypeName = categoryItem.get("newsType").asText();
+                String shortName = categoryItem.get("shortName").asText();
 
                 // 将所有条目直接放入result Map中，不区分类别
                 result.put(newsTypeName, shortName);
@@ -272,8 +268,9 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public JSONObject getNewsType() {
-        JSONObject cachedConfigInfo = (JSONObject) redisTemplate.opsForValue().get("post:news:newsType");
+    @SneakyThrows
+    public JsonNode getNewsType() {
+        JsonNode cachedConfigInfo = objectMapper.readTree(redisTemplate.opsForValue().get("post:news:newsType"));
         if (cachedConfigInfo != null) {
             return cachedConfigInfo;
         }
@@ -281,12 +278,12 @@ public class NewsServiceImpl implements NewsService {
         String dataId = "news-type.json";
         String group = "DEFAULT_GROUP";
         try {
-            String configInfo = nacosConfigManager.getConfigService()
+            String newsType = nacosConfigManager.getConfigService()
                     .getConfig(dataId, group, 5000);
-            JSONObject newsType = new JSONObject(configInfo);
             redisTemplate.opsForValue().set("post:news:newsType", newsType);
-            return newsType;
+            return objectMapper.readTree(newsType);
         } catch (NacosException e) {
+            log.error("获取新闻类型失败", e);
             throw new RuntimeException("获取新闻类型失败");
         }
     }

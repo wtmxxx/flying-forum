@@ -1,7 +1,9 @@
 package com.atcumt.post.listener;
 
+import com.atcumt.common.utils.ExecutorUtil;
 import com.atcumt.model.post.dto.PostViewCountDTO;
 import com.atcumt.model.post.entity.Tag;
+import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
@@ -19,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RocketMQMessageListener(
@@ -57,7 +58,7 @@ public class PostViewCountConsumer implements RocketMQListener<PostViewCountDTO>
         }
     }
 
-    @Scheduled(fixedRate = 5580)
+    @Scheduled(fixedRate = 8180)
     public void scheduledCount() {
         if (!postViewCountMap.isEmpty()) {
             log.info("定时任务触发批量消费...");
@@ -73,6 +74,7 @@ public class PostViewCountConsumer implements RocketMQListener<PostViewCountDTO>
         log.info("正在批量计算帖子浏览量...");
 
         // 创建虚拟线程池
+        @Cleanup
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
         Map<String, Long> postViewCounts = new HashMap<>(postViewCountMap);
@@ -112,7 +114,7 @@ public class PostViewCountConsumer implements RocketMQListener<PostViewCountDTO>
         }
 
         // 等待所有任务完成
-        shutdownExecutor(executor);
+        ExecutorUtil.shutdown(executor);
 
         long start = System.currentTimeMillis();
 
@@ -165,7 +167,7 @@ public class PostViewCountConsumer implements RocketMQListener<PostViewCountDTO>
         }
 
         // 等待所有任务完成
-        shutdownExecutor(executor);
+        ExecutorUtil.shutdown(executor);
 
         long start = System.currentTimeMillis();
 
@@ -179,20 +181,5 @@ public class PostViewCountConsumer implements RocketMQListener<PostViewCountDTO>
         long end = System.currentTimeMillis();
 
         log.info("批量更新标签浏览量耗时：{}ms", end - start);
-    }
-
-    private void shutdownExecutor(ExecutorService executor) {
-        // 等待所有任务完成
-        try {
-            // 关闭线程池之前等待任务完成
-            executor.shutdown();
-            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
-                log.warn("任务未能在指定时间内完成，强制关闭线程池");
-                executor.shutdownNow(); // 超时后强制关闭
-            }
-        } catch (InterruptedException e) {
-            log.error("等待线程池关闭时发生异常", e);
-            executor.shutdownNow(); // 中断时强制关闭线程池
-        }
     }
 }

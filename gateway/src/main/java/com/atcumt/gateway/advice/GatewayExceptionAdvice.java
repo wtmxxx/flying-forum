@@ -1,10 +1,10 @@
 package com.atcumt.gateway.advice;
 
-import cn.hutool.json.JSONConfig;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -17,22 +17,24 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)  // 优先级较高，确保捕获到异常
 public class GatewayExceptionAdvice implements WebExceptionHandler {
 
-    @NotNull
+    private final ObjectMapper objectMapper;
+
     @Override
-    public Mono<Void> handle(ServerWebExchange exchange, @NotNull Throwable ex) {
+    @NonNull
+    public Mono<Void> handle(ServerWebExchange exchange, @NonNull Throwable ex) {
         // 打印日志
         log.error("捕获到异常 -> ", ex);
 
         // 构造 JSON 响应体
-        JSONObject errorResponse = JSONUtil
-                .createObj(new JSONConfig().setIgnoreNullValue(false))
-                .set("code", HttpStatus.NOT_FOUND.value())
-                .set("msg", "无效请求")
-                .set("data", null);
+        JsonNode errorResponse = objectMapper.createObjectNode()
+                .put("code", HttpStatus.NOT_FOUND.value())
+                .put("msg", "无效请求")
+                .putNull("data");
 
         // 将 JSON 转换为字节数组
         byte[] responseBytes;

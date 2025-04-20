@@ -24,12 +24,12 @@ public class SensitiveRecordConsumer implements RocketMQListener<SensitiveRecord
 
     @Override
     public void onMessage(SensitiveRecord sensitiveRecord) {
+        sensitiveRecordMapper.insert(sensitiveRecord);
+
         sensitiveRecordMapper.delete(Wrappers
                 .<SensitiveRecord>lambdaQuery()
 //                .eq(SensitiveRecord::getUserId, sensitiveRecord.getUserId())
-                .lt(SensitiveRecord::getRecordTime, LocalDateTime.now().minusDays(30))
+                .lt(SensitiveRecord::getRecordTime, LocalDateTime.now().minusDays(7))
         );
-
-        sensitiveRecordMapper.insert(sensitiveRecord);
     }
 }

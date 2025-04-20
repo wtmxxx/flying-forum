@@ -1,7 +1,10 @@
 package com.atcumt.auth.service.impl;
 
 import cn.dev33.satoken.secure.BCrypt;
+import cn.dev33.satoken.session.SaTerminalInfo;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.stp.parameter.SaLogoutParameter;
+import cn.dev33.satoken.stp.parameter.enums.SaLogoutRange;
 import cn.hutool.captcha.AbstractCaptcha;
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.core.bean.BeanUtil;
@@ -18,6 +21,7 @@ import com.atcumt.auth.api.client.SchoolYktClient;
 import com.atcumt.auth.mapper.*;
 import com.atcumt.auth.service.AuthService;
 import com.atcumt.auth.utils.AppleAuthUtil;
+import com.atcumt.auth.utils.AuthUtil;
 import com.atcumt.auth.utils.EmailUtil;
 import com.atcumt.auth.utils.RefreshTokenUtil;
 import com.atcumt.common.enums.RoleType;
@@ -25,6 +29,7 @@ import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.common.exception.BadRequestException;
 import com.atcumt.common.exception.TooManyRequestsException;
 import com.atcumt.common.exception.UnauthorizedException;
+import com.atcumt.common.utils.Argon2Util;
 import com.atcumt.common.utils.WebUtil;
 import com.atcumt.model.auth.dto.QqAccessTokenDTO;
 import com.atcumt.model.auth.dto.QqOpenIdDTO;
@@ -33,30 +38,31 @@ import com.atcumt.model.auth.entity.*;
 import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.auth.enums.AuthenticationType;
 import com.atcumt.model.auth.enums.EncryptionType;
-import com.atcumt.model.auth.vo.AuthenticationVO;
-import com.atcumt.model.auth.vo.LinkedAccountVO;
-import com.atcumt.model.auth.vo.SensitiveRecordVO;
-import com.atcumt.model.auth.vo.TokenVO;
+import com.atcumt.model.auth.vo.*;
 import com.atcumt.model.common.dto.TypePageQueryDTO;
-import com.atcumt.model.common.enums.DeviceType;
 import com.atcumt.model.common.vo.PageQueryVO;
+import com.atcumt.model.search.dto.SearchUserDTO;
 import com.atcumt.model.user.entity.UserInfo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.seata.spring.annotation.GlobalTransactional;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.units.qual.K;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -64,13 +70,16 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implements AuthService {
@@ -88,6 +97,9 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     private final SensitiveRecordMapper sensitiveRecordMapper;
     private final AppleAuthMapper appleAuthMapper;
     private final AppleAuthUtil appleAuthUtil;
+    private final AuthUtil authUtil;
+    private final ObjectMapper objectMapper;
+    private final RocketMQTemplate rocketMQTemplate;
 
     @Value("${qq.app-id}")
     private String qqAppId;
@@ -126,7 +138,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         );
 
         // 注册成功，进行登录，返回token
-        StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(userAuth.getUserId());
 
         return TokenVO
                 .builder()
@@ -155,7 +167,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         // 查看学号是否已注册
         if (userAuth == null) throw new AuthorizationException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage(), 404);
 
-        StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(userAuth.getUserId());
 
         return TokenVO
                 .builder()
@@ -174,12 +186,13 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     @Override
     public void logout(String device) {
         refreshTokenUtil.deleteRefreshToken();
-        if (device == null || device.isEmpty()) {
-            StpUtil.logout();
-        } else if ("ALL".equalsIgnoreCase(device)) {
-            StpUtil.logout(StpUtil.getLoginIdAsString());
+        if (device == null || device.isEmpty() || "TOKEN".equalsIgnoreCase(device)) {
+            // 只注销当前 token 的会话
+            StpUtil.logout(new SaLogoutParameter().setRange(SaLogoutRange.TOKEN));
+        } else if ("ACCOUNT".equalsIgnoreCase(device)) {
+            StpUtil.logout(new SaLogoutParameter().setRange(SaLogoutRange.ACCOUNT));
         } else {
-            StpUtil.logout(StpUtil.getLoginIdAsString(), device);
+            StpUtil.logout(new SaLogoutParameter().setDeviceType(device));
         }
     }
 
@@ -192,7 +205,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         validateUsername(username);
 
         // 生成加密密码
-        String pw_hash = "{bcrypt}" + BCrypt.hashpw(password, BCrypt.gensalt());
+        String pw_hash = EncryptionType.ARGON2.getTypeWithBraces() + Argon2Util.hash(password);
         authMapper.update(Wrappers
                 .<UserAuth>lambdaUpdate()
                 .eq(UserAuth::getUserId, userId)
@@ -215,27 +228,19 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         // 获取储存的加密密码
         String storedHash = userAuth.getPassword();
 
-        // 检查加密算法（新老算法迭代使用）
-        if (storedHash.startsWith(EncryptionType.BCRYPT.getTypeWithBraces())) {
-            String pw_hash = storedHash.substring(EncryptionType.BCRYPT.getTypeWithBraces().length());
-            if (BCrypt.checkpw(password, pw_hash)) {
-                // 密码正确，登录
-                StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
-
-                // 返回Token
-                return TokenVO
-                        .builder()
-                        .userId(userAuth.getUserId())
-                        .accessToken(StpUtil.getTokenValue())
-                        .expiresIn(StpUtil.getTokenTimeout())
-                        .refreshToken(refreshTokenUtil.generateRefreshToken())
-                        .build();
-            } else {
-                throw new AuthorizationException(AuthMessage.PASSWORD_INCORRECT.getMessage());
-            }
-        } else {
-            throw new Exception("密码解析失败");
+        // 验证密码并登录
+        if (!verifyPassword(storedHash, password)) {
+            throw new AuthorizationException(AuthMessage.PASSWORD_INCORRECT.getMessage());
         }
+        // 密码正确，登录
+        authUtil.login(userAuth.getUserId());
+        // 统一返回 Token
+        return TokenVO.builder()
+                .userId(userAuth.getUserId())
+                .accessToken(StpUtil.getTokenValue())
+                .expiresIn(StpUtil.getTokenTimeout())
+                .refreshToken(refreshTokenUtil.generateRefreshToken())
+                .build();
     }
 
     @Override
@@ -331,7 +336,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         // 检查邮箱是否存在
         if (Objects.isNull(userAuth)) throw new AuthorizationException(AuthMessage.EMAIL_NOT_EXISTS.getMessage());
 
-        StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(userAuth.getUserId());
         return TokenVO
                 .builder()
                 .userId(userAuth.getUserId())
@@ -392,7 +397,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
             throw new UnauthorizedException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
 
         // 生成加密密码
-        String pw_hash = "{bcrypt}" + BCrypt.hashpw(password, BCrypt.gensalt());
+        String pw_hash = EncryptionType.ARGON2.getTypeWithBraces() + Argon2Util.hash(password);
 
         // 更新密码
         authMapper.update(
@@ -536,7 +541,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         }
 
         // 生成加密密码
-        String pw_hash = "{bcrypt}" + BCrypt.hashpw(registerDTO.getPassword(), BCrypt.gensalt());
+        String pw_hash = EncryptionType.ARGON2.getTypeWithBraces() + Argon2Util.hash(registerDTO.getPassword());
 
         UserAuth userAuth = UserAuth
                 .builder()
@@ -577,10 +582,13 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         }
 
         // 注册成功，进行登录，返回token
-        StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(userAuth.getUserId());
 
         // MongoDB操作放最后，实现顺序性事务
         mongoTemplate.insert(userInfo);
+
+        // 发送用户名修改消息
+        sendUsernameChangeMessage(userId);
 
         return TokenVO
                 .builder()
@@ -604,7 +612,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         // 查看学号是否已注册
         if (userAuth == null) throw new AuthorizationException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage(), 404);
 
-        StpUtil.login(userAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(userAuth.getUserId());
 
         return TokenVO
                 .builder()
@@ -634,7 +642,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         );
         if (qqAuth == null) throw new AuthorizationException(AuthMessage.QQ_NOT_BOUND.getMessage());
 
-        StpUtil.login(qqAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(qqAuth.getUserId());
 
         return TokenVO
                 .builder()
@@ -677,6 +685,18 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
         redisIntegerTemplate.opsForValue().increment(usernameChangeKey);
         redisIntegerTemplate.expire(usernameChangeKey, Duration.ofDays(7));
+
+        sendUsernameChangeMessage(userId);
+    }
+
+    @Async
+    public void sendUsernameChangeMessage(String userId) {
+        SearchUserDTO searchUserDTO = SearchUserDTO
+                .builder()
+                .userId(userId)
+                .isUserAuth(true)
+                .build();
+        rocketMQTemplate.convertAndSend("search:searchUser", searchUserDTO);
     }
 
     @Override
@@ -686,7 +706,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         checkPassword(userId, oldPassword);
 
         // 生成加密密码
-        String pw_hash = "{bcrypt}" + BCrypt.hashpw(newPassword, BCrypt.gensalt());
+        String pw_hash = EncryptionType.ARGON2.getTypeWithBraces() + Argon2Util.hash(newPassword);
 
         // 更新密码
         authMapper.update(
@@ -710,7 +730,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         if (userAuth == null) throw new AuthorizationException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage(), 404);
 
         // 生成加密密码
-        String pw_hash = "{bcrypt}" + BCrypt.hashpw(password, BCrypt.gensalt());
+        String pw_hash = EncryptionType.ARGON2.getTypeWithBraces() + Argon2Util.hash(password);
 
         authMapper.update(
                 Wrappers.<UserAuth>lambdaUpdate()
@@ -939,7 +959,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         );
         if (appleAuth == null) throw new AuthorizationException(AuthMessage.APPLE_NOT_BOUND.getMessage());
 
-        StpUtil.login(appleAuth.getUserId(), DeviceType.getDeviceType());
+        authUtil.login(appleAuth.getUserId());
 
         return TokenVO
                 .builder()
@@ -986,16 +1006,25 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
                 .select(UserAuth::getUsername)
         );
 
+        if (userAuth == null) {
+            return "未知用户";
+        }
+
         return userAuth.getUsername();
     }
 
     @Override
-    public List<String> getLoginDevices() {
-        List<String> tokens = StpUtil.getTokenValueListByLoginId(StpUtil.getLoginIdAsString());
+    public List<DeviceVO> getLoginDevices() {
+        List<SaTerminalInfo> saTerminalInfos = StpUtil.getTerminalListByLoginId(cn.dev33.satoken.stp.StpUtil.getLoginId());
 
-        List<String> loginDevices = new ArrayList<>();
-        for (String token : tokens) {
-            loginDevices.add(StpUtil.getLoginDeviceByToken(token));
+        List<DeviceVO> loginDevices = new ArrayList<>();
+        for (SaTerminalInfo saTerminalInfo : saTerminalInfos) {
+            loginDevices.add(DeviceVO.builder()
+                    .deviceType(saTerminalInfo.getDeviceType())
+                    .deviceName(String.valueOf(saTerminalInfo.getExtraData().get("deviceName")))
+                    .region(String.valueOf(saTerminalInfo.getExtraData().get("region")))
+                    .lastLoginTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(saTerminalInfo.getCreateTime()), ZoneId.systemDefault()))
+                    .build());
         }
 
         return loginDevices;
@@ -1004,10 +1033,10 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     // Cookie获取学工号
     String getSidByUnifiedAuth(String cookie) throws AuthorizationException, UnauthorizedException {
         // 使用统一身份认证Cookie获取学号
-        JSONObject profile = portalClient.getProfile(cookie);
-        String sid = null;
+        JsonNode profile = portalClient.getProfile(cookie);
+        String sid;
         try {
-            sid = profile.getByPath("$.results.entities[0].account", String.class);
+            sid = profile.at("$.results.entities[0].account").asText();
         } catch (Exception e) {
             throw new AuthorizationException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
         }
@@ -1074,7 +1103,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
     // 获取QQ OpenId
     String getQqOpenId(String qqAccessToken) throws AuthorizationException {
-        QqOpenIdDTO qqOpenIdDTO = null;
+        QqOpenIdDTO qqOpenIdDTO;
         try {
             qqOpenIdDTO = webClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -1099,17 +1128,17 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
 
     // 获取QQ昵称
     String getQqNickname(String qqOpenId, String qqAccessToken) {
-        JSONObject jsonObject = webClient.get()
+        JsonNode jsonNode = webClient.get()
                 .uri("https://graph.qq.com/user/get_user_info")
                 .attribute("access_token", qqAccessToken)
                 .attribute("oauth_consumer_key", qqAppId)
                 .attribute("openid", qqOpenId)
                 .retrieve()
-                .bodyToMono(JSONObject.class)
+                .bodyToMono(JsonNode.class)
                 .block();
-        if (jsonObject != null) {
+        if (jsonNode != null) {
             try {
-                return jsonObject.get("nickname", String.class);
+                return jsonNode.get("nickname").asText();
             } catch (ConvertException e) {
                 return null;
             }
@@ -1195,7 +1224,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     // 检查密码是否正确（修改时注意用户名密码登录）
-    public boolean checkPassword(String userId, String password) throws Exception {
+    public void checkPassword(String userId, String password) throws Exception {
         // 从数据库查询用ID和密码
         UserAuth userAuth = authMapper.selectOne(Wrappers
                 .<UserAuth>lambdaQuery()
@@ -1208,17 +1237,24 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         // 获取储存的加密密码
         String storedHash = userAuth.getPassword();
 
-        // 检查加密算法（新老算法迭代使用）
-        if (storedHash.startsWith(EncryptionType.BCRYPT.getTypeWithBraces())) {
-            String old_pw_hash = storedHash.substring(EncryptionType.BCRYPT.getTypeWithBraces().length());
-            if (BCrypt.checkpw(password, old_pw_hash)) {
-                return true;
-            } else {
-                throw new UnauthorizedException(AuthMessage.PASSWORD_INCORRECT.getMessage());
-            }
+        // 检查密码是否正确
+        if (!verifyPassword(storedHash, password)) {
+            throw new UnauthorizedException(AuthMessage.PASSWORD_INCORRECT.getMessage());
+        }
+    }
+
+    public boolean verifyPassword(String hash, String password) throws Exception {
+        // 选择加密算法（新老算法迭代使用）
+        boolean isValidPassword;
+        if (hash.startsWith(EncryptionType.ARGON2.getTypeWithBraces())) {
+            String pw_hash = hash.substring(EncryptionType.ARGON2.getTypeWithBraces().length());
+            isValidPassword = Argon2Util.verify(pw_hash, password);
+        } else if (hash.startsWith(EncryptionType.BCRYPT.getTypeWithBraces())) {
+            String pw_hash = hash.substring(EncryptionType.BCRYPT.getTypeWithBraces().length());
+            isValidPassword = BCrypt.checkpw(password, pw_hash);
         } else {
             throw new Exception("密码解析失败");
         }
-
+        return isValidPassword;
     }
 }

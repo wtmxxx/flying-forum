@@ -14,10 +14,10 @@ public class PageQueryDTO {
     private Long size;
 
     public void checkParam() {
-        if (this.page == null || this.page < 0) {
+        if (this.page == null || this.page <= 0) {
             setPage(1L);
         }
-        if (this.size == null || this.size < 0 || this.size > 1000) {
+        if (this.size == null || this.size <= 0 || this.size > 1000) {
             setSize(10L);
         }
     }

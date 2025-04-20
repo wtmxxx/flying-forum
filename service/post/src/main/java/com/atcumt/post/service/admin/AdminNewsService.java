@@ -1,13 +1,13 @@
 package com.atcumt.post.service.admin;
 
-import cn.hutool.json.JSONObject;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.atcumt.model.post.dto.NewsDTO;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 
 public interface AdminNewsService {
     void uploadNews(List<NewsDTO> newsDTOs);
 
-    void uploadNewsType(JSONObject newsType) throws NacosException;
+    void uploadNewsType(JsonNode newsType) throws NacosException;
 }

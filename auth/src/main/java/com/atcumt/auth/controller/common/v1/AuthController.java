@@ -8,10 +8,7 @@ import com.atcumt.common.exception.BadRequestException;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.model.auth.dto.*;
 import com.atcumt.model.auth.enums.AuthMessage;
-import com.atcumt.model.auth.vo.AuthenticationVO;
-import com.atcumt.model.auth.vo.LinkedAccountVO;
-import com.atcumt.model.auth.vo.SensitiveRecordVO;
-import com.atcumt.model.auth.vo.TokenVO;
+import com.atcumt.model.auth.vo.*;
 import com.atcumt.model.common.dto.TypePageQueryDTO;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.common.vo.PageQueryVO;
@@ -57,7 +54,9 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "注册")
     @Parameters({
-            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     @SaIgnore
     public Result<TokenVO> register(@RequestBody RegisterDTO registerDTO) throws Exception {
@@ -72,7 +71,9 @@ public class AuthController {
     @PostMapping("/login/username")
     @Operation(summary = "用户名密码登录")
     @Parameters({
-            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> loginByUsernamePassword(@RequestBody UsernamePasswordDTO usernamePasswordDTO) throws Exception {
         log.info("用户名密码登录, username: {}", usernamePasswordDTO.getUsername());
@@ -92,7 +93,9 @@ public class AuthController {
     @PostMapping("/login/qq")
     @Operation(summary = "QQ登录")
     @Parameters({
-            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> loginByQQ(@RequestBody QqAuthorizationCodeDTO qqAuthorizationCode) throws AuthorizationException {
         log.info("QQ登录");
@@ -112,7 +115,9 @@ public class AuthController {
     @PostMapping("/login/apple")
     @Operation(summary = "Apple登录")
     @Parameters({
-            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> loginByApple(@RequestBody AppleAuthorizationCodeDTO appleAuthorizationCodeDTO) throws Exception {
         log.info("Apple登录");
@@ -191,7 +196,9 @@ public class AuthController {
     @Operation(summary = "统一身份认证登录（保留）")
     @Parameters({
             @Parameter(name = "Cookie", description = "统一身份认证的cookie", in = ParameterIn.HEADER, required = true),
-            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> loginBySchool(@RequestHeader("Cookie") String cookie) throws Exception {
         log.info("统一身份认证登录");
@@ -275,7 +282,9 @@ public class AuthController {
     @PostMapping("/login/email")
     @Operation(summary = "邮箱验证码登录（保留）")
     @Parameters({
-            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     @SaIgnore
     public Result<TokenVO> loginByEmailVerificationCode(@RequestBody EmailDTO emailDTO) throws Exception {
@@ -296,7 +305,10 @@ public class AuthController {
     @PostMapping("/refresh_token")
     @Operation(summary = "更新accessToken", description = "使用RefreshToken刷新accessToken(Authorization)，refreshToken也会被刷新")
     @Parameters({
-            @Parameter(name = "Authorization", description = "授权Token", required = true)
+            @Parameter(name = "Authorization", description = "授权Token", required = true),
+            @Parameter(name = "Device-Type", description = "设备类型，尽量给出（同类型设备仅能登录一个）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Id", description = "设备ID，尽量给出（该设备将标记为可信任设备）", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "Device-Name", description = "设备名称，尽量给出（向用户展示当前登录设备信息）", in = ParameterIn.HEADER, required = true)
     })
     public Result<TokenVO> refreshToken(@RequestHeader("Authorization") String accessToken, @RequestBody RefreshTokenDTO refreshTokenDTO) {
         log.info("使用RefreshToken刷新accessToken, 原accessToken: {}", accessToken);
@@ -312,12 +324,16 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/logout/{device}")
     @Operation(summary = "账号登出")
     @Parameters({
-            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
+            @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true),
+            @Parameter(name = "device", description = "设备类型，不给或者TOKEN（登出当前设备）、ACCOUNT（登出全部设备）", in = ParameterIn.HEADER, required = true)
     })
-    public Result<Object> logout(@RequestHeader("Authorization") String accessToken, String device) {
+    public Result<Object> logout(
+            @RequestHeader("Authorization") String accessToken,
+            @PathVariable(name = "device", required = false) String device
+    ) {
         log.info("账号登出, accessToken: {}, device: {}", accessToken, device);
         authService.logout(device);
 
@@ -329,10 +345,10 @@ public class AuthController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public Result<List<String>> getDevices(@RequestHeader("Authorization") String accessToken) {
-        log.info("获取所有登录设备, accessToken: {}", accessToken);
+    public Result<List<DeviceVO>> getDevices(@RequestHeader("Authorization") String accessToken) {
+        log.info("获取所有登录设备, accessToken: {}", accessToken.substring(0, 20));
 
-        List<String> loginDevices = authService.getLoginDevices();
+        List<DeviceVO> loginDevices = authService.getLoginDevices();
 
         return Result.success(loginDevices);
     }

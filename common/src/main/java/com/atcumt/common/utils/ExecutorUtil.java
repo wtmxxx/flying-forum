@@ -19,7 +19,7 @@ public class ExecutorUtil {
             terminated = executor.awaitTermination(timeout, timeUnit);
         } catch (InterruptedException e) {
             log.error("等待线程池关闭时发生异常", e);
-            Thread.currentThread().interrupt(); // 恢复中断状态
+            Thread.currentThread().interrupt();
         }
 
         if (!terminated) {
@@ -28,19 +28,19 @@ public class ExecutorUtil {
         }
     }
 
-    private static void forceShutdown(ExecutorService executor) {
+    public static void forceShutdown(ExecutorService executor) {
         List<Runnable> remainingTasks = executor.shutdownNow();
         if (!remainingTasks.isEmpty()) {
             log.warn("强制关闭线程池，{} 个任务未执行", remainingTasks.size());
         }
 
-        try {
-            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                log.error("线程池无法完全关闭");
-            }
-        } catch (InterruptedException e) {
-            log.error("强制关闭线程池时发生异常", e);
-            Thread.currentThread().interrupt();
-        }
+//        try {
+//            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+//                log.error("线程池无法完全关闭");
+//            }
+//        } catch (InterruptedException e) {
+//            log.error("强制关闭线程池时发生异常 | {}", e.getMessage());
+//            Thread.currentThread().interrupt();
+//        }
     }
 }

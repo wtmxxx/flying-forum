@@ -1,12 +1,12 @@
 package com.atcumt.auth.utils;
 
-import cn.hutool.json.JSONObject;
-import cn.hutool.jwt.JWTUtil;
 import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.model.auth.entity.AppleAuth;
 import com.atcumt.model.auth.enums.AuthMessage;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.Claim;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,6 +20,7 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class AppleAuthUtil {
         // 设置请求参数
         String clientSecret = getAppleClientSecret();
         // 发送 POST 请求并处理响应
-        JSONObject response = null;
+        JsonNode response;
         try {
             response = webClient.post()
                     .uri(uriBuilder -> uriBuilder.scheme("https")
@@ -51,7 +52,7 @@ public class AppleAuthUtil {
                             .queryParam("grant_type", "authorization_code")
                             .build())
                     .retrieve()
-                    .bodyToMono(JSONObject.class)
+                    .bodyToMono(JsonNode.class)
                     .block();
         } catch (Exception e) {
             throw new AuthorizationException(AuthMessage.APPLE_AUTH_FAILURE.getMessage());
@@ -61,19 +62,19 @@ public class AppleAuthUtil {
             throw new AuthorizationException(AuthMessage.APPLE_AUTH_FAILURE.getMessage());
         }
 
-        return response.get("id_token", String.class);
+        return response.get("id_token").asText();
     }
 
     // 获取Apple用户信息
     public AppleAuth getAppleInfo(String appleIdToken) throws AuthorizationException {
         try {
             // 解析JWT token
-            JSONObject jwt = JWTUtil.parseToken(appleIdToken).getPayload().getClaimsJson();
+            Map<String, Claim> jwt = JWT.decode(appleIdToken).getClaims();
 
             // 提取用户信息
-            String appleId = jwt.get("sub", String.class);  // Apple ID（sub）
-            String email = jwt.get("email", String.class);  // 邮箱
-            String name = jwt.get("name", String.class);  // 姓名
+            String appleId = jwt.get("sub").asString();  // Apple ID（sub）
+            String email = jwt.get("email").asString();  // 邮箱
+            String name = jwt.get("name").asString();  // 姓名
 
             // 将用户信息封装到VO对象中
             AppleAuth appleAuth = new AppleAuth();

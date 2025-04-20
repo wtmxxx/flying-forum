@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.TypeAlias;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.IndexDirection;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -20,10 +22,14 @@ import java.util.List;
 @NoArgsConstructor
 @Document(collection = "reply")
 @TypeAlias("Reply")
+@CompoundIndexes({
+        @CompoundIndex(name = "replyToId_score_replyId_idx", def = "{'replyToId': -1, 'score': -1, 'replyId': -1}"),
+        @CompoundIndex(name = "replyToId_createTime_replyId_idx", def = "{'replyToId': -1, 'createTime': -1, 'replyId': -1}"),
+        @CompoundIndex(name = "userId_createTime_replyId_idx", def = "{'userId': 1, 'createTime': -1, 'replyId': -1}")
+})
 public class Reply {
     @MongoId
     private Long replyId;
-    @Indexed
     private Long replyToId;
     @Indexed
     private String replyToUserId;
@@ -33,7 +39,6 @@ public class Reply {
     private String postType;
     @Indexed
     private Long postId;
-    @Indexed
     private String userId;
     private String content;
     private List<MediaFile> mediaFiles;

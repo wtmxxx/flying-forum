@@ -31,7 +31,6 @@ public class Discussion {
     @Indexed  // 为authorId创建单字段索引
     private String userId;  // 作者ID
     private String title;  // 帖子标题
-    private String excerpt; // 帖子摘要
     private String content; // 帖子内容
     private List<MediaFile> mediaFiles; // 动态存储附件数据：图片、视频、文档等，每个媒体文件包含文件类型、URL等信息
     @Indexed
@@ -41,7 +40,7 @@ public class Discussion {
     private Integer commentCount; // 评论数
     private Long viewCount;  // 观看量
     @Indexed
-    private String status;  // 帖子状态（0 - 草稿，1 - 审核中，2 - 已发布，3 - 审核不通过，-1 - 已删除）
+    private String status;  // 帖子状态
     private String rejectReason;  // 帖子审核不通过原因
     @Indexed(direction = IndexDirection.DESCENDING)
     private Double score;  // 帖子评分

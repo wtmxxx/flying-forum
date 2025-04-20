@@ -6,6 +6,7 @@ import com.atcumt.common.utils.WebUtil;
 import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.common.enums.ResultCode;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -68,8 +70,12 @@ public class GlobalExceptionAdvice {
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public Object handleRuntimeException(RuntimeException e) throws Throwable {
-        log.error("运行时异常 uri : {} -> ", Objects.requireNonNull(WebUtil.getRequest()).getRequestURI(), e);
+    public Object handleRuntimeException(RuntimeException e) {
+        String uri = Optional.ofNullable(WebUtil.getRequest())
+                .map(HttpServletRequest::getRequestURI)
+                .orElse("unknown");
+
+        log.error("运行时异常 uri : {} -> ", uri, e);
 
         Throwable finalCause = ExceptionUtil.getRootCause(e);
         return processResponse(new CommonException(finalCause.getLocalizedMessage(), ResultCode.FAILURE.getCode()));

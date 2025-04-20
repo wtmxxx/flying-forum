@@ -19,7 +19,6 @@ public class QuestionVO {
     private String userId;  // 作者ID
     private UserInfoSimpleVO userInfo; // 作者信息
     private String title;  // 帖子标题
-    private String excerpt; // 帖子摘要
     private String content; // 帖子内容
     private List<MediaFileVO> mediaFiles; // 动态存储附件数据：图片、视频、文档等，每个媒体文件包含文件类型、URL等信息
     private List<TagSimpleVO> tags; // 标签ID

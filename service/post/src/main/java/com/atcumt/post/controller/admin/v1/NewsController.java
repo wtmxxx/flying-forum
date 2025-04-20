@@ -1,12 +1,12 @@
 package com.atcumt.post.controller.admin.v1;
 
-import cn.hutool.json.JSONObject;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.atcumt.common.exception.AuthorizationException;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.post.dto.NewsDTO;
 import com.atcumt.model.post.enums.PostMessage;
 import com.atcumt.post.service.admin.AdminNewsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -28,6 +28,7 @@ import java.util.List;
 @Slf4j
 public class NewsController {
     private final AdminNewsService adminNewsService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping("")
     @Operation(summary = "上传新闻", description = "上传新闻")
@@ -56,7 +57,7 @@ public class NewsController {
     public Result<Object> uploadNews(@RequestBody Object newsType) throws AuthorizationException, NacosException {
         log.info("上传新闻类型");
 
-        adminNewsService.uploadNewsType(new JSONObject(newsType));
+        adminNewsService.uploadNewsType(objectMapper.valueToTree(newsType));
 
         return Result.success();
     }

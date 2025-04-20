@@ -3,7 +3,6 @@ package com.atcumt.post.service.impl.admin;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.json.JSONObject;
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.nacos.api.config.ConfigType;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -15,6 +14,7 @@ import com.atcumt.model.post.dto.NewsDTO;
 import com.atcumt.model.post.entity.News;
 import com.atcumt.model.post.enums.PostStatus;
 import com.atcumt.post.service.admin.AdminNewsService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -62,7 +62,7 @@ public class AdminNewsServiceImpl implements AdminNewsService {
     }
 
     @Override
-    public void uploadNewsType(JSONObject newsType) throws NacosException {
+    public void uploadNewsType(JsonNode newsType) throws NacosException {
         // 权限鉴定
         StpUtil.checkPermission(PermissionUtil.generate(PermModule.NEWS, PermAction.CREATE));
 

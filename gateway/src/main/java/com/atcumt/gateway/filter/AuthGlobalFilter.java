@@ -3,12 +3,13 @@ package com.atcumt.gateway.filter;
 import cn.dev33.satoken.same.SaSameUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.text.AntPathMatcher;
-import cn.hutool.json.JSONConfig;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.atcumt.common.exception.UnauthorizedException;
 import com.atcumt.gateway.property.AuthProperty;
 import com.atcumt.model.common.enums.ResultCode;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,22 +28,29 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 
 @Component
 @RefreshScope
 @EnableConfigurationProperties(AuthProperty.class)
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
-
     private final AuthProperty authProperty;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
     private final RedisTemplate<String, String> saRedisTemplate;
+    private static final Cache<String, Object> localTokenCache = Caffeine.newBuilder()
+            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .maximumSize(1000)
+            .build();
+    private final ObjectMapper objectMapper;
+
     @Autowired
     AuthGlobalFilter(AuthProperty authProperty,
-                     @Qualifier("saRedisTemplate") RedisTemplate<String, String> saRedisTemplate
-    ) {
+                     @Qualifier("saRedisTemplate") RedisTemplate<String, String> saRedisTemplate,
+                     ObjectMapper objectMapper) {
         this.authProperty = authProperty;
         this.saRedisTemplate = saRedisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -72,7 +80,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     .requireNonNull(tokenValue, ResultCode.UNAUTHORIZED.getMessage())
                     .substring(StpUtil.getStpLogic().getConfigOrGlobal().getTokenPrefix().length() + " ".length());
 
-            Object loginId = StpUtil.getLoginIdByToken(tokenValueWithoutPrefix);
+            // 从本地缓存Caffeine中获取登录ID，如果不存在则从Redis中获取
+            Object loginId = localTokenCache.getIfPresent(tokenValueWithoutPrefix);
+            if (loginId == null) {
+                loginId = StpUtil.getLoginIdByToken(tokenValueWithoutPrefix);
+            }
             if (loginId == null || !StpUtil.isLogin(loginId)) {
                 // 新老Token切换
                 String oldTokenKey = "Authorization:login:old-access-token:" + tokenValueWithoutPrefix;
@@ -82,6 +94,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     throw new UnauthorizedException(ResultCode.UNAUTHORIZED.getMessage());
                 }
             } else {
+                localTokenCache.put(tokenValueWithoutPrefix, loginId);
                 userId = String.valueOf(loginId);
             }
         } catch (Exception e) {
@@ -89,11 +102,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             ServerHttpResponse response = exchange.getResponse();
 
             // 构造 JSON 响应体 (未授权)
-            JSONObject errorResponse = JSONUtil
-                    .createObj(new JSONConfig().setIgnoreNullValue(false))
-                    .set("code", ResultCode.UNAUTHORIZED.getCode())
-                    .set("msg", ResultCode.UNAUTHORIZED.getMessage())
-                    .set("data", null);
+            JsonNode errorResponse = objectMapper.createObjectNode()
+                    .put("code", ResultCode.UNAUTHORIZED.getCode())
+                    .put("msg", ResultCode.UNAUTHORIZED.getMessage())
+                    .putNull("data");
 
             // 将 JSON 转换为字节数组
             byte[] responseBytes;
@@ -104,7 +116,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
             // 将字节数组写入响应
-            return exchange.getResponse().writeWith(Mono.just(response
+            return response.writeWith(Mono.just(response
                     .bufferFactory().wrap(responseBytes)));
         }
 

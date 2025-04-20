@@ -11,7 +11,6 @@ import com.atcumt.model.auth.enums.AuthMessage;
 import com.atcumt.model.common.entity.MediaFile;
 import com.atcumt.model.post.dto.DiscussionDTO;
 import com.atcumt.model.post.dto.DiscussionUpdateDTO;
-import com.atcumt.model.post.dto.PostReviewDTO;
 import com.atcumt.model.post.entity.Discussion;
 import com.atcumt.model.post.entity.Tag;
 import com.atcumt.model.post.enums.PostMessage;
@@ -21,7 +20,6 @@ import com.atcumt.model.post.vo.DiscussionVO;
 import com.atcumt.post.repository.DiscussionRepository;
 import com.atcumt.post.service.DiscussionService;
 import com.atcumt.post.service.TagService;
-import com.atcumt.post.utils.ExcerptUtil;
 import com.atcumt.post.utils.PostReviewUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +63,6 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .discussionId(IdUtil.getSnowflakeNextId())
                 .userId(UserContext.getUserId())
                 .title(discussionDTO.getTitle())
-                .excerpt(ExcerptUtil.getExcerpt(discussionDTO.getContent()))
                 .content(discussionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(discussionDTO.getMediaFiles(), MediaFile.class))
                 .tagIds(discussionDTO.getTagIds())
@@ -105,7 +102,6 @@ public class DiscussionServiceImpl implements DiscussionService {
                 .discussionId(IdUtil.getSnowflakeNextId())
                 .userId(UserContext.getUserId())
                 .title(discussionDTO.getTitle())
-                .excerpt(ExcerptUtil.getExcerpt(discussionDTO.getContent()))
                 .content(discussionDTO.getContent())
                 .mediaFiles(BeanUtil.copyToList(discussionDTO.getMediaFiles(), MediaFile.class))
                 .tagIds(discussionDTO.getTagIds())
@@ -233,7 +229,6 @@ public class DiscussionServiceImpl implements DiscussionService {
         }
         if (discussionUpdateDTO.getContent() != null) {
             update.set("content", discussionUpdateDTO.getContent());
-            update.set("excerpt", ExcerptUtil.getExcerpt(discussionUpdateDTO.getContent()));
         }
         if (discussionUpdateDTO.getMediaFiles() != null) {
             update.set("mediaFiles", discussionUpdateDTO.getMediaFiles());

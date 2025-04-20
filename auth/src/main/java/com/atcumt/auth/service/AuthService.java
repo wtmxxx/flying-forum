@@ -7,10 +7,7 @@ import com.atcumt.model.auth.dto.RegisterDTO;
 import com.atcumt.model.auth.entity.AppleAuth;
 import com.atcumt.model.auth.entity.QqAuth;
 import com.atcumt.model.auth.entity.UserAuth;
-import com.atcumt.model.auth.vo.AuthenticationVO;
-import com.atcumt.model.auth.vo.LinkedAccountVO;
-import com.atcumt.model.auth.vo.SensitiveRecordVO;
-import com.atcumt.model.auth.vo.TokenVO;
+import com.atcumt.model.auth.vo.*;
 import com.atcumt.model.common.dto.TypePageQueryDTO;
 import com.atcumt.model.common.vo.PageQueryVO;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -87,5 +84,5 @@ public interface AuthService extends IService<UserAuth> {
 
     String getUsername();
 
-    List<String> getLoginDevices();
+    List<DeviceVO> getLoginDevices();
 }
