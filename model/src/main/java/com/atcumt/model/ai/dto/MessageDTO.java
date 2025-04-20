@@ -1,9 +1,6 @@
-package com.atcumt.model.gpt.dto;
+package com.atcumt.model.ai.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder

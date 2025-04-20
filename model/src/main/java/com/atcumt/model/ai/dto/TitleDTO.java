@@ -1,4 +1,4 @@
-package com.atcumt.model.gpt.dto;
+package com.atcumt.model.ai.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ConversationDTO {
-    private String userId;
+public class TitleDTO {
+    private String conversationId;
+    private String title;
 }

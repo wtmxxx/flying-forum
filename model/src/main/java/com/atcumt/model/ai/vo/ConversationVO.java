@@ -1,4 +1,4 @@
-package com.atcumt.model.gpt.vo;
+package com.atcumt.model.ai.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +13,11 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ConversationVO {
-    private String id;
+    private String conversationId;
+    private String userId;
     private String title;
-    private List<MessagePageVO> messages;
+    private Integer currentMessageId;
+    private List<MessageVO> messages;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }
