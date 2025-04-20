@@ -1,4 +1,4 @@
-package com.atcumt.post.utils;
+package com.atcumt.search.utils;
 
 public class ExcerptUtil {
     public static String getExcerpt(String text, int minLength, int maxLength) {

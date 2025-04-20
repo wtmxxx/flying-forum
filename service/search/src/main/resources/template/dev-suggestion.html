@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>矿小圈搜索</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f8fa;
+            padding: 20px;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 40px auto;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 15px 25px;
+            font-size: 18px;
+            border: 2px solid #1da1f2;
+            border-radius: 30px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            box-shadow: 0 0 10px rgba(29, 161, 242, 0.3);
+        }
+
+        .suggestions {
+            background: white;
+            border-radius: 15px;
+            margin-top: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 12px 25px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background: #f5f8fa;
+        }
+
+        .search-results {
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .tags {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .tag {
+            background: #e1f5fe;
+            color: #039be5;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .thumb {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .stats {
+            color: #657786;
+            font-size: 14px;
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            overflow: auto;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .suggestion-item.highlight {
+            background: #1da1f2 !important;
+            color: white;
+        }
+        .user-level {
+            background: #ffd700;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .post-time {
+            color: #657786;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .no-media {
+            color: #657786;
+            font-style: italic;
+            padding: 10px 0;
+        }
+        .stats span {
+            margin-right: 15px;
+        }
+        .eye-icon::before {
+            content: '👁️';
+            margin-right: 5px;
+        }
+        em {
+            background: yellow;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+<div class="search-container">
+    <input type="text" class="search-box" placeholder="搜索矿小圈内容..." id="searchInput">
+    <div class="suggestions" id="suggestions"></div>
+    <div class="search-results" id="results"></div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content" id="modalContent"></div>
+</div>
+
+<script>
+    const API = {
+        suggest: 'http://localhost:8080/api/search/v1/suggest',
+        search: 'http://localhost:8080/api/search/v1/search/post'
+    };
+
+    const headers = {
+        'Authorization': 'Bearer la01UICnSvuYllLWA4G4X9lTdp63Jr3Xv9sElfIt4k69UP3u6COdvhOA48oeSqpKFWbERzimWwRJQ7imsjDL2YLkdUr0sJuz1QHy24a9gzFCkplAVqluwH8Ak8gTbDWfMBWNErP32F0l2hVgrn65Pr9cu2z1yxuUUP5LgCSmZM7wm3NffG1Kn1ssODCxJIVatZnNEBcNxCsoJf2C5SK4kM9Pu1S080mOHsUeLi2YCNxCgUoIAWHhDq1GYgroEEe9'
+    };
+
+    let imageSize = 120;
+    let imageFormat = 'webp';
+
+    let timer;
+    const searchInput = document.getElementById('searchInput');
+    const suggestions = document.getElementById('suggestions');
+    const results = document.getElementById('results');
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modalContent');
+
+    // 搜索建议
+    searchInput.addEventListener('input', async (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const text = e.target.value.trim();
+            if (!text) {
+                suggestions.style.display = 'none';
+                return;
+            }
+
+            try {
+                const res = await axios.get(API.suggest, {
+                    params: { text },
+                    headers
+                });
+                showSuggestions(res.data.data.suggestions);
+            } catch (error) {
+                console.error('获取建议失败:', error);
+            }
+        }, 300);
+    });
+
+    // 执行搜索
+    async function doSearch(text) {
+        try {
+            const res = await axios.get(API.search, {
+                params: {
+                    text: text,
+                    searchContentType: 'post',   // 例子：搜索帖子
+                    searchSortType: 'default', // 例子：按相关性排序
+                    searchTimeLimit: 'all',      // 例子：不限时间
+                    from: 0,                     // 例子：从第 0 条开始
+                    size: 10                     // 例子：每次查 10 条
+                },
+                headers
+            });
+            showResults(res.data.data.hits);
+        } catch (error) {
+            console.error('搜索失败:', error);
+        }
+    }
+
+    // 显示建议
+    function showSuggestions(items) {
+        suggestions.innerHTML = items.map(item => `
+                <div class="suggestion-item" onclick="searchInput.value='${item.suggestion}';doSearch('${item.suggestion}')">
+                    ${item.suggestion}
+                </div>
+            `).join('');
+        suggestions.style.display = items.length ? 'block' : 'none';
+    }
+
+    // 显示结果
+    function showResults(posts) {
+        results.innerHTML = posts.map(post => `
+                <div class="result-card" onclick="showDetail(${JSON.stringify(post).replace(/"/g, '&quot;')})">
+                    <div class="user-info">
+                        <img src="${post.userInfo.avatar}@${imageSize}w_${imageSize}h.${imageFormat}" class="avatar" alt="头像">
+                        <div>
+                            <div style="display: flex; align-items: center">
+                                <h3>${post.userInfo.nickname}</h3>
+                                <span class="user-level">Lv.${post.userInfo.level}</span>
+                            </div>
+                            <div class="post-time">${formatTime(post.createTime)}</div>
+                            <div>${post.highlight?.content?.[0] || post.excerpt}</div>
+                        </div>
+                    </div>
+
+                    ${post.tags?.length ? `
+                    <div class="tags">
+                        ${post.tags.map(tag => `<span class="tag">${tag.tagName}</span>`).join('')}
+                    </div>` : ''}
+
+                    ${(post.mediaFiles && post.mediaFiles.length > 0) ? `
+                    <div class="image-grid">
+                        ${post.mediaFiles.slice(0,3).map(file => `
+                            <img src="${file.url}" class="thumb" alt="配图">
+                        `).join('')}
+                    </div>` : `<div class="no-media">暂无配图</div>`}
+
+                    <div class="stats">
+                        <span class="eye-icon">${post.viewCount || 0}</span>
+                        <span>❤️ ${post.likeCount}</span>
+                        <span>💬 ${post.commentCount}</span>
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    // 显示详情弹窗
+    function showDetail(post) {
+        modalContent.innerHTML = `
+                <h2>${post.highlight?.title?.[0] || post.title}</h2>
+                <div class="user-info">
+                    <img src="${post.userInfo.avatar}@${imageSize}w_${imageSize}h.${imageFormat}" class="avatar" alt="头像">
+                    <div>
+                        <div style="display: flex; align-items: center">
+                            <h3>${post.userInfo.nickname}</h3>
+                            <span class="user-level">Lv.${post.userInfo.level}</span>
+                        </div>
+                        <div class="post-time">${formatTime(post.createTime)}</div>
+                        <div>${post.userInfo.bio}</div>
+                    </div>
+                </div>
+                <div class="stats" style="margin: 15px 0">
+                    <span class="eye-icon">${post.viewCount || 0}</span>
+                    <span>❤️ ${post.likeCount}</span>
+                    <span>💬 ${post.commentCount}</span>
+                </div>
+                <p style="margin: 20px 0;">${post.highlight?.content?.[0] || post.content}</p>
+                ${(post.mediaFiles && post.mediaFiles.length > 0) ? `
+                <div class="image-grid">
+                    ${post.mediaFiles.map(file => `
+                        <img src="${file.url}" class="thumb" style="height: 200px">
+                    `).join('')}
+                </div>` : `<div class="no-media">该帖子暂无配图</div>`}
+            `;
+        modal.style.display = 'block';
+    }
+
+    // 关闭弹窗
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // 回车搜索
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            doSearch(e.target.value);
+        }
+    });
+
+    // 新增变量
+    let suggestionsData = [];
+    let selectedSuggestionIndex = -1;
+
+    // 修改后的输入事件处理
+    searchInput.addEventListener('input', async (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const text = e.target.value.trim();
+            if (!text) {
+                hideSuggestions();
+                return;
+            }
+
+            try {
+                const res = await axios.get(API.suggest, {
+                    params: { text },
+                    headers
+                });
+                suggestionsData = res.data.data.suggestions;
+                showSuggestions(suggestionsData);
+            } catch (error) {
+                console.error('获取建议失败:', error);
+            }
+        }, 300);
+    });
+
+    // 新增键盘事件处理
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestionsData.length - 1);
+            updateHighlight();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+            updateHighlight();
+        } else if (e.key === 'Enter') {
+            if (selectedSuggestionIndex > -1) {
+                const selected = suggestionsData[selectedSuggestionIndex].suggestion;
+                searchInput.value = selected;
+                doSearch(selected);
+            } else {
+                doSearch(searchInput.value);
+            }
+            hideSuggestions();
+        }
+    });
+
+    // 新增辅助方法
+    function updateHighlight() {
+        document.querySelectorAll('.suggestion-item').forEach((item, index) => {
+            item.classList.toggle('highlight', index === selectedSuggestionIndex);
+            if (index === selectedSuggestionIndex) {
+                item.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    }
+
+    function hideSuggestions() {
+        suggestions.style.display = 'none';
+        selectedSuggestionIndex = -1;
+    }
+
+    // 新增时间格式化方法
+    function formatTime(isoString) {
+        const date = new Date(isoString);
+        return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}
+                    ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+</script>
+</body>
+</html>

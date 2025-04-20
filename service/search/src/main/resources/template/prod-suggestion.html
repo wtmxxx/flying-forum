@@ -2,8 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>实时搜索提示</title>
+    <title>矿小圈搜索提示体验</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
         /* 搜索容器样式 */
         .search-box {
             width: 80%;
@@ -42,6 +47,7 @@
             display: none;
         }
 
+
         /* 每一项建议的样式 */
         .suggestion-item {
             padding: 12px 24px;
@@ -58,6 +64,9 @@
     </style>
 </head>
 <body>
+<h1>矿小圈搜索提示体验</h1>
+<p>请输入关键词，体验实时搜索提示</p>
+
 <!-- 搜索框区域 -->
 <div class="search-box">
     <input type="text" id="searchInput" placeholder="搜索..." autocomplete="off">
@@ -65,61 +74,40 @@
 </div>
 
 <script>
-    // API 地址和防抖延迟时间（单位：毫秒）
-    const API_URL = 'http://localhost:8080/api/search/v1/suggest';
+    const API_URL = 'https://kxq.wotemo.com/api/search/v1/suggest';
     const DEBOUNCE_TIME = 1;
 
-    // 获取 DOM 节点
     const searchInput = document.getElementById('searchInput');
     const suggestions = document.getElementById('suggestions');
-    let timer = null;  // 用于防抖处理
+    let timer = null;
 
-    // 监听输入框的输入事件，实时捕捉用户输入
     searchInput.addEventListener('input', function(e) {
-        clearTimeout(timer); // 清除之前设置的定时器
+        clearTimeout(timer);
         const query = e.target.value.trim();
-
-        // 如果输入为空，则直接隐藏建议列表
         if (!query) {
             hideSuggestions();
             return;
         }
-
-        // 防抖处理，延时发送请求
         timer = setTimeout(() => {
             getSuggestions(query);
         }, DEBOUNCE_TIME);
     });
 
-    // 请求搜索建议数据
     async function getSuggestions(query) {
         try {
-            // 构造 URL 并添加查询参数 text
             const url = new URL(API_URL);
             url.searchParams.append('text', query);
-
-            // 发送 GET 请求，注意加入 Authorization 头部
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': 'Bearer Cxcvu2VJzLDvTysJBqCKwqD51kTbJGXJPeaNYpWRdAzsHtnrvZshWkyEUU3DoetP'
+                    'Authorization': 'Bearer 7PTD0k0acKD7wpEcCu3p6kTPxkoKVe4gGid0QjHcIPPqxlRWGfQRNPJEmrPKU2yVRimKh7Y7CFh50Mvjau9P9ZTHEFqGS3aso9QiOo9HlUCRrA7fDfp1mNTLiVXoBKee'
                 }
             });
-
-            // 若响应状态不是 200，则抛出错误
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            // 解析 JSON 数据
             const result = await response.json();
-
-            // 根据 Swagger 文档结构，从 result.data.suggestions 中获取数据
             const suggestionList = result.data && result.data.suggestions ? result.data.suggestions : [];
-
-            console.log('获取搜索建议成功:', suggestionList);
-
-            // 渲染建议列表
             renderSuggestions(suggestionList);
         } catch (error) {
             console.error('获取搜索建议失败:', error);
@@ -127,45 +115,43 @@
         }
     }
 
-    // 根据数据生成建议项，并显示在页面上
     function renderSuggestions(items) {
-        // 清空已有的建议项
         suggestions.innerHTML = '';
-
-        // 如果没有建议，则隐藏列表
         if (items.length === 0) {
             hideSuggestions();
             return;
         }
-
-        // 遍历建议数据，生成每个建议项
         items.forEach(item => {
             const div = document.createElement('div');
             div.className = 'suggestion-item';
-            div.textContent = item.suggestion;  // 显示 suggestion 字段
-
-            // 点击建议项后填充到搜索输入框，并关闭建议列表
+            div.textContent = item.suggestion;
             div.addEventListener('click', () => {
                 searchInput.value = item.suggestion;
                 hideSuggestions();
             });
-
             suggestions.appendChild(div);
         });
-
-        // 显示建议列表
         suggestions.style.display = 'block';
     }
 
-    // 隐藏建议列表
     function hideSuggestions() {
         suggestions.style.display = 'none';
     }
 
-    // 点击页面其他区域时关闭建议列表
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-box')) {
             hideSuggestions();
+        }
+    });
+
+    // 回车键跳转到百度搜索
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) {
+                // 跳转到百度搜索结果页
+                window.location.href = `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`;
+            }
         }
     });
 </script>
