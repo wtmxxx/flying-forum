@@ -18,7 +18,7 @@
 ```json
 {
   "code": 200,
-  "message": "Success",
+  "storeMessage": "Success",
   "data": {
     "type": "content",
     "data": {
@@ -37,7 +37,7 @@
 ```json
 {
   "code": 200,
-  "message": "Success",
+  "storeMessage": "Success",
   "data": {
     "type": "citations",
     "messageId": "UUID",
@@ -60,11 +60,11 @@
 
 ```json
 {
-  "id": "UUID",
+  "conversationId": "UUID",
   "userId": "UUID",
-  "messages": [
+  "storeMessages": [
     {
-      "id": "UUID",
+      "conversationId": "UUID",
       "conversationId": "UUID",
       "role": "human",
       "content": "Who is Wotemo?",

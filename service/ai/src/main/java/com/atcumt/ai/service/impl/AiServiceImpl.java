@@ -2,202 +2,161 @@ package com.atcumt.ai.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
-import com.atcumt.ai.ai.ChatMessageStore;
-import com.atcumt.ai.ai.WotemoTokenWindowChatMemory;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.atcumt.ai.ai.WotemoChatHistory;
+import com.atcumt.ai.ai.WotemoChatMemory;
 import com.atcumt.ai.ai.WotemoTokenizer;
 import com.atcumt.ai.service.AiService;
-import com.atcumt.ai.utils.SseEmitterRegistry;
+import com.atcumt.ai.utils.ConversationManager;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.ai.dto.ConversationDTO;
 import com.atcumt.model.ai.dto.StopConversationDTO;
 import com.atcumt.model.ai.dto.StopConversationMsgDTO;
 import com.atcumt.model.ai.dto.TitleDTO;
 import com.atcumt.model.ai.entity.Conversation;
-import com.atcumt.model.ai.entity.Message;
+import com.atcumt.model.ai.entity.StoreMessage;
 import com.atcumt.model.ai.enums.AiStatus;
+import com.atcumt.model.ai.enums.FluxType;
 import com.atcumt.model.ai.vo.*;
 import com.atcumt.model.common.dto.PageQueryDTO;
 import com.atcumt.model.common.vo.MediaFileVO;
 import com.atcumt.model.common.vo.SimplePageQueryVO;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AiServiceImpl implements AiService {
-    private final SseEmitterRegistry sseEmitterRegistry;
-    private final ChatMessageStore chatMessageStore;
+    private final ConversationManager conversationManager;
     private final MongoTemplate mongoTemplate;
-    private final RedisTemplate<String, String> redisTemplate;
     private final RedissonClient redissonClient;
     private final RocketMQTemplate rocketMQTemplate;
+    private final WotemoChatHistory chatHistory;
     private WotemoTokenizer tokenizer = new WotemoTokenizer(MAX_TOKENS);
-    private StreamingChatLanguageModel deepseekReasonerModel;
-    private StreamingChatLanguageModel deepseekChatModel;
-    private StreamingChatLanguageModel qwenModel;
-    private StreamingChatLanguageModel qwqModel;
-    private StreamingChatLanguageModel deepseekR1Model;
+    private ChatModel dashScopeChatModel;
 
     private static final int MAX_TOKENS = 20000;
+    private static final int MAX_MESSAGE_SIZE = 100;
+    private static final int MAX_MEMORY_SIZE = (MAX_MESSAGE_SIZE / 3) / 2 * 2;
+    private static final int MAX_LEASE_TIME = 15;
 
-    @Value("${langchain4j.ollama.chat-model.base-url}")
-    private String ollamaChatModelBaseUrl;
-    @Value("${langchain4j.openai.chat-model.deepseek.base-url}")
+    @Value("${spring-ai.openai.deepseek.base-url}")
     private String deepseekBaseUrl;
-    @Value("${langchain4j.openai.chat-model.deepseek.api-key}")
+    @Value("${spring-ai.openai.deepseek.api-key}")
     private String deepseekApiKey;
 
     @PostConstruct
     void init() {
-        // 初始化大模型
-        deepseekChatModel = OpenAiStreamingChatModel.builder()
-                .baseUrl(deepseekBaseUrl)
-                .apiKey(deepseekApiKey)
-                .defaultRequestParameters(OpenAiChatRequestParameters.builder()
-                        .modelName("deepseek-chat")
-//                        .responseFormat(ResponseFormat.JSON)
-                        .build())
-//                .strictJsonSchema(true)
-                .logRequests(true)
-                .logResponses(true)
-                .build();
+//        dashScopeChatModel = OpenAiChatModel
+//                .builder()
+//                .defaultOptions(OpenAiChatOptions.builder()
+//                        .model("deekseek-v3")
+//                        .streamUsage(true)
+////                        .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+//                        .build())
+//                .openAiApi(OpenAiApi.builder()
+//                        .baseUrl(deepseekBaseUrl)
+//                        .apiKey(deepseekApiKey)
+//                        .build())
+//                .retryTemplate(RetryTemplate.builder()
+//                        .maxAttempts(3)
+//                        .build())
+//                .build();
 
-        deepseekReasonerModel = OpenAiStreamingChatModel.builder()
-                .baseUrl(deepseekBaseUrl)
-                .apiKey(deepseekApiKey)
-                .defaultRequestParameters(OpenAiChatRequestParameters.builder()
-                        .modelName("deepseek-reasoner")
-//                        .responseFormat(ResponseFormat.JSON)
-                        .build())
-//                .strictJsonSchema(true)
-                .logRequests(true)
-                .logResponses(true)
-                .build();
-
-        qwenModel = OllamaStreamingChatModel.builder()
-                .baseUrl(ollamaChatModelBaseUrl)
-                .modelName("qwen2.5:7b")
-//                .supportedCapabilities(Set.of(Capability.RESPONSE_FORMAT_JSON_SCHEMA))
-//                .responseFormat(ResponseFormat.JSON)
-                .customHeaders(Map.of("Content-Type", "application/json; charset=UTF-8"))
-                .logRequests(true)
-                .logResponses(true)
-                .build();
-
-        deepseekR1Model = OllamaStreamingChatModel.builder()
-                .baseUrl(ollamaChatModelBaseUrl)
-                .modelName("deepseek-r1:7b")
-//                .supportedCapabilities(Set.of(Capability.RESPONSE_FORMAT_JSON_SCHEMA))
-//                .responseFormat(ResponseFormat.JSON)
-                .customHeaders(Map.of("Content-Type", "application/json; charset=UTF-8"))
-                .logRequests(true)
-                .logResponses(true)
-                .build();
-
-        qwqModel = OllamaStreamingChatModel.builder()
-                .baseUrl(ollamaChatModelBaseUrl)
-                .modelName("qwq:32b")
-//                .supportedCapabilities(Set.of(Capability.RESPONSE_FORMAT_JSON_SCHEMA))
-//                .responseFormat(ResponseFormat.JSON)
-                .customHeaders(Map.of("Content-Type", "application/json; charset=UTF-8"))
-                .logRequests(true)
-                .logResponses(true)
-                .build();
+        dashScopeChatModel = new DashScopeChatModel(
+        new DashScopeApi(
+                deepseekBaseUrl,
+                deepseekApiKey,
+                RestClient.builder(),
+                WebClient.builder(),
+                RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER
+        ),
+                DashScopeChatOptions
+                        .builder()
+                        .withModel("deepseek-v3")
+                        .withStream(true)
+//                        .withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build())
+                        .build()
+                );
     }
 
     @Override
-    public SseEmitter conversation(ConversationDTO conversationDTO) throws Exception {
-        int estimatedTokens = tokenizer.estimateTokenCountInText(conversationDTO.getContent());
+    public Flux<FluxVO> conversation(ConversationDTO conversationDTO) throws InterruptedException {
+        Flux<NewConversationVO> newConversationFlux = Flux.empty();
+        Flux<TitleVO> titleFlux = Flux.empty();
+        Flux<TextMessageVO> streamingMessageFlux;
+
+        int estimatedTokens = tokenizer.estimateTokenCountInText(conversationDTO.getTextContent());
         if (estimatedTokens > MAX_TOKENS) {
             throw new RuntimeException("你输入的内容太长了，请缩短后重试");
         }
-
         String userId = UserContext.getUserId();
         boolean newConversation = conversationDTO.getConversationId() == null || conversationDTO.getConversationId().isEmpty();
         if (newConversation) conversationDTO.setConversationId(IdUtil.simpleUUID());
         String conversationId = conversationDTO.getConversationId();
-
         RLock conversationLock = redissonClient.getLock("ai:conversation_lock:" + conversationId);
-        if (!newConversation && sseEmitterRegistry.contains(UserContext.getUserId(), conversationId)) {
-            throw new RuntimeException("回答正在生成中，请稍后再试");
-        } else if (!conversationLock.tryLock(3, TimeUnit.SECONDS)) {
+        if (!conversationLock.tryLock(0, MAX_LEASE_TIME, TimeUnit.MINUTES)) {
             throw new RuntimeException("回答正在生成中，请稍后再试");
         }
 
         try {
-            SseEmitter sseEmitter;
-
             if (newConversation) {
                 // 新建对话
-                chatMessageStore.createEmptyConversation(conversationId, userId);
-
+                chatHistory.createEmptyConversation(conversationId, userId);
                 NewConversationVO newConversationVO = NewConversationVO
                         .builder()
-                        .type("newConversation")
+                        .type(FluxType.NEW_CONVERSATION.getValue())
                         .conversationId(conversationId)
-                        .messageId(1)
-                        .parentId(0)
                         .build();
-                sseEmitter = sseEmitterRegistry.create(UserContext.getUserId(), conversationId);
-                sseEmitter.send(SseEmitter.event()
-                        .id(conversationId)
-                        .name("newConversation")
-                        .comment("新建对话")
-                        .data(newConversationVO)
-                );
-                generateTitle(sseEmitter, conversationDTO);
-            } else {
-                sseEmitter = sseEmitterRegistry.create(UserContext.getUserId(), conversationId);
+                newConversationFlux = Mono.just(newConversationVO).flux();
+
+                titleFlux = generateTitle(conversationDTO);
             }
 
-            WotemoTokenWindowChatMemory chatMemory = WotemoTokenWindowChatMemory
-                    .builder()
-                    .maxTokens(MAX_TOKENS, tokenizer)
-                    .chatMemoryStore(chatMessageStore)
-                    .id(conversationDTO)
-                    .build();
-
-            Conversation conversation = chatMessageStore.getConversation(conversationId, userId);
+            Conversation conversation = chatHistory.getConversation(conversationId, userId);
             if (conversation == null) {
                 throw new RuntimeException("对话不存在");
             }
-            if (conversation.getMessages().size() > 100) {
-                sseEmitterRegistry.remove(userId, conversationId);
-                throw new RuntimeException("对话消息太多了，请新建对话");
+            if (conversation.getMessages().size() > MAX_MESSAGE_SIZE) {
+                throw new RuntimeException("对话消息太多了，新建一个对话吧");
             }
-
             int currentMessageId = conversation.getCurrentMessageId();
             int parentId;
-
             if (conversationDTO.getParentId() == null
                     || conversationDTO.getParentId() < 0
                     || conversationDTO.getParentId() > currentMessageId
@@ -207,203 +166,151 @@ public class AiServiceImpl implements AiService {
                 parentId = conversationDTO.getParentId();
             }
 
-            List<ChatMessage> historyMessages = chatMessageStore.toChatMessages(parentId, conversation.getMessages());
-            for (ChatMessage historyMessage : historyMessages) {
+            WotemoChatMemory chatMemory = new WotemoChatMemory(MAX_TOKENS);
+
+            List<Message> historyMessages = chatHistory.toChatMessages(parentId, conversation.getMessages());
+            for (Message historyMessage : historyMessages) {
+                chatMemory.add(conversationId, historyMessage);
                 chatMemory.add(historyMessage);
             }
-
-            String modelName = "deepseek-chat";
-            StreamingChatLanguageModel chatModel = deepseekChatModel;
-            if (conversationDTO.getReasoningEnabled()) {
-                modelName = "deepseek-reasoner";
-                chatModel = deepseekR1Model;
-            }
-            final String finalModelName = modelName;
-
+            boolean reasoningEnabled = conversationDTO.getReasoningEnabled();
+            String modelName = reasoningEnabled ? "deepseek-r1" : "deepseek-v3";
             int userMessageId = currentMessageId + 1;
-            int aiMessageId = currentMessageId + 2;
-            Message storeUserMessage = Message
+            int assistantMessageId = currentMessageId + 2;
+            StoreMessage storeUserMessage = StoreMessage
                     .builder()
                     .messageId(userMessageId)
                     .parentId(parentId)
-                    .model(finalModelName)
-                    .role("user")
-                    .content(conversationDTO.getContent())
-                    .reasoningEnabled(conversationDTO.getReasoningEnabled())
+                    .model(modelName)
+                    .role(MessageType.USER.getValue())
+                    .textContent(conversationDTO.getTextContent())
+                    .reasoningEnabled(reasoningEnabled)
                     .reasoningContent(null)
                     .reasoningTime(-1)
-                    .reasoningStatus(AiStatus.OTHER.getValue())
+                    .reasoningStatus(null)
                     .searchEnabled(conversationDTO.getSearchEnabled())
                     .searchResults(List.of())
-                    .searchStatus(AiStatus.OTHER.getValue())
-                    .files(List.of())
-                    .status(AiStatus.OTHER.getValue())
+                    .searchStatus(null)
+                    .mediaFiles(List.of())
+                    .status(null)
                     .createTime(LocalDateTime.now())
                     .build();
-            chatMessageStore.updateMessage(conversation.getConversationId(), storeUserMessage);
-            chatMemory.add(chatMessageStore.toChatMessage(storeUserMessage));
 
-            final StringBuilder[] partMsg = {new StringBuilder()};
-            final StringBuilder[] fullMsg = {new StringBuilder()};
-            final StringBuilder[] reasoningMsg = {new StringBuilder()};
+            chatHistory.updateMessage(conversation.getConversationId(), storeUserMessage);
+            chatMemory.add(chatHistory.toChatMessage(storeUserMessage));
 
-            final long reasoningStartTime = System.currentTimeMillis();
-            final int[] reasoningTime = {-1};
-            final String[] reasoningStatus = {AiStatus.CANCELLED.getValue()};
-            final boolean[] reasoningStarted = {false};
-            final boolean[] reasoningComplete = {false};
-            final boolean[] thinkFirst = {false};
-            final boolean[] thinkLast = {false};
+            List<Message> messages = new ArrayList<>();
+            messages.add(
+                    new SystemMessage("你是中国矿业大学的AI助手，你的名字叫圈圈，现在是北京时间：" + LocalDateTime.now())
+            );
+            messages.addAll(chatMemory.get(conversationId, MAX_MEMORY_SIZE));
 
-            chatModel.chat(chatMemory.messages(), new StreamingChatResponseHandler() {
-                @Override
-                public void onPartialResponse(String msg) {
-                    if (!sseEmitterRegistry.contains(userId, conversationId)) {
-                        Message message = Message
+            Prompt prompt = new Prompt(messages, ChatOptions.builder()
+                    .model(modelName)
+                    .build());
+
+            ChatClient chatClient = ChatClient.builder(dashScopeChatModel)
+                    .build();
+
+            StringBuilder finalTextContent = new StringBuilder();
+            StringBuilder finalReasoningContent = new StringBuilder();
+            long reasoningStartTime = System.currentTimeMillis();
+            AtomicInteger reasoningTime = new AtomicInteger(-1);
+
+            conversationManager.register(userId, conversationId);
+
+            Flux<ChatResponse> chatResponseFlux = chatClient
+                    .prompt(prompt)
+                    .stream().chatResponse()
+                    .doOnNext(chatResponse -> {
+                        String textContent = chatResponse.getResult().getOutput().getText();
+                        System.out.println("回答：" + textContent);
+                        if (reasoningEnabled) {
+                            Map<String, Object> metadata = chatResponse.getResult().getOutput().getMetadata();
+                            String reasoningContent = String.valueOf(metadata.getOrDefault("reasoningContent", ""));
+
+                            if (!reasoningContent.isEmpty()) {
+                                finalReasoningContent.append(reasoningContent);
+                                System.out.println("深度思考：" + reasoningContent);
+                            } else {
+                                long reasoningEndTime = System.currentTimeMillis();
+                                reasoningTime.compareAndSet(-1, (int) ((reasoningEndTime - reasoningStartTime) / 1000));
+                                finalTextContent.append(textContent);
+                            }
+                        } else {
+                            finalTextContent.append(textContent);
+                        }
+                    })
+                    .doFinally(signalType -> {
+                        AiStatus reasoningStatus = reasoningEnabled ? switch (signalType) {
+                            case ON_COMPLETE -> AiStatus.FINISHED;
+                            case ON_ERROR -> AiStatus.FAILED;
+                            case CANCEL -> AiStatus.CANCELLED;
+                            default -> AiStatus.UNUSED;
+                        } : AiStatus.UNUSED;
+
+                        AiStatus status = switch (signalType) {
+                            case ON_COMPLETE -> AiStatus.FINISHED;
+                            case ON_ERROR -> AiStatus.FAILED;
+                            case CANCEL -> AiStatus.CANCELLED;
+                            default -> AiStatus.UNUSED;
+                        };
+
+                        // 处理完成后的逻辑
+                        StoreMessage storeAssistantMessage = StoreMessage
                                 .builder()
-                                .messageId(aiMessageId)
-                                .parentId(userMessageId)
-                                .model(finalModelName)
-                                .role("assistant")
-                                .content(fullMsg[0].toString().trim())
-                                .reasoningEnabled(conversationDTO.getReasoningEnabled())
-                                .reasoningContent(conversationDTO.getReasoningEnabled() ?
-                                        reasoningMsg[0].toString().trim() : null)
-                                .reasoningTime(reasoningTime[0])
-                                .reasoningStatus(conversationDTO.getReasoningEnabled() ?
-                                        reasoningStatus[0] : AiStatus.UNUSED.getValue())
+                                .messageId(userMessageId)
+                                .parentId(parentId)
+                                .model(modelName)
+                                .role(MessageType.ASSISTANT.getValue())
+                                .textContent(finalTextContent.toString())
+                                .reasoningEnabled(reasoningEnabled)
+                                .reasoningContent(finalReasoningContent.toString())
+                                .reasoningTime(reasoningTime.get())
+                                .reasoningStatus(reasoningStatus.getValue())
                                 .searchEnabled(conversationDTO.getSearchEnabled())
                                 .searchResults(List.of())
                                 .searchStatus(AiStatus.UNUSED.getValue())
-                                .files(List.of())
-                                .status(AiStatus.CANCELLED.getValue())
+                                .mediaFiles(List.of())
+                                .status(status.getValue())
                                 .createTime(LocalDateTime.now())
                                 .build();
-                        chatMessageStore.updateMessage(conversation.getConversationId(), message);
-                        conversationLock.forceUnlock();
-                        throw new RuntimeException("中止对话");
-                    }
 
-                    // 推理内容处理
-                    if (conversationDTO.getReasoningEnabled()) {
-                        if (msg.equals("<think>")) {
-                            reasoningStarted[0] = true;
-                        } else if (msg.equals("</think>")) {
-                            reasoningComplete[0] = true;
-                            reasoningTime[0] = (int) ((System.currentTimeMillis() - reasoningStartTime) / 1000);
-                            reasoningStatus[0] = AiStatus.FINISHED.getValue();
-                        } else if (reasoningStarted[0] && !reasoningComplete[0]) {
-                            if (msg.isBlank()) {
-                                if (!thinkFirst[0]) {
-                                    thinkFirst[0] = true;
-                                    return;
-                                }
-                            }
-                            reasoningMsg[0].append(msg);
-                            partMsg[0].append(msg);
-                        } else if (reasoningComplete[0]) {
-                            if (msg.isBlank()) {
-                                if (!thinkLast[0]) {
-                                    thinkLast[0] = true;
-                                    return;
-                                }
-                            }
-                            fullMsg[0].append(msg);
-                            partMsg[0].append(msg);
-                        }
-                    } else {
-                        fullMsg[0].append(msg);
-                        partMsg[0].append(msg);
-                    }
+                        chatHistory.updateMessage(conversationId, storeAssistantMessage);
+                        conversationManager.remove(userId, conversationId);
+                        conversationLock.forceUnlockAsync();
+                        chatMemory.clear();
+                    })
+                    .takeUntilOther(conversationManager.cancelFlux(userId, conversationId));
 
-                    StreamingMessageVO streamingMessageVO = StreamingMessageVO
-                            .builder()
-                            .type("message")
-                            .messageId(aiMessageId)
-                            .parentId(userMessageId)
-                            .model(finalModelName)
-                            .role("assistant")
-                            .content(partMsg[0].toString())
-                            .build();
+            streamingMessageFlux = chatResponseFlux.map(chatResponse -> {
+                String textContent = chatResponse.getResult().getOutput().getText();
 
-                    if (conversationDTO.getReasoningEnabled() && (!reasoningComplete[0] || msg.equals("</think>"))) {
-                        streamingMessageVO.setType("reasoning");
-                    }
-                    if (!msg.equals("</think>") && partMsg[0].length() <= 10) return;
+                TextMessageVO textMessageVO = TextMessageVO
+                        .builder()
+                        .type(FluxType.TEXT_MESSAGE.getValue())
+                        .messageId(assistantMessageId)
+                        .parentId(userMessageId)
+                        .model(modelName)
+                        .role(MessageType.ASSISTANT.getValue())
+                        .textContent(textContent)
+                        .build();
 
-                    try {
-                        sseEmitter.send(SseEmitter.event()
-                                .id(conversationId)
-                                .name(streamingMessageVO.getType())
-                                .comment("AI消息")
-                                .data(streamingMessageVO)
-                        );
-                        partMsg[0].setLength(0);
-                    } catch (IOException e) {
-                        log.error("发送AI消息失败", e);
-                        sseEmitterRegistry.remove(userId, conversationId);
+                if (reasoningEnabled) {
+                    Map<String, Object> metadata = chatResponse.getResult().getOutput().getMetadata();
+                    String reasoningContent = String.valueOf(metadata.getOrDefault("reasoningContent", ""));
+
+                    if (!reasoningContent.isEmpty()) {
+                        textMessageVO.setType(FluxType.REASONING_MESSAGE.getValue());
+                        textMessageVO.setTextContent(reasoningContent);
                     }
                 }
 
-                @Override
-                public void onCompleteResponse(ChatResponse chatResponse) {
-                    if (!partMsg[0].isEmpty()) {
-                        try {
-                            StreamingMessageVO streamingMessageVO = StreamingMessageVO
-                                    .builder()
-                                    .type("message")
-                                    .messageId(aiMessageId)
-                                    .parentId(userMessageId)
-                                    .model(finalModelName)
-                                    .role("assistant")
-                                    .content(partMsg[0].toString())
-                                    .build();
-                            sseEmitter.send(SseEmitter.event()
-                                    .id(conversationId)
-                                    .name("message")
-                                    .comment("AI消息")
-                                    .data(streamingMessageVO)
-                            );
-                            partMsg[0].setLength(0);
-                        } catch (IOException ignored) {}
-                    }
-
-                    Message message = Message
-                            .builder()
-                            .messageId(aiMessageId)
-                            .parentId(userMessageId)
-                            .model(finalModelName)
-                            .role("assistant")
-                            .content(fullMsg[0].toString().trim())
-                            .reasoningEnabled(conversationDTO.getReasoningEnabled())
-                            .reasoningContent(conversationDTO.getReasoningEnabled() ?
-                                    reasoningMsg[0].toString().trim() : null)
-                            .reasoningTime(reasoningTime[0])
-                            .reasoningStatus(conversationDTO.getReasoningEnabled() ?
-                                    reasoningStatus[0] : AiStatus.UNUSED.getValue())
-                            .searchEnabled(conversationDTO.getSearchEnabled())
-                            .searchResults(List.of())
-                            .searchStatus(AiStatus.UNUSED.getValue())
-                            .files(List.of())
-                            .status(AiStatus.FINISHED.getValue())
-                            .createTime(LocalDateTime.now())
-                            .build();
-
-                    chatMessageStore.updateMessage(conversation.getConversationId(), message);
-                    sseEmitterRegistry.remove(userId, conversationId);
-                    conversationLock.forceUnlockAsync();
-                }
-
-                @Override
-                public void onError(Throwable error) {
-                    log.error("发送AI消息失败", error);
-                    sseEmitterRegistry.remove(userId, conversationId);
-                    conversationLock.forceUnlockAsync();
-                }
+                return textMessageVO;
             });
 
-            return sseEmitter;
-        } catch (Exception e) {
+            return Flux.merge(newConversationFlux, titleFlux, streamingMessageFlux);
+        } catch (RuntimeException e) {
             conversationLock.forceUnlockAsync();
             throw new RuntimeException(e);
         }
@@ -411,16 +318,16 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public ConversationVO getConversation(String conversationId) {
-        Conversation conversation = chatMessageStore.getConversation(conversationId, UserContext.getUserId());
+        Conversation conversation = chatHistory.getConversation(conversationId, UserContext.getUserId());
 
         List<MessageVO> messageVOs = new ArrayList<>();
-        for (Message message : conversation.getMessages()) {
+        for (StoreMessage message : conversation.getMessages()) {
             MessageVO messageVO = BeanUtil.copyProperties(message, MessageVO.class, "files");
-            messageVO.setFiles(BeanUtil.copyToList(message.getFiles(), MediaFileVO.class));
+            messageVO.setMediaFiles(BeanUtil.copyToList(message.getMediaFiles(), MediaFileVO.class));
             messageVOs.add(messageVO);
         }
 
-        ConversationVO conversationVO = ConversationVO
+        return ConversationVO
                 .builder()
                 .conversationId(conversation.getConversationId())
                 .userId(conversation.getUserId())
@@ -430,8 +337,6 @@ public class AiServiceImpl implements AiService {
                 .createTime(conversation.getCreateTime())
                 .updateTime(conversation.getUpdateTime())
                 .build();
-
-        return conversationVO;
     }
 
     @Override
@@ -467,8 +372,8 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public void stopConversation(StopConversationDTO stopConversationDTO) {
-        if (sseEmitterRegistry.contains(UserContext.getUserId(), stopConversationDTO.getConversationId())) {
-            sseEmitterRegistry.remove(UserContext.getUserId(), stopConversationDTO.getConversationId());
+        if (conversationManager.contains(UserContext.getUserId(), stopConversationDTO.getConversationId())) {
+            conversationManager.cancel(UserContext.getUserId(), stopConversationDTO.getConversationId());
         } else {
             StopConversationMsgDTO stopConversationMsgDTO = StopConversationMsgDTO
                     .builder()
@@ -480,32 +385,33 @@ public class AiServiceImpl implements AiService {
         }
     }
 
-    @Async
-    public void generateTitle(SseEmitter sseEmitter, ConversationDTO conversationDTO) throws IOException {
-        String title;
+    public Flux<TitleVO> generateTitle(ConversationDTO conversationDTO) {
+        // 异步操作
+        return Mono.fromCallable(() -> {
+                    String title;
 
-        String content = conversationDTO.getContent();
-        if (content.length() <= 15) {
-            title = content;
-        } else {
-            title = content.substring(0, 15);
-        }
+                    String textContent = conversationDTO.getTextContent();
+                    if (textContent.length() <= 15) {
+                        title = textContent;
+                    } else {
+                        title = textContent.substring(0, 15);
+                    }
 
-        TitleVO titleVO = TitleVO
-                .builder()
-                .type("title")
-                .title(title)
-                .build();
+                    TitleVO titleVO = TitleVO
+                            .builder()
+                            .type(FluxType.TITLE.getValue())
+                            .title(title)
+                            .build();
 
-        sseEmitter.send(SseEmitter.event()
-                .id(conversationDTO.getConversationId())
-                .name("title")
-                .comment("生成标题")
-                .data(titleVO)
-        );
+                    // 异步更新 MongoDB 数据
+                    Query query = new Query(Criteria.where("_id").is(conversationDTO.getConversationId()));
+                    Update update = new Update().set("title", title);
+                    mongoTemplate.updateFirst(query, update, Conversation.class);
 
-        Query query = new Query(Criteria.where("_id").is(conversationDTO.getConversationId()));
-        Update update = new Update().set("title", title);
-        mongoTemplate.updateFirst(query, update, Conversation.class);
+                    return titleVO;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flux();
     }
+
 }

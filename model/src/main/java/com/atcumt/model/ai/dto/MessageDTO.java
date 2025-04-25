@@ -8,5 +8,5 @@ import lombok.*;
 @NoArgsConstructor
 public class MessageDTO {
     private String conversationId;
-    private String content;
+    private String textContent;
 }

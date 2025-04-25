@@ -16,8 +16,8 @@ public class ConversationDTO {
     private String conversationId;
     @Schema(name = "parentId", description = "父消息ID")
     private Integer parentId;
-    @Schema(name = "content", description = "用户对话内容")
-    private String content;
+    @Schema(name = "content", description = "用户对话文本内容")
+    private String textContent;
     @Schema(name = "reasoningEnabled", description = "深度思考")
     private Boolean reasoningEnabled = false;
     @Schema(name = "searchEnabled", description = "搜索")

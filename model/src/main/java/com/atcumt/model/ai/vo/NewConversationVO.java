@@ -1,14 +1,14 @@
 package com.atcumt.model.ai.vo;
 
+import com.atcumt.model.ai.enums.FluxType;
 import lombok.*;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class NewConversationVO {
-    private String type = "newConversation";
+@EqualsAndHashCode(callSuper = false)
+public class NewConversationVO extends FluxVO {
+    private String type = FluxType.NEW_CONVERSATION.getValue();
     private String conversationId;
-    private Integer messageId;
-    private Integer parentId;
 }

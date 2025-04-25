@@ -1,6 +1,6 @@
 package com.atcumt.model.ai.vo;
 
-import com.atcumt.model.ai.entity.AiSearch;
+import com.atcumt.model.ai.entity.WebSearch;
 import com.atcumt.model.common.vo.MediaFileVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,15 +19,15 @@ public class MessageVO {
     private Integer parentId;
     private String model;
     private String role;
-    private String content;
+    private String textContent;
     private Boolean reasoningEnabled;
     private String reasoningContent;
     private Integer reasoningTime;
     private String reasoningStatus;
     private Boolean searchEnabled;
-    private List<AiSearch> searchResults;
+    private List<WebSearch> searchResults;
     private String searchStatus;
-    private List<MediaFileVO> files;
+    private List<MediaFileVO> mediaFiles;
     private String status;
     private LocalDateTime createTime;
 }

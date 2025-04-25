@@ -3,7 +3,7 @@
 
 <mapper namespace="com.atcumt.auth.mapper.PermissionMapper">
     <!-- 根据用户ID查询用户权限 -->
-    <select id="selectPermissionsByUserId" resultType="com.atcumt.model.auth.entity.Permission"
+    <select conversationId="selectPermissionsByUserId" resultType="com.atcumt.model.auth.entity.Permission"
             parameterType="java.lang.String">
         SELECT permission.*
         FROM permission
@@ -11,7 +11,7 @@
                  INNER JOIN user_role ON role_permission.role_id = user_role.role_id
         WHERE user_role.user_id = #{userId}
     </select>
-    <select id="selectPermissionsByRoleId" resultType="com.atcumt.model.auth.entity.Permission"
+    <select conversationId="selectPermissionsByRoleId" resultType="com.atcumt.model.auth.entity.Permission"
             parameterType="java.lang.String">
         SELECT permission.*
         FROM permission

@@ -3,7 +3,7 @@
 
 <mapper namespace="com.atcumt.auth.mapper.RoleMapper">
     <!-- 查询用户角色信息 -->
-    <select id="selectRolesByUserId" resultType="com.atcumt.model.auth.entity.Role"
+    <select conversationId="selectRolesByUserId" resultType="com.atcumt.model.auth.entity.Role"
             parameterType="java.lang.String">
         SELECT role.*
         FROM user_role
@@ -11,7 +11,7 @@
                             ON user_role.user_id = #{userId}
         where user_role.role_id = role.role_id;
     </select>
-    <select id="getValidRoleIds" resultType="java.lang.String"
+    <select conversationId="getValidRoleIds" resultType="java.lang.String"
             parameterType="list">
         SELECT role_id FROM role WHERE role_id IN
         <foreach item="roleId" collection="roleIds" open="(" separator="," close=")">

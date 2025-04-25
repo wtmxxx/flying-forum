@@ -13,20 +13,20 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Message {
+public class StoreMessage {
     private Integer messageId;
     private Integer parentId;
     private String model;
     private String role;
-    private String content;
+    private String textContent;
     private Boolean reasoningEnabled;
     private String reasoningContent;
     private Integer reasoningTime;
     private String reasoningStatus;
     private Boolean searchEnabled;
-    private List<AiSearch> searchResults;
+    private List<WebSearch> searchResults;
     private String searchStatus;
-    private List<MediaFile> files;
+    private List<MediaFile> mediaFiles;
     private String status;
     private LocalDateTime createTime;
 }

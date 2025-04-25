@@ -26,7 +26,7 @@ public class Conversation {
     private String userId;
     private String title;
     private Integer currentMessageId;
-    private List<Message> messages;
+    private List<StoreMessage> messages;
     @Indexed(direction = IndexDirection.DESCENDING)
     private LocalDateTime createTime;
     @Indexed(direction = IndexDirection.DESCENDING)

@@ -9,7 +9,7 @@ USE gpt;
 -- 注意此处0.3.0+ 增加唯一索引 ux_undo_log
 CREATE TABLE `undo_log`
 (
-    `id`            bigint(20)   NOT NULL AUTO_INCREMENT,
+    `conversationId`            bigint(20)   NOT NULL AUTO_INCREMENT,
     `branch_id`     bigint(20)   NOT NULL,
     `xid`           varchar(100) NOT NULL,
     `context`       varchar(128) NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE `undo_log`
     `log_created`   datetime     NOT NULL,
     `log_modified`  datetime     NOT NULL,
     `ext`           varchar(100) DEFAULT NULL,
-    PRIMARY KEY (`id`),
+    PRIMARY KEY (`conversationId`),
     UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS conversation
 
 -- 创建消息表，存储每条消息的详细信息
 USE gpt;
-CREATE TABLE IF NOT EXISTS message
+CREATE TABLE IF NOT EXISTS storeMessage
 (
     message_id VARCHAR(36) NOT NULL PRIMARY KEY COMMENT '使用UUID算法生成',
     conversation_id VARCHAR(36) NOT NULL COMMENT '会话ID，标识消息所属的会话',

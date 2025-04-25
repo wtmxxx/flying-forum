@@ -1,6 +1,6 @@
 package com.atcumt.ai.listener;
 
-import com.atcumt.ai.utils.SseEmitterRegistry;
+import com.atcumt.ai.utils.ConversationManager;
 import com.atcumt.model.ai.dto.StopConversationMsgDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class StopConversationConsumer implements RocketMQListener<StopConversationMsgDTO> {
-    private final SseEmitterRegistry sseEmitterRegistry;
+    private final ConversationManager conversationManager;
 
     @Override
     public void onMessage(StopConversationMsgDTO stopConversationMsgDTO) {
@@ -33,6 +33,6 @@ public class StopConversationConsumer implements RocketMQListener<StopConversati
             return;
         }
 
-        sseEmitterRegistry.remove(stopConversationMsgDTO.getUserId(), stopConversationMsgDTO.getConversationId());
+        conversationManager.cancel(stopConversationMsgDTO.getUserId(), stopConversationMsgDTO.getConversationId());
     }
 }

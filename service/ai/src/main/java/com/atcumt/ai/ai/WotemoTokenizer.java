@@ -1,9 +1,10 @@
 package com.atcumt.ai.ai;
 
-import dev.langchain4j.data.message.*;
-import dev.langchain4j.model.Tokenizer;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 
-public class WotemoTokenizer implements Tokenizer {
+public class WotemoTokenizer {
     private final int maxTokens;
 
     public WotemoTokenizer() {
@@ -14,7 +15,6 @@ public class WotemoTokenizer implements Tokenizer {
         this.maxTokens = maxTokens * 4;
     }
 
-    @Override
     public int estimateTokenCountInText(String text) {
         if (text == null) return 0;
         if (text.length() <= maxTokens || text.length() > maxTokens * 4) return text.length() * 3 / 4;
@@ -48,29 +48,29 @@ public class WotemoTokenizer implements Tokenizer {
                 || block == Character.UnicodeBlock.GENERAL_PUNCTUATION;
     }
 
-    @Override
-    public int estimateTokenCountInMessage(ChatMessage chatMessage) {
-        if (chatMessage instanceof UserMessage userMessage) {
-            int count = 0;
-            for (Content content : userMessage.contents()) {
-                if (content instanceof TextContent textContent) {
-                    count += estimateTokenCountInText(textContent.text());
-                }
-            }
-            return count;
-        } else if (chatMessage instanceof AiMessage aiMessage) {
-            return estimateTokenCountInText(aiMessage.text());
-        }
+//    public int estimateTokenCountInMessages(List<Message> messages) {
+//        int count = 0;
+//        for (Message msg : messages) {
+//            count += estimateTokenCountInMessage(msg);
+//        }
+//        return count;
+//    }
 
-        return estimateTokenCountInText(chatMessage.type().name());
-    }
-
-    @Override
-    public int estimateTokenCountInMessages(Iterable<ChatMessage> messages) {
+    public int estimateTokenCountInMessages(Iterable<Message> messages) {
         int count = 0;
-        for (ChatMessage msg : messages) {
+        for (Message msg : messages) {
             count += estimateTokenCountInMessage(msg);
         }
         return count;
+    }
+
+    public int estimateTokenCountInMessage(Message message) {
+        if (message instanceof UserMessage userMessage) {
+            return estimateTokenCountInText(userMessage.getText());
+        } else if (message instanceof AssistantMessage assistantMessage) {
+            return estimateTokenCountInText(assistantMessage.getText());
+        }
+
+        return estimateTokenCountInText(message.getMessageType().getValue());
     }
 }

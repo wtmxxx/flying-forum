@@ -1,6 +1,6 @@
 package com.atcumt.model.ai.dto;
 
-import com.atcumt.model.ai.entity.AiSearch;
+import com.atcumt.model.ai.entity.WebSearch;
 import com.atcumt.model.ai.enums.AiStatus;
 import com.atcumt.model.common.entity.MediaFile;
 import lombok.AllArgsConstructor;
@@ -22,7 +22,7 @@ public class ChatMessageDTO {
     private Integer parentId;
     private String model;
     private String role;
-    private String content;
+    private String textContent;
     @Builder.Default
     private Boolean reasoningEnabled = false;
     @Builder.Default
@@ -32,11 +32,11 @@ public class ChatMessageDTO {
     @Builder.Default
     private Boolean searchEnabled = false;
     @Builder.Default
-    private List<AiSearch> searchResults = List.of();
+    private List<WebSearch> searchResults = List.of();
     @Builder.Default
     private String searchStatus = AiStatus.UNUSED.getValue();
     @Builder.Default
-    private List<MediaFile> files = List.of();
+    private List<MediaFile> mediaFiles = List.of();
     private String status;
     @Builder.Default
     private LocalDateTime createTime = LocalDateTime.now();

@@ -1,15 +1,14 @@
 package com.atcumt.model.ai.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.atcumt.model.ai.enums.FluxType;
+import lombok.*;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TitleVO {
-    private String type = "title";
+@EqualsAndHashCode(callSuper = false)
+public class TitleVO extends FluxVO {
+    private String type = FluxType.TITLE.getValue();
     private String title;
 }

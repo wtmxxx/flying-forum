@@ -45,7 +45,7 @@ public class AppleAuthUtil {
             response = webClient.post()
                     .uri(uriBuilder -> uriBuilder.scheme("https")
                             .host("appleid.apple.com")
-                            .path("/auth/oauth2/v2/token")
+                            .path("/auth/oauth2/v1/token")
                             .queryParam("client_id", appleClientId)
                             .queryParam("client_secret", clientSecret)
                             .queryParam("code", appleAuthorizationCode)

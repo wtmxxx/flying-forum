@@ -62,7 +62,7 @@
         <auth0.java-jwt.version>4.5.0</auth0.java-jwt.version>
         <caffeine.version>3.2.0</caffeine.version>
         <druid.version>1.2.24</druid.version>
-        <dubbo.version>3.3.3</dubbo.version>
+        <dubbo.version>3.3.4</dubbo.version>
         <houbb.sensitive-word.version>0.25.0</houbb.sensitive-word.version>
         <hutool.version>5.8.36</hutool.version>
         <javassist.version>3.30.2-GA</javassist.version>
@@ -92,6 +92,26 @@
             <version>${jackson.version}</version>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
     <dependencyManagement>
         <dependencies>
             <!-- Spring Cloud 版本管理器 -->
@@ -117,6 +137,12 @@
                 <version>${spring-ai.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Spring AI Alibaba 版本管理器 -->
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
             </dependency>
             <!-- LangChain4j 版本管理器 -->
             <dependency>

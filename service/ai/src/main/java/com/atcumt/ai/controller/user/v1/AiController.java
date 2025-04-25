@@ -7,9 +7,11 @@ import com.atcumt.model.ai.dto.StopConversationDTO;
 import com.atcumt.model.ai.dto.TitleDTO;
 import com.atcumt.model.ai.vo.ConversationPageVO;
 import com.atcumt.model.ai.vo.ConversationVO;
+import com.atcumt.model.ai.vo.FluxVO;
 import com.atcumt.model.common.dto.PageQueryDTO;
 import com.atcumt.model.common.entity.Result;
 import com.atcumt.model.common.vo.SimplePageQueryVO;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -17,8 +19,9 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
 
 @RestController("aiControllerV1")
 @RequestMapping("/api/ai/user/v1")
@@ -28,15 +31,23 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class AiController {
     private final AiService aiService;
 
-    @PostMapping("/conversation")
+    @PostMapping(path = "/conversation", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "对话")
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public SseEmitter getConversation(@RequestBody ConversationDTO conversationDTO) throws Exception {
+    public Flux<FluxVO> getConversation(@RequestBody ConversationDTO conversationDTO) throws Exception {
         log.info("对话, userId: {}, conversationId: {}", UserContext.getUserId(), conversationDTO.getConversationId());
 
         return aiService.conversation(conversationDTO);
+    }
+
+    @PostMapping("/conversation/logger/api/v1/services/aigc/text-generation/generation")
+    @Operation(summary = "对话日志")
+    public Result<Object> getConversationLogger(@RequestBody JsonNode jsonNode) {
+        log.info("对话日志: {}", jsonNode);
+
+        return Result.success();
     }
 
     @GetMapping("/conversation/{conversationId}")
@@ -44,7 +55,7 @@ public class AiController {
     @Parameters({
             @Parameter(name = "Authorization", description = "授权Token", in = ParameterIn.HEADER, required = true)
     })
-    public Result<ConversationVO> getConversation(@PathVariable(name = "conversationId") String conversationId) throws Exception {
+    public Result<ConversationVO> getConversation(@PathVariable(name = "conversationId") String conversationId) {
         log.info("获取对话历史消息, userId: {}, conversationId: {}", UserContext.getUserId(), conversationId);
 
         ConversationVO conversationVO = aiService.getConversation(conversationId);

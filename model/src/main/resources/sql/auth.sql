@@ -9,7 +9,7 @@ USE auth;
 -- 注意此处0.3.0+ 增加唯一索引 ux_undo_log （seata）
 CREATE TABLE `undo_log`
 (
-    `id`            bigint(20)   NOT NULL AUTO_INCREMENT,
+    `conversationId`            bigint(20)   NOT NULL AUTO_INCREMENT,
     `branch_id`     bigint(20)   NOT NULL,
     `xid`           varchar(100) NOT NULL,
     `context`       varchar(128) NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE `undo_log`
     `log_created`   datetime     NOT NULL,
     `log_modified`  datetime     NOT NULL,
     `ext`           varchar(100) DEFAULT NULL,
-    PRIMARY KEY (`id`),
+    PRIMARY KEY (`conversationId`),
     UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
