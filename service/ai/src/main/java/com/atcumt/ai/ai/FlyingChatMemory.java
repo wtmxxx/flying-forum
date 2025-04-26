@@ -8,19 +8,19 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Slf4j
-public class WotemoChatMemory implements ChatMemory {
+public class FlyingChatMemory implements ChatMemory {
     private final Integer maxTokens;
-    private final WotemoTokenizer tokenizer;
+    private final FlyingTokenizer tokenizer;
     private final List<Message> messages = new LinkedList<>();
 
-    public WotemoChatMemory() {
+    public FlyingChatMemory() {
         this.maxTokens = 20000;
-        this.tokenizer = new WotemoTokenizer();
+        this.tokenizer = new FlyingTokenizer();
     }
 
-    public WotemoChatMemory(int maxTokens) {
+    public FlyingChatMemory(int maxTokens) {
         this.maxTokens = maxTokens;
-        this.tokenizer = new WotemoTokenizer(maxTokens);
+        this.tokenizer = new FlyingTokenizer(maxTokens);
     }
 
     public void add(Message message) {
@@ -51,7 +51,7 @@ public class WotemoChatMemory implements ChatMemory {
         messages.clear();
     }
 
-    private static void ensureCapacity(List<Message> messages, int maxTokens, WotemoTokenizer tokenizer) {
+    private static void ensureCapacity(List<Message> messages, int maxTokens, FlyingTokenizer tokenizer) {
         if (!messages.isEmpty()) {
             int currentTokenCount = tokenizer.estimateTokenCountInMessages(messages);
 

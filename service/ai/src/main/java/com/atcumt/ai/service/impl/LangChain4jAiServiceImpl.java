@@ -5,12 +5,12 @@ package com.atcumt.ai.service.impl;
 //@Slf4j
 //public class AiServiceImpl implements AiService {
 //    private final SseEmitterRegistry sseEmitterRegistry;
-//    private final WotemoChatHistory chatMessageStore;
+//    private final FlyingChatHistory chatMessageStore;
 //    private final MongoTemplate mongoTemplate;
 //    private final RedisTemplate<String, String> redisTemplate;
 //    private final RedissonClient redissonClient;
 //    private final RocketMQTemplate rocketMQTemplate;
-//    private WotemoTokenizer tokenizer = new WotemoTokenizer(MAX_TOKENS);
+//    private FlyingTokenizer tokenizer = new FlyingTokenizer(MAX_TOKENS);
 //    private StreamingChatLanguageModel deepseekReasonerModel;
 //    private StreamingChatLanguageModel deepseekChatModel;
 //    private StreamingChatLanguageModel qwenModel;

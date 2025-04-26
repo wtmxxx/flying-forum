@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class TitleVO extends FluxVO {
+    @Builder.Default
     private String type = FluxType.TITLE.getValue();
     private String title;
 }

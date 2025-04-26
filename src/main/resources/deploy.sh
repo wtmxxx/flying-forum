@@ -1,8 +1,8 @@
 #!/bin/bash
 
 cd G:/FLYING_FORUM/flying-forum || exit
-mvn clean
-mvn package -Dmaven.test.skip=true
+#mvn clean
+#mvn package -DskipTests=true
 
 # 强制使用 UTF-8
 export LANG="en_US.UTF-8"

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class WotemoChatHistory {
+public class FlyingChatHistory {
     private final MongoTemplate mongoTemplate;
 
     public List<Message> toChatMessages(int currentMessageId , List<StoreMessage> storeMessages) {

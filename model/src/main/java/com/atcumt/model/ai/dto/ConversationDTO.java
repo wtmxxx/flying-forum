@@ -16,10 +16,12 @@ public class ConversationDTO {
     private String conversationId;
     @Schema(name = "parentId", description = "父消息ID")
     private Integer parentId;
-    @Schema(name = "content", description = "用户对话文本内容")
+    @Schema(name = "textContent", description = "用户对话文本内容")
     private String textContent;
+    @Builder.Default
     @Schema(name = "reasoningEnabled", description = "深度思考")
     private Boolean reasoningEnabled = false;
+    @Builder.Default
     @Schema(name = "searchEnabled", description = "搜索")
     private Boolean searchEnabled = false;
 }

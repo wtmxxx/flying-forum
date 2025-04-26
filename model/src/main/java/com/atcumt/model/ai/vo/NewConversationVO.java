@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class NewConversationVO extends FluxVO {
+    @Builder.Default
     private String type = FluxType.NEW_CONVERSATION.getValue();
     private String conversationId;
 }

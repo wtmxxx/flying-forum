@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AiSearch {
-    private Integer searchId;
+public class WebSearch {
     private String url;
+    private String title;
     private String content;
 }

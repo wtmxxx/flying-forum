@@ -5,10 +5,11 @@ import cn.hutool.core.util.IdUtil;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.atcumt.ai.ai.WotemoChatHistory;
-import com.atcumt.ai.ai.WotemoChatMemory;
-import com.atcumt.ai.ai.WotemoTokenizer;
+import com.atcumt.ai.ai.FlyingChatHistory;
+import com.atcumt.ai.ai.FlyingChatMemory;
+import com.atcumt.ai.ai.FlyingTokenizer;
 import com.atcumt.ai.service.AiService;
+import com.atcumt.ai.tools.WebSearchTool;
 import com.atcumt.ai.utils.ConversationManager;
 import com.atcumt.common.utils.UserContext;
 import com.atcumt.model.ai.dto.ConversationDTO;
@@ -17,6 +18,8 @@ import com.atcumt.model.ai.dto.StopConversationMsgDTO;
 import com.atcumt.model.ai.dto.TitleDTO;
 import com.atcumt.model.ai.entity.Conversation;
 import com.atcumt.model.ai.entity.StoreMessage;
+import com.atcumt.model.ai.entity.WebSearch;
+import com.atcumt.model.ai.entity.WebSearchParameter;
 import com.atcumt.model.ai.enums.AiStatus;
 import com.atcumt.model.ai.enums.FluxType;
 import com.atcumt.model.ai.vo.*;
@@ -33,10 +36,13 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
+import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
@@ -66,8 +72,9 @@ public class AiServiceImpl implements AiService {
     private final MongoTemplate mongoTemplate;
     private final RedissonClient redissonClient;
     private final RocketMQTemplate rocketMQTemplate;
-    private final WotemoChatHistory chatHistory;
-    private WotemoTokenizer tokenizer = new WotemoTokenizer(MAX_TOKENS);
+    private final FlyingChatHistory chatHistory;
+    private final WebSearchTool webSearchTool;
+    private FlyingTokenizer tokenizer = new FlyingTokenizer(MAX_TOKENS);
     private ChatModel dashScopeChatModel;
 
     private static final int MAX_TOKENS = 20000;
@@ -108,17 +115,23 @@ public class AiServiceImpl implements AiService {
         ),
                 DashScopeChatOptions
                         .builder()
-                        .withModel("deepseek-v3")
+                        .withModel("qwen2.5-1.5b-instruct")
                         .withStream(true)
+                        .withEnableSearch(true)
 //                        .withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build())
                         .build()
                 );
+    }
+
+    private String getSystemMessage() {
+        return "你是中国矿业大学的AI助手，你的名字叫圈圈，现在是北京时间：" + LocalDateTime.now();
     }
 
     @Override
     public Flux<FluxVO> conversation(ConversationDTO conversationDTO) throws InterruptedException {
         Flux<NewConversationVO> newConversationFlux = Flux.empty();
         Flux<TitleVO> titleFlux = Flux.empty();
+        Flux<WebSearchResultsVO> webSearchFlux = Flux.empty();
         Flux<TextMessageVO> streamingMessageFlux;
 
         int estimatedTokens = tokenizer.estimateTokenCountInText(conversationDTO.getTextContent());
@@ -150,7 +163,12 @@ public class AiServiceImpl implements AiService {
 
             Conversation conversation = chatHistory.getConversation(conversationId, userId);
             if (conversation == null) {
-                throw new RuntimeException("对话不存在");
+                if (newConversation) {
+                    Thread.yield();
+                    conversation = chatHistory.getConversation(conversationId, userId);
+                }
+
+                if (conversation == null) throw new RuntimeException("对话不存在");
             }
             if (conversation.getMessages().size() > MAX_MESSAGE_SIZE) {
                 throw new RuntimeException("对话消息太多了，新建一个对话吧");
@@ -166,7 +184,7 @@ public class AiServiceImpl implements AiService {
                 parentId = conversationDTO.getParentId();
             }
 
-            WotemoChatMemory chatMemory = new WotemoChatMemory(MAX_TOKENS);
+            FlyingChatMemory chatMemory = new FlyingChatMemory(MAX_TOKENS);
 
             List<Message> historyMessages = chatHistory.toChatMessages(parentId, conversation.getMessages());
             for (Message historyMessage : historyMessages) {
@@ -174,7 +192,7 @@ public class AiServiceImpl implements AiService {
                 chatMemory.add(historyMessage);
             }
             boolean reasoningEnabled = conversationDTO.getReasoningEnabled();
-            String modelName = reasoningEnabled ? "deepseek-r1" : "deepseek-v3";
+            String modelName = reasoningEnabled ? "deepseek-r1-distill-llama-70b" : "qwen2.5-1.5b-instruct";
             int userMessageId = currentMessageId + 1;
             int assistantMessageId = currentMessageId + 2;
             StoreMessage storeUserMessage = StoreMessage
@@ -197,12 +215,72 @@ public class AiServiceImpl implements AiService {
                     .build();
 
             chatHistory.updateMessage(conversation.getConversationId(), storeUserMessage);
+
+            List<WebSearch> webSearches;
+            if (conversationDTO.getSearchEnabled()) {
+                List<Message> searchHistoryMessages = new ArrayList<>();
+                searchHistoryMessages.add(new UserMessage("系统提示：" + getSystemMessage()));
+                searchHistoryMessages.addAll(historyMessages.subList(Math.max(0, historyMessages.size() - 5), historyMessages.size()));
+
+                org.springframework.ai.rag.Query query = org.springframework.ai.rag.Query.builder()
+                        .text(conversationDTO.getTextContent())
+                        .history(searchHistoryMessages)
+                        .build();
+
+                QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+                        .chatClientBuilder(ChatClient.builder(dashScopeChatModel))
+                        .build();
+
+                org.springframework.ai.rag.Query transformedQuery = queryTransformer.transform(query);
+
+                String transformedText = transformedQuery.text();
+
+                System.out.println(transformedText);
+
+                WebSearchParameter webSearchParameter = WebSearchParameter
+                        .builder()
+                        .q(transformedText)
+                        .build();
+
+                webSearches = webSearchTool.search(webSearchParameter, 10);
+
+                webSearchFlux = Mono.just(WebSearchResultsVO
+                        .builder()
+                        .searchResults(webSearches)
+                        .build()).flux();
+
+                System.out.println(webSearches);
+
+                StringBuilder searchText = new StringBuilder("以下是搜索到的内容，根据这些内容回答问题：");
+
+                for (int i = 0; i < Math.min(5, webSearches.size()); i++) {
+                    try {
+                        var webSearch = webSearches.get(i);
+//                    var config = JsoupDocumentReaderConfig.builder()
+//                            .allElements(true)
+//                            .build();
+//                    String html = Jsoup.parse(URI.create(webSearch.getUrl()).toURL(), 3000).outerHtml();
+//                    InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(html.getBytes()), "UTF-8");
+//
+//                    DocumentReader reader = new JsoupDocumentReader(resource, config);
+//                    Document document = reader.read().getFirst();
+//
+//                    searchText.append(document.getText().substring(0, 200));
+
+                        searchText.append("Title: ").append(webSearch.getTitle()).append("\n")
+                                .append("Content: ").append(webSearch.getContent()).append("\n");
+                    } catch (Exception ignored) {}
+                }
+
+                chatMemory.add(new UserMessage(searchText.toString()));
+            } else {
+                webSearches = List.of();
+            }
+
             chatMemory.add(chatHistory.toChatMessage(storeUserMessage));
 
             List<Message> messages = new ArrayList<>();
-            messages.add(
-                    new SystemMessage("你是中国矿业大学的AI助手，你的名字叫圈圈，现在是北京时间：" + LocalDateTime.now())
-            );
+            messages.add(new SystemMessage(getSystemMessage()));
             messages.addAll(chatMemory.get(conversationId, MAX_MEMORY_SIZE));
 
             Prompt prompt = new Prompt(messages, ChatOptions.builder()
@@ -269,8 +347,9 @@ public class AiServiceImpl implements AiService {
                                 .reasoningTime(reasoningTime.get())
                                 .reasoningStatus(reasoningStatus.getValue())
                                 .searchEnabled(conversationDTO.getSearchEnabled())
-                                .searchResults(List.of())
-                                .searchStatus(AiStatus.UNUSED.getValue())
+                                .searchResults(webSearches)
+                                .searchStatus(conversationDTO.getSearchEnabled() ?
+                                        AiStatus.FINISHED.getValue() : AiStatus.UNUSED.getValue())
                                 .mediaFiles(List.of())
                                 .status(status.getValue())
                                 .createTime(LocalDateTime.now())
@@ -309,7 +388,7 @@ public class AiServiceImpl implements AiService {
                 return textMessageVO;
             });
 
-            return Flux.merge(newConversationFlux, titleFlux, streamingMessageFlux);
+            return Flux.merge(newConversationFlux, titleFlux, webSearchFlux, streamingMessageFlux);
         } catch (RuntimeException e) {
             conversationLock.forceUnlockAsync();
             throw new RuntimeException(e);
@@ -341,6 +420,14 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public SimplePageQueryVO<ConversationPageVO> getConversations(PageQueryDTO pageQueryDTO) {
+        if (UserContext.getUserId() == null) {
+            return SimplePageQueryVO.<ConversationPageVO>staticBuilder()
+                    .page(pageQueryDTO.getPage())
+                    .size(pageQueryDTO.getSize())
+                    .data(new ArrayList<>())
+                    .build();
+        }
+
         Query query = new Query(Criteria.where("userId").is(UserContext.getUserId()));
         query.with(Sort.by(Sort.Order.desc("updateTime")));
         query.skip((pageQueryDTO.getPage() - 1) * pageQueryDTO.getSize())
@@ -391,10 +478,27 @@ public class AiServiceImpl implements AiService {
                     String title;
 
                     String textContent = conversationDTO.getTextContent();
-                    if (textContent.length() <= 15) {
+                    if (textContent.length() <= 10) {
                         title = textContent;
                     } else {
-                        title = textContent.substring(0, 15);
+                        try {
+                            title = dashScopeChatModel.call(
+                                    new UserMessage("""
+                                            Given the following conversation content, generate a short and relevant title for a new chat. Requirements:
+                                            1. No more than 15 characters;
+                                            2. Accurately summarize the main topic or purpose of the conversation;
+                                            3. Keep it concise, clear, and catchy;
+                                            4. Avoid using overly broad or generic words.
+                                            Conversation content:
+                                            
+                                            """ + textContent + """
+                                            
+                                            Title:
+                                            """)
+                            );
+                        } catch (Exception e) {
+                            title = "新对话";
+                        }
                     }
 
                     TitleVO titleVO = TitleVO

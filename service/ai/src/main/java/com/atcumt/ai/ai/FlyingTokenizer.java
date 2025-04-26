@@ -4,14 +4,14 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
-public class WotemoTokenizer {
+public class FlyingTokenizer {
     private final int maxTokens;
 
-    public WotemoTokenizer() {
+    public FlyingTokenizer() {
         this.maxTokens = 20000;
     }
 
-    public WotemoTokenizer(int maxTokens) {
+    public FlyingTokenizer(int maxTokens) {
         this.maxTokens = maxTokens * 4;
     }
 
