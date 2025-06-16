@@ -75,7 +75,7 @@ public class RedisLockUtil {
     public boolean renewLock(String lockKey, String requestId, long expireTime) {
         String value = redisTemplate.opsForValue().get(lockKey);
         if (requestId.equals(value)) {
-            return Boolean.TRUE.equals(redisTemplate.expire(lockKey, expireTime, LOCK_EXPIRE_TIME_UNIT));
+            return redisTemplate.expire(lockKey, expireTime, LOCK_EXPIRE_TIME_UNIT);
         }
         return false;
     }
@@ -98,7 +98,7 @@ public class RedisLockUtil {
      * @return 是否续期成功
      */
     public boolean forceRenewLock(String lockKey, long expireTime) {
-        return Boolean.TRUE.equals(redisTemplate.expire(lockKey, expireTime, LOCK_EXPIRE_TIME_UNIT));
+        return redisTemplate.expire(lockKey, expireTime, LOCK_EXPIRE_TIME_UNIT);
     }
 
     /**
@@ -108,7 +108,7 @@ public class RedisLockUtil {
      * @return 是否续期成功
      */
     public boolean forceRenewLock(String lockKey) {
-        return Boolean.TRUE.equals(redisTemplate.expire(lockKey, LOCK_EXPIRE_TIME, LOCK_EXPIRE_TIME_UNIT));
+        return redisTemplate.expire(lockKey, LOCK_EXPIRE_TIME, LOCK_EXPIRE_TIME_UNIT);
     }
 
     /**
@@ -120,7 +120,7 @@ public class RedisLockUtil {
     public boolean releaseLock(String lockKey, String requestId) {
         String value = redisTemplate.opsForValue().get(lockKey);
         if (requestId.equals(value)) {
-            return Boolean.TRUE.equals(redisTemplate.delete(lockKey));
+            return redisTemplate.delete(lockKey);
         }
         return false;
     }

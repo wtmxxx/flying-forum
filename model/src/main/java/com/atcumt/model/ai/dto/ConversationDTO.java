@@ -24,4 +24,7 @@ public class ConversationDTO {
     @Builder.Default
     @Schema(name = "searchEnabled", description = "搜索")
     private Boolean searchEnabled = false;
+    @Builder.Default
+    @Schema(name = "knowledgeBaseEnabled", description = "知识库")
+    private Boolean knowledgeBaseEnabled = false;
 }

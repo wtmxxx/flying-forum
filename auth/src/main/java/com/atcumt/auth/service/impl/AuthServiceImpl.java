@@ -49,8 +49,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.seata.spring.annotation.GlobalTransactional;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -98,7 +96,6 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     private final AppleAuthMapper appleAuthMapper;
     private final AppleAuthUtil appleAuthUtil;
     private final AuthUtil authUtil;
-    private final ObjectMapper objectMapper;
     private final RocketMQTemplate rocketMQTemplate;
 
     @Value("${qq.app-id}")
@@ -109,7 +106,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     private String qqRedirectUri;
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
     @Deprecated
     public TokenVO registerBySchool(String schoolToken) throws AuthorizationException, UnauthorizedException {
         // 使用token获取学号
@@ -153,7 +150,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
     @Deprecated
     public TokenVO loginBySchool(String schoolToken) throws AuthorizationException, UnauthorizedException {
         // 使用token获取学号
@@ -515,12 +512,12 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    @GlobalTransactional(
-            rollbackFor = Exception.class,
-            name = "register-transaction",
-            lockRetryInterval = 500,
-            lockRetryTimes = 5
-    )
+//    @GlobalTransactional(
+//            rollbackFor = Exception.class,
+//            name = "register-transaction",
+//            lockRetryInterval = 500,
+//            lockRetryTimes = 5
+//    )
     @Transactional(rollbackFor = Exception.class)
     public TokenVO register(RegisterDTO registerDTO, String sid) throws Exception {
         String userId = IdUtil.simpleUUID();
@@ -627,7 +624,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     public TokenVO loginByQQ(String qqAuthorizationCode) throws AuthorizationException {
         // QQ登录
         String qqAccessToken;
-        String qqOpenId = null;
+        String qqOpenId;
 
         QqAccessTokenDTO qqAccessTokenDTO = getQqAccessToken(qqAuthorizationCode);
         qqAccessToken = qqAccessTokenDTO.getAccess_token();
@@ -740,12 +737,12 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
     }
 
     @Override
-    @GlobalTransactional(
-            rollbackFor = Exception.class,
-            name = "delete-account-transaction",
-            lockRetryInterval = 500,
-            lockRetryTimes = 5
-    )
+//    @GlobalTransactional(
+//            rollbackFor = Exception.class,
+//            name = "delete-account-transaction",
+//            lockRetryInterval = 500,
+//            lockRetryTimes = 5
+//    )
     @Transactional(rollbackFor = Exception.class)
     public void deleteAccount(String password) throws Exception {
         String userId = StpUtil.getLoginIdAsString();
@@ -1036,7 +1033,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAuth> implement
         JsonNode profile = portalClient.getProfile(cookie);
         String sid;
         try {
-            sid = profile.at("$.results.entities[0].account").asText();
+            sid = profile.at("/results/entities/0/account").asText();
         } catch (Exception e) {
             throw new AuthorizationException(AuthMessage.UNIFIED_AUTH_FAILURE.getMessage());
         }

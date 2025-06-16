@@ -1,15 +1,24 @@
 package com.atcumt.search.ai;
 
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.atcumt.model.search.entity.SuggestionChat;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
-import dev.langchain4j.service.V;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 搜索建议提取器
  */
-public interface SearchSuggestionExtractor {
-    @SystemMessage("""
+@Component
+public class SearchSuggestionExtractor {
+    public static final String SYSTEM_MESSAGE = """
                    你是一个搜索优化助手，负责将用户输入的搜索内容进行严格规范化，返回规范化后的搜索建议（0 - 5 条）。请严格遵循以下规则：
 
                    ### **规范规则**
@@ -43,7 +52,26 @@ public interface SearchSuggestionExtractor {
                    10. '矿dad达零零六年。' → ''
 
                    **请务必严格遵循以上规则。**
-                   """)
-    @UserMessage("{{text}}")
-    SuggestionChat extract(@V("text") String text);
+                   """;
+
+    public SuggestionChat extract(ChatModel chatModel, String query) {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage(SYSTEM_MESSAGE));
+        messages.add(new UserMessage(query));
+
+        Prompt prompt = Prompt
+                .builder()
+                .messages(messages)
+                .chatOptions(DashScopeChatOptions.builder()
+                        .withTemperature(0.0)
+                        .withTopK(50)
+                        .withTopP(0.9)
+                        .build()
+                )
+                .build();
+
+        ChatClient chatClient = ChatClient.builder(chatModel).build();
+
+        return chatClient.prompt(prompt).call().entity(SuggestionChat.class);
+    }
 }

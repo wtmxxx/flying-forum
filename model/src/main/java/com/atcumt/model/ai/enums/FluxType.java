@@ -9,6 +9,7 @@ public enum FluxType {
     TEXT_MESSAGE("TEXT_MESSAGE", "文本消息"),
     REASONING_MESSAGE("REASONING_MESSAGE", "推理消息"),
     WEB_SEARCH_MESSAGE("WEB_SEARCH_MESSAGE", "网页搜索消息"),
+    KNOWLEDGE_BASE_MESSAGE("KNOWLEDGE_BASE_MESSAGE", "知识库消息"),
     ;
 
     private final String value;

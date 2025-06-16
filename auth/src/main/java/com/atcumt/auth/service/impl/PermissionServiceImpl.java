@@ -25,8 +25,8 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -129,7 +129,6 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    @GlobalTransactional
     public PermissionVO createPermission(PermissionDTO permissionDTO) {
         String namePattern = "^[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)*$";
         if (!permissionDTO.getPermissionName().matches(namePattern)) {
@@ -165,7 +164,6 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    @GlobalTransactional
     public void updatePermissionDescription(String permissionId, String description) {
         // 检查描述是否合法
         String pattern = "^(?!.*\\|\\|)(?!.*#\\|#).*$";
@@ -185,7 +183,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void deletePermission(String permissionId) {
         Permission permission = permissionMapper.selectById(permissionId);
         if (permission == null) {
@@ -252,7 +251,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void updateRolePermission(String roleId, String permissionId) {
         String roleName = roleMapper.selectById(roleId).getRoleName();
 
@@ -277,7 +277,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void updateRolePermissions(String roleId, List<String> permissionIds) {
         String roleName = roleMapper.selectById(roleId).getRoleName();
 
@@ -309,7 +310,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void deleteRolePermissions(RolePermissionDTO rolePermissionDTO) {
         String roleName = roleMapper.selectById(rolePermissionDTO.getRoleId()).getRoleName();
 

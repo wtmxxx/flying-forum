@@ -7,7 +7,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.atcumt.ai.ai.FlyingChatHistory;
 import com.atcumt.ai.ai.FlyingChatMemory;
-import com.atcumt.ai.ai.FlyingTokenizer;
 import com.atcumt.ai.service.AiService;
 import com.atcumt.ai.tools.WebSearchTool;
 import com.atcumt.ai.utils.ConversationManager;
@@ -16,10 +15,7 @@ import com.atcumt.model.ai.dto.ConversationDTO;
 import com.atcumt.model.ai.dto.StopConversationDTO;
 import com.atcumt.model.ai.dto.StopConversationMsgDTO;
 import com.atcumt.model.ai.dto.TitleDTO;
-import com.atcumt.model.ai.entity.Conversation;
-import com.atcumt.model.ai.entity.StoreMessage;
-import com.atcumt.model.ai.entity.WebSearch;
-import com.atcumt.model.ai.entity.WebSearchParameter;
+import com.atcumt.model.ai.entity.*;
 import com.atcumt.model.ai.enums.AiStatus;
 import com.atcumt.model.ai.enums.FluxType;
 import com.atcumt.model.ai.vo.*;
@@ -41,18 +37,22 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
-import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.tokenizer.TokenCountEstimator;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
+@RefreshScope
 @RequiredArgsConstructor
 @Slf4j
 public class AiServiceImpl implements AiService {
@@ -74,7 +75,8 @@ public class AiServiceImpl implements AiService {
     private final RocketMQTemplate rocketMQTemplate;
     private final FlyingChatHistory chatHistory;
     private final WebSearchTool webSearchTool;
-    private FlyingTokenizer tokenizer = new FlyingTokenizer(MAX_TOKENS);
+    private final ElasticsearchVectorStore vectorStore;
+    private final TokenCountEstimator tokenizer;
     private ChatModel dashScopeChatModel;
 
     private static final int MAX_TOKENS = 20000;
@@ -82,45 +84,40 @@ public class AiServiceImpl implements AiService {
     private static final int MAX_MEMORY_SIZE = (MAX_MESSAGE_SIZE / 3) / 2 * 2;
     private static final int MAX_LEASE_TIME = 15;
 
-    @Value("${spring-ai.openai.deepseek.base-url}")
-    private String deepseekBaseUrl;
-    @Value("${spring-ai.openai.deepseek.api-key}")
-    private String deepseekApiKey;
+    @Value("${spring-ai.dashscope.base-url}")
+    private String dashScopeBaseUrl;
+    @Value("${spring-ai.dashscope.api-key}")
+    private String dashScopeApiKey;
+    @Value("${spring-ai.dashscope.base-model:qwen2.5-1.5b-instruct}")
+    private String baseModel;
+    @Value("${spring-ai.dashscope.title-model:qwen2.5-1.5b-instruct}")
+    private String titleModel;
+    @Value("${spring-ai.dashscope.chat-model:qwen2.5-1.5b-instruct}")
+    private String chatModel;
+    @Value("${spring-ai.dashscope.reasoning-model:deepseek-r1-distill-llama-70b}")
+    private String reasoningModel;
+
 
     @PostConstruct
     void init() {
-//        dashScopeChatModel = OpenAiChatModel
-//                .builder()
-//                .defaultOptions(OpenAiChatOptions.builder()
-//                        .model("deekseek-v3")
-//                        .streamUsage(true)
-////                        .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
-//                        .build())
-//                .openAiApi(OpenAiApi.builder()
-//                        .baseUrl(deepseekBaseUrl)
-//                        .apiKey(deepseekApiKey)
-//                        .build())
-//                .retryTemplate(RetryTemplate.builder()
-//                        .maxAttempts(3)
-//                        .build())
-//                .build();
-
-        dashScopeChatModel = new DashScopeChatModel(
-        new DashScopeApi(
-                deepseekBaseUrl,
-                deepseekApiKey,
-                RestClient.builder(),
-                WebClient.builder(),
-                RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER
-        ),
-                DashScopeChatOptions
-                        .builder()
-                        .withModel("qwen2.5-1.5b-instruct")
-                        .withStream(true)
-                        .withEnableSearch(true)
+        dashScopeChatModel = DashScopeChatModel
+                .builder()
+                .dashScopeApi(
+                        DashScopeApi
+                                .builder()
+                                .baseUrl(dashScopeBaseUrl)
+                                .apiKey(dashScopeApiKey)
+                                .build()
+                )
+                .defaultOptions(
+                        DashScopeChatOptions
+                                .builder()
+                                .withModel(baseModel)
+                                .withStream(true)
 //                        .withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build())
-                        .build()
-                );
+                                .build()
+                )
+                .build();
     }
 
     private String getSystemMessage() {
@@ -132,9 +129,10 @@ public class AiServiceImpl implements AiService {
         Flux<NewConversationVO> newConversationFlux = Flux.empty();
         Flux<TitleVO> titleFlux = Flux.empty();
         Flux<WebSearchResultsVO> webSearchFlux = Flux.empty();
+        Flux<KnowledgeBaseVO> knowledgeBaseFlux = Flux.empty();
         Flux<TextMessageVO> streamingMessageFlux;
 
-        int estimatedTokens = tokenizer.estimateTokenCountInText(conversationDTO.getTextContent());
+        int estimatedTokens = tokenizer.estimate(conversationDTO.getTextContent());
         if (estimatedTokens > MAX_TOKENS) {
             throw new RuntimeException("你输入的内容太长了，请缩短后重试");
         }
@@ -164,8 +162,12 @@ public class AiServiceImpl implements AiService {
             Conversation conversation = chatHistory.getConversation(conversationId, userId);
             if (conversation == null) {
                 if (newConversation) {
-                    Thread.yield();
+                    Thread.sleep(100);
                     conversation = chatHistory.getConversation(conversationId, userId);
+                    if (conversation == null) {
+                        Thread.yield();
+                        conversation = chatHistory.getConversation(conversationId, userId);
+                    }
                 }
 
                 if (conversation == null) throw new RuntimeException("对话不存在");
@@ -184,15 +186,14 @@ public class AiServiceImpl implements AiService {
                 parentId = conversationDTO.getParentId();
             }
 
-            FlyingChatMemory chatMemory = new FlyingChatMemory(MAX_TOKENS);
+            FlyingChatMemory chatMemory = new FlyingChatMemory(MAX_TOKENS, MAX_MEMORY_SIZE, tokenizer);
 
             List<Message> historyMessages = chatHistory.toChatMessages(parentId, conversation.getMessages());
             for (Message historyMessage : historyMessages) {
-                chatMemory.add(conversationId, historyMessage);
                 chatMemory.add(historyMessage);
             }
             boolean reasoningEnabled = conversationDTO.getReasoningEnabled();
-            String modelName = reasoningEnabled ? "deepseek-r1-distill-llama-70b" : "qwen2.5-1.5b-instruct";
+            String modelName = reasoningEnabled ? reasoningModel : chatModel;
             int userMessageId = currentMessageId + 1;
             int assistantMessageId = currentMessageId + 2;
             StoreMessage storeUserMessage = StoreMessage
@@ -216,8 +217,8 @@ public class AiServiceImpl implements AiService {
 
             chatHistory.updateMessage(conversation.getConversationId(), storeUserMessage);
 
-            List<WebSearch> webSearches;
-            if (conversationDTO.getSearchEnabled()) {
+            org.springframework.ai.rag.Query transformedQuery = new org.springframework.ai.rag.Query(conversationDTO.getTextContent());
+            if (conversationDTO.getSearchEnabled() || conversationDTO.getKnowledgeBaseEnabled()) {
                 List<Message> searchHistoryMessages = new ArrayList<>();
                 searchHistoryMessages.add(new UserMessage("系统提示：" + getSystemMessage()));
                 searchHistoryMessages.addAll(historyMessages.subList(Math.max(0, historyMessages.size() - 5), historyMessages.size()));
@@ -227,16 +228,54 @@ public class AiServiceImpl implements AiService {
                         .history(searchHistoryMessages)
                         .build();
 
+                System.out.println(searchHistoryMessages);
+
+                String promptTemplate = """
+                                        你是一名智能助手，任务是根据对话历史和用户提出的跟进问题，综合上下文信息，生成一个清晰、独立、具体的查询语句。
+                                        
+                                        - 查询必须保留用户原意；
+                                        - 必须补全如“我们学校”“这里”“这门课”此类省略或指代不明的信息；
+                                        - 不要添加无关内容；
+                                        - 只输出最终的改写结果。
+                                        
+                                        以下是一个示例：
+                                        
+                                        对话历史：
+                                        用户：我们学校是中国矿业大学
+                                        助手：明白了
+                                        
+                                        跟进问题：
+                                        我们学校最近有哪些活动？
+                                        
+                                        独立查询：
+                                        中国矿业大学最近有哪些活动？
+                                        
+                                        ---
+                                        
+                                        现在请处理以下输入：
+                                        
+                                        对话历史：
+                                        {history}
+                                        
+                                        跟进问题：
+                                        {query}
+                                        
+                                        独立查询：
+                                        """;
+
                 QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+                        .promptTemplate(new PromptTemplate(promptTemplate))
                         .chatClientBuilder(ChatClient.builder(dashScopeChatModel))
                         .build();
 
-                org.springframework.ai.rag.Query transformedQuery = queryTransformer.transform(query);
+                transformedQuery = queryTransformer.transform(query);
 
+                System.out.println(transformedQuery.text());
+            }
+
+            List<WebSearch> webSearches;
+            if (conversationDTO.getSearchEnabled()) {
                 String transformedText = transformedQuery.text();
-
-                System.out.println(transformedText);
-
                 WebSearchParameter webSearchParameter = WebSearchParameter
                         .builder()
                         .q(transformedText)
@@ -251,37 +290,79 @@ public class AiServiceImpl implements AiService {
 
                 System.out.println(webSearches);
 
-                StringBuilder searchText = new StringBuilder("以下是搜索到的内容，根据这些内容回答问题：");
+                StringBuilder searchText = new StringBuilder("以下是搜索到的内容，可能对回答有帮助：\n\n");
 
                 for (int i = 0; i < Math.min(5, webSearches.size()); i++) {
                     try {
                         var webSearch = webSearches.get(i);
-//                    var config = JsoupDocumentReaderConfig.builder()
-//                            .allElements(true)
-//                            .build();
-//                    String html = Jsoup.parse(URI.create(webSearch.getUrl()).toURL(), 3000).outerHtml();
-//                    InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(html.getBytes()), "UTF-8");
-//
-//                    DocumentReader reader = new JsoupDocumentReader(resource, config);
-//                    Document document = reader.read().getFirst();
-//
-//                    searchText.append(document.getText().substring(0, 200));
+                        int index = i + 1; // 序号从1开始
 
-                        searchText.append("Title: ").append(webSearch.getTitle()).append("\n")
-                                .append("Content: ").append(webSearch.getContent()).append("\n");
+                        searchText.append("[").append(index).append("] ")
+                                .append("Title: ").append(webSearch.getTitle()).append("\n")
+                                .append("Content: ").append(webSearch.getContent()).append("\n\n");
+
                     } catch (Exception ignored) {}
                 }
+
+                searchText.append("如需引用以上内容，请在回答中注明对应序号，例如：中国矿业大学位于徐州<ref>[1]</ref>，拥有两个校区<ref>[1]</ref><ref>[2]</ref>。\n\n");
 
                 chatMemory.add(new UserMessage(searchText.toString()));
             } else {
                 webSearches = List.of();
             }
 
+            // 知识库
+            List<KnowledgeBase> knowledgeBases = new ArrayList<>();
+            if (conversationDTO.getKnowledgeBaseEnabled()) {
+                DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+                        .vectorStore(vectorStore)
+                        .similarityThreshold(0.5)    // 设置相似度阈值
+                        .topK(5)                     // 返回前3个最相关的文档
+//                    .filterExpression()
+                        .build();
+
+                List<Document> documents = retriever.retrieve(transformedQuery);
+
+                if (!documents.isEmpty()) {
+                    StringBuilder knowledgeBaseText = new StringBuilder("以下是知识库中相关的内容，可能对回答有帮助：\n\n");
+
+                    for (int i = 0; i < documents.size(); i++) {
+                        Document document = documents.get(i);
+                        int index = i + 1 + webSearches.size(); // 序号从1开始，接着搜索结果
+
+                        knowledgeBaseText.append("[").append(index).append("] ")
+                                .append("Title: ").append(document.getMetadata().getOrDefault("title", "无标题")).append("\n")
+                                .append("Content: ").append(document.getText()).append("\n")
+                                .append("Url: ").append(document.getMetadata().getOrDefault("url", "无链接")).append("\n\n");
+
+                        KnowledgeBase knowledgeBase = KnowledgeBase
+                                .builder()
+                                .id(document.getId())
+                                .title(String.valueOf(document.getMetadata().getOrDefault("title", "无标题")))
+                                .content(document.getText())
+                                .url((String) document.getMetadata().getOrDefault("url", null))
+                                .build();
+                        knowledgeBases.add(knowledgeBase);
+                    }
+
+                    knowledgeBaseText.append("如需引用以上内容，请在回答中注明对应序号，例如：中国矿业大学位于徐州<ref>[1]</ref>，拥有两个校区<ref>[1]</ref><ref>[2]</ref>。\n\n");
+
+                    chatMemory.add(new UserMessage(knowledgeBaseText.toString()));
+
+                    System.out.println(knowledgeBaseText);
+                }
+
+                knowledgeBaseFlux = Mono.just(KnowledgeBaseVO
+                        .builder()
+                        .documents(knowledgeBases)
+                        .build()).flux();
+            }
+
             chatMemory.add(chatHistory.toChatMessage(storeUserMessage));
 
             List<Message> messages = new ArrayList<>();
             messages.add(new SystemMessage(getSystemMessage()));
-            messages.addAll(chatMemory.get(conversationId, MAX_MEMORY_SIZE));
+            messages.addAll(chatMemory.get(conversationId));
 
             Prompt prompt = new Prompt(messages, ChatOptions.builder()
                     .model(modelName)
@@ -302,14 +383,14 @@ public class AiServiceImpl implements AiService {
                     .stream().chatResponse()
                     .doOnNext(chatResponse -> {
                         String textContent = chatResponse.getResult().getOutput().getText();
-                        System.out.println("回答：" + textContent);
+//                        System.out.println("回答：" + textContent);
                         if (reasoningEnabled) {
                             Map<String, Object> metadata = chatResponse.getResult().getOutput().getMetadata();
                             String reasoningContent = String.valueOf(metadata.getOrDefault("reasoningContent", ""));
 
                             if (!reasoningContent.isEmpty()) {
                                 finalReasoningContent.append(reasoningContent);
-                                System.out.println("深度思考：" + reasoningContent);
+//                                System.out.println("深度思考：" + reasoningContent);
                             } else {
                                 long reasoningEndTime = System.currentTimeMillis();
                                 reasoningTime.compareAndSet(-1, (int) ((reasoningEndTime - reasoningStartTime) / 1000));
@@ -337,8 +418,8 @@ public class AiServiceImpl implements AiService {
                         // 处理完成后的逻辑
                         StoreMessage storeAssistantMessage = StoreMessage
                                 .builder()
-                                .messageId(userMessageId)
-                                .parentId(parentId)
+                                .messageId(assistantMessageId)
+                                .parentId(userMessageId)
                                 .model(modelName)
                                 .role(MessageType.ASSISTANT.getValue())
                                 .textContent(finalTextContent.toString())
@@ -349,6 +430,10 @@ public class AiServiceImpl implements AiService {
                                 .searchEnabled(conversationDTO.getSearchEnabled())
                                 .searchResults(webSearches)
                                 .searchStatus(conversationDTO.getSearchEnabled() ?
+                                        AiStatus.FINISHED.getValue() : AiStatus.UNUSED.getValue())
+                                .knowledgeBaseEnabled(conversationDTO.getKnowledgeBaseEnabled())
+                                .documents(knowledgeBases)
+                                .knowledgeBaseStatus(conversationDTO.getKnowledgeBaseEnabled() ?
                                         AiStatus.FINISHED.getValue() : AiStatus.UNUSED.getValue())
                                 .mediaFiles(List.of())
                                 .status(status.getValue())
@@ -388,7 +473,7 @@ public class AiServiceImpl implements AiService {
                 return textMessageVO;
             });
 
-            return Flux.merge(newConversationFlux, titleFlux, webSearchFlux, streamingMessageFlux);
+            return Flux.merge(newConversationFlux, titleFlux, webSearchFlux, knowledgeBaseFlux, streamingMessageFlux);
         } catch (RuntimeException e) {
             conversationLock.forceUnlockAsync();
             throw new RuntimeException(e);
@@ -482,20 +567,37 @@ public class AiServiceImpl implements AiService {
                         title = textContent;
                     } else {
                         try {
-                            title = dashScopeChatModel.call(
-                                    new UserMessage("""
-                                            Given the following conversation content, generate a short and relevant title for a new chat. Requirements:
-                                            1. No more than 15 characters;
-                                            2. Accurately summarize the main topic or purpose of the conversation;
-                                            3. Keep it concise, clear, and catchy;
-                                            4. Avoid using overly broad or generic words.
-                                            Conversation content:
-                                            
-                                            """ + textContent + """
-                                            
-                                            Title:
-                                            """)
+                            Prompt prompt = new Prompt(
+                                    List.of(
+                                            new UserMessage("""
+                                                请根据以下对话内容，为新建的聊天生成一个简洁且相关的标题。
+                                                
+                                                要求：
+                                                1. 不超过15个字符；
+                                                2. 准确概括主要话题或目的；
+                                                3. 简明清晰且具有吸引力；
+                                                4. 避免使用模糊或泛泛的词语。
+                                                
+                                                对话内容：
+                                                """ + textContent + """
+                                                
+                                                标题：
+                                                """)
+                                    ),
+                                    DashScopeChatOptions.builder()
+                                            .withModel(titleModel)
+                                            .withTemperature(0.3)
+                                            .withTopK(50)
+                                            .withTopP(0.9)
+                                            .build()
                             );
+                            title = dashScopeChatModel.call(prompt).getResult().getOutput().getText();
+
+                            if (title == null || title.isEmpty()) {
+                                title = "新对话";
+                            } else if (title.length() > 15) {
+                                title = title.substring(0, 15);
+                            }
                         } catch (Exception e) {
                             title = "新对话";
                         }

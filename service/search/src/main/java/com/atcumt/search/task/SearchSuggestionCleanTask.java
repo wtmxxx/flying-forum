@@ -1,7 +1,6 @@
 package com.atcumt.search.task;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.JsonData;
 import com.atcumt.common.utils.RedisLockUtil;
 import com.atcumt.model.search.enums.SuggestionType;
 import lombok.extern.slf4j.Slf4j;
@@ -42,9 +41,9 @@ public class SearchSuggestionCleanTask {
                         .index("suggestion")
                         .query(q -> q.bool(b -> b
                                 .must(m -> m.term(t -> t.field("type").value(SuggestionType.SEARCH.getValue())))
-                                .must(m -> m.range(r -> r.field("score").lte(JsonData.of(3.0))))
-                                .must(m -> m.range(r -> r.field("createTime").lt(JsonData.of(LocalDateTime.now().minusDays(7)))))
-                        ))
+                                .must(m -> m.range(r -> r.number(n -> n.field("score").lte(3.0))))
+                                .must(m -> m.range(r -> r.date(dr -> dr.field("createTime").lt(LocalDateTime.now().minusDays(7).toString())))
+                        )))
                 );
             } catch (Exception e) {
                 log.error("清除搜索提示词异常: ", e);

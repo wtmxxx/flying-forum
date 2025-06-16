@@ -22,8 +22,8 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -63,7 +63,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void updateUserRole(String userId, String roleId) {
         if (userId == null || userId.isEmpty()) {
             userId = StpUtil.getLoginIdAsString();
@@ -91,7 +92,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void updateUserRoles(UserRoleDTO userRoleDTO) {
         String userId = userRoleDTO.getUserId();
         if (userId == null || userId.isEmpty()) {
@@ -127,7 +129,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void deleteUserRole(UserRoleDTO userRoleDTO) {
         String userId = userRoleDTO.getUserId();
         if (userId == null || userId.isEmpty()) {
@@ -184,7 +187,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    @GlobalTransactional
+//    @GlobalTransactional
+    @Transactional
     public void deleteRole(String roleId) {
         // 获取用户ID，清除缓存
         List<UserRole> userRole = userRoleMapper.selectList(Wrappers

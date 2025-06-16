@@ -1,8 +1,8 @@
 #!/bin/bash
 
 cd G:/FLYING_FORUM/flying-forum || exit
-#mvn clean
-#mvn package -DskipTests=true
+mvn clean
+mvn package -DskipTests=true
 
 # 强制使用 UTF-8
 export LANG="en_US.UTF-8"
@@ -11,7 +11,7 @@ export LC_ALL="en_US.UTF-8"
 SOURCE_ROOT="G:/FLYING_FORUM/flying-forum"
 DEST_ROOT="G:/FLYING_FORUM/部署/生产/flying-forum/service"
 TYPE1_SERVICES=("apidoc" "auth" "gateway" "oss")
-TYPE2_SERVICES=("comment" "like" "post" "rag" "search" "user" "forum" "ai")
+TYPE2_SERVICES=("comment" "like" "post" "search" "user" "forum" "ai")
 
 # 远程服务器配置
 export PATH="/usr/bin:/bin:$PATH"

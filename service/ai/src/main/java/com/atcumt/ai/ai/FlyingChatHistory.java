@@ -31,7 +31,7 @@ public class FlyingChatHistory {
                 .collect(Collectors.toMap(
                         StoreMessage::getMessageId,
                         Function.identity(),
-                        (existing, replacement) -> replacement
+                        (_, replacement) -> replacement
                 ));
 
         List<Message> messages = new ArrayList<>();

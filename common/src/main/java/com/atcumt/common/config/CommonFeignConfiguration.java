@@ -15,7 +15,7 @@ import java.time.Duration;
 public class CommonFeignConfiguration {
     @Bean
     public Logger.Level feignLogLevel() {
-        return Logger.Level.FULL;
+        return Logger.Level.BASIC;
     }
 
     @Bean

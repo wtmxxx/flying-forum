@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.10</version>
+        <version>3.5.0</version>
     </parent>
     <modules>
         <module>apidoc</module>
@@ -21,7 +21,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>flying-forum</name>
-    <description>FlyingForum is a Java-based backend system for the FlyingKxq community</description>
+    <description>FlyingForum is a Java-based backend system for Campus community</description>
     <url>https://github.com/wtmxxx/flying-forum</url>
     <licenses>
         <license>
@@ -49,33 +49,36 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <java.version>21</java.version>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <java.version>24</java.version>
+        <maven.compiler.source>24</maven.compiler.source>
+        <maven.compiler.target>24</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-cloud.version>2023.0.5</spring-cloud.version>
-        <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
-        <spring-ai.version>1.0.0-M7</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0-M6.1</spring-ai-alibaba.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
+        <spring-cloud-alibaba.version>2023.0.3.3</spring-cloud-alibaba.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
+        <spring-ai-alibaba.version>1.0.0.2</spring-ai-alibaba.version>
         <argon2.version>2.12</argon2.version>
         <auth0.java-jwt.version>4.5.0</auth0.java-jwt.version>
         <caffeine.version>3.2.0</caffeine.version>
         <druid.version>1.2.24</druid.version>
         <dubbo.version>3.3.4</dubbo.version>
-        <houbb.sensitive-word.version>0.25.0</houbb.sensitive-word.version>
-        <hutool.version>5.8.36</hutool.version>
+        <elasticsearch.version>8.17.2</elasticsearch.version>
+        <houbb.sensitive-word.version>0.26.0</houbb.sensitive-word.version>
+        <hutool.version>5.8.38</hutool.version>
         <javassist.version>3.30.2-GA</javassist.version>
-        <jackson.version>2.18.3</jackson.version>
-        <jsoup.version>1.19.1</jsoup.version>
+        <jackson.version>2.19.0</jackson.version>
+        <jsoup.version>1.20.1</jsoup.version>
         <knife4j.version>4.5.0</knife4j.version>
-        <langchain4j.version>1.0.0-beta3</langchain4j.version>
+        <langchain4j.version>1.0.0</langchain4j.version>
         <minio.version>8.5.17</minio.version>
-        <mybatis-plus.version>3.5.11</mybatis-plus.version>
-        <redisson.version>3.45.0</redisson.version>
-        <rocketmq-spring.version>2.3.2</rocketmq-spring.version>
-        <rocketmq.version>5.3.1</rocketmq.version>
-        <sa-token.version>1.42.0</sa-token.version>
+        <mybatis-plus.version>3.5.12</mybatis-plus.version>
+        <nacos.client.version>3.0.1</nacos.client.version>
+        <protobuf-java.version>3.25.6</protobuf-java.version>
+        <redisson.version>3.47.0</redisson.version>
+        <rocketmq-spring.version>2.3.3</rocketmq-spring.version>
+        <rocketmq.version>5.3.3</rocketmq.version>
+        <sa-token.version>1.43.0</sa-token.version>
         <thumbnailator.version>0.4.20</thumbnailator.version>
         <tika.version>3.1.0</tika.version>
         <webp-imageio.version>0.1.6</webp-imageio.version>
@@ -90,6 +93,12 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos.client.version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -141,8 +150,10 @@
             <!-- Spring AI Alibaba 版本管理器 -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter</artifactId>
+                <artifactId>spring-ai-alibaba-bom</artifactId>
                 <version>${spring-ai-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!-- LangChain4j 版本管理器 -->
             <dependency>
@@ -157,6 +168,13 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-bom</artifactId>
                 <version>${mybatis-plus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

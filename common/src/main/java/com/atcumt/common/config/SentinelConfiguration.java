@@ -1,8 +1,8 @@
 package com.atcumt.common.config;
 
 import com.alibaba.csp.sentinel.adapter.spring.webflux.SentinelWebFluxFilter;
-import com.alibaba.csp.sentinel.adapter.spring.webmvc.SentinelWebInterceptor;
-import com.alibaba.csp.sentinel.adapter.spring.webmvc.callback.BlockExceptionHandler;
+import com.alibaba.csp.sentinel.adapter.spring.webmvc_v6x.SentinelWebInterceptor;
+import com.alibaba.csp.sentinel.adapter.spring.webmvc_v6x.callback.BlockExceptionHandler;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,31 +40,13 @@ public class SentinelConfiguration {
 
     private BlockExceptionHandler getBlockExceptionHandler() {
         return new BlockExceptionHandler() {
-//            @Override
-//            public void handle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, String s, BlockException e) throws Exception {
-//                // 打印日志
-//                log.warn("限流异常 -> SentinelBlockException { Blocked by Sentinel (flow limiting) }");
-//
-//                httpServletResponse.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-//                httpServletResponse.setContentType("application/json;charset=UTF-8");
-//
-//                // 构造 JSON 响应体
-//                JsonNode errorResponse = objectMapper.createObjectNode()
-//                        .put("code", HttpStatus.TOO_MANY_REQUESTS.value())
-//                        .put("msg", "请求过于频繁，请稍后再试")
-//                        .putNull("data");
-//
-//
-//                httpServletResponse.getWriter().write(errorResponse.toString());
-//            }
-
             @Override
-            public void handle(HttpServletRequest request, HttpServletResponse response, BlockException e) throws Exception {
+            public void handle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, String s, BlockException e) throws Exception {
                 // 打印日志
-                log.warn("限流异常 -> SentinelBlockException { Blocked by Sentinel (flow limiting) }");
+                log.warn("限流异常 -> SentinelBlockException { Blocked by Sentinel (flow limiting), URI = {} }", httpServletRequest.getRequestURI());
 
-                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                response.setContentType("application/json;charset=UTF-8");
+                httpServletResponse.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                httpServletResponse.setContentType("application/json;charset=UTF-8");
 
                 // 构造 JSON 响应体
                 JsonNode errorResponse = objectMapper.createObjectNode()
@@ -72,8 +54,26 @@ public class SentinelConfiguration {
                         .put("msg", "请求过于频繁，请稍后再试")
                         .putNull("data");
 
-                response.getWriter().write(errorResponse.toString());
+
+                httpServletResponse.getWriter().write(errorResponse.toString());
             }
+
+//            @Override
+//            public void handle(HttpServletRequest request, HttpServletResponse response, BlockException e) throws Exception {
+//                // 打印日志
+//                log.warn("限流异常 -> SentinelBlockException { Blocked by Sentinel (flow limiting) }");
+//
+//                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+//                response.setContentType("application/json;charset=UTF-8");
+//
+//                // 构造 JSON 响应体
+//                JsonNode errorResponse = objectMapper.createObjectNode()
+//                        .put("code", HttpStatus.TOO_MANY_REQUESTS.value())
+//                        .put("msg", "请求过于频繁，请稍后再试")
+//                        .putNull("data");
+//
+//                response.getWriter().write(errorResponse.toString());
+//            }
         };
     }
 }

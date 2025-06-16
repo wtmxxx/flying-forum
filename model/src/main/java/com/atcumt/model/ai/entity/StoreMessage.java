@@ -26,6 +26,9 @@ public class StoreMessage {
     private Boolean searchEnabled;
     private List<WebSearch> searchResults;
     private String searchStatus;
+    private Boolean knowledgeBaseEnabled;
+    private List<KnowledgeBase> documents;
+    private String knowledgeBaseStatus;
     private List<MediaFile> mediaFiles;
     private String status;
     private LocalDateTime createTime;

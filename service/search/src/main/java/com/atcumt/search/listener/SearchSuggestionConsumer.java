@@ -8,17 +8,16 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.json.JsonData;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.atcumt.common.api.forum.sensitive.SensitiveWordDubboService;
 import com.atcumt.model.search.dto.SearchSuggestionDTO;
 import com.atcumt.model.search.entity.SuggestionEs;
 import com.atcumt.model.search.enums.SuggestionAction;
 import com.atcumt.model.search.enums.SuggestionType;
 import com.atcumt.search.ai.SearchSuggestionExtractor;
-import dev.langchain4j.model.chat.Capability;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.chat.request.ResponseFormat;
-import dev.langchain4j.model.ollama.OllamaChatModel;
-import dev.langchain4j.service.AiServices;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -29,6 +28,7 @@ import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.elasticsearch.client.ResponseException;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -57,24 +57,47 @@ public class SearchSuggestionConsumer implements RocketMQListener<SearchSuggesti
     private final RedissonClient redissonClient;
     @DubboReference
     private final SensitiveWordDubboService sensitiveWordDubboService;
-    private ChatLanguageModel suggestionModel;
+    private ChatModel suggestionModel;
+    private final SearchSuggestionExtractor searchSuggestionExtractor;
 
-    @Value("${langchain4j.ollama.chat-model.base-url}")
-    private String ollamaChatModelBaseUrl;
+    @Value("${spring-ai.dashscope.base-url}")
+    private String dashScopeBaseUrl;
+    @Value("${spring-ai.dashscope.api-key}")
+    private String dashScopeApiKey;
+    @Value("${spring-ai.dashscope.base-model:qwen2.5-1.5b-instruct}")
+    private String baseModel;
 
     @PostConstruct
     void init() {
         // 初始化大模型
-        suggestionModel = OllamaChatModel.builder()
-                .baseUrl(ollamaChatModelBaseUrl)
-                .modelName("qwen2.5:7b")
-                .temperature(0.0)
-                .topP(0.0)
-                .topK(1)
-                .supportedCapabilities(Set.of(Capability.RESPONSE_FORMAT_JSON_SCHEMA))
-                .responseFormat(ResponseFormat.JSON)
-                .logRequests(true)
-                .logResponses(true)
+//        suggestionModel = OllamaChatModel.builder()
+//                .baseUrl(ollamaChatModelBaseUrl)
+//                .modelName("qwen2.5:7b")
+//                .temperature(0.0)
+//                .topP(0.0)
+//                .topK(1)
+//                .supportedCapabilities(Set.of(Capability.RESPONSE_FORMAT_JSON_SCHEMA))
+//                .responseFormat(ResponseFormat.JSON)
+//                .logRequests(true)
+//                .logResponses(true)
+//                .build();
+        suggestionModel = DashScopeChatModel
+                .builder()
+                .dashScopeApi(
+                        DashScopeApi
+                                .builder()
+                                .baseUrl(dashScopeBaseUrl)
+                                .apiKey(dashScopeApiKey)
+                                .build()
+                )
+                .defaultOptions(
+                        DashScopeChatOptions
+                                .builder()
+                                .withModel(baseModel)
+                                .withStream(true)
+                        .withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build())
+                                .build()
+                )
                 .build();
     }
 
@@ -126,8 +149,7 @@ public class SearchSuggestionConsumer implements RocketMQListener<SearchSuggesti
             // 判断搜索词是否违规
             if (sensitiveWordDubboService.contains(suggestionEs.getSuggestion())) return;
             // 使用大模型优化搜索词
-            SearchSuggestionExtractor searchSuggestionExtractor = AiServices.create(SearchSuggestionExtractor.class, suggestionModel);
-            List<String> suggestions = searchSuggestionExtractor.extract(suggestionEs.getSuggestion()).getSuggestions();
+            List<String> suggestions = searchSuggestionExtractor.extract(suggestionModel, suggestionEs.getSuggestion()).getSuggestions();
 
             log.info("智能处理搜索提示: {}", suggestions);
 
@@ -185,13 +207,11 @@ public class SearchSuggestionConsumer implements RocketMQListener<SearchSuggesti
                         .index("suggestion")
                         .id(suggestionId)
                         .script(s -> s
-                                .inline(i -> i
-                                        .source("ctx._source.score += params.increment; ctx._source.type = params.type")
-                                        .lang(ScriptLanguage.Painless)
-                                        .params(Map.of(
-                                                "increment", JsonData.of(30.0),
-                                                "type", JsonData.of(SuggestionType.TAG.getValue())))
-                                )
+                                .source("ctx._source.score += params.increment; ctx._source.type = params.type")
+                                .lang(ScriptLanguage.Painless)
+                                .params(Map.of(
+                                        "increment", JsonData.of(30.0),
+                                        "type", JsonData.of(SuggestionType.TAG.getValue())))
                         ), suggestionEs.getClass()
                 );
             }
@@ -255,11 +275,9 @@ public class SearchSuggestionConsumer implements RocketMQListener<SearchSuggesti
                     .index("suggestion")
                     .id(entry.getKey())
                     .action(ua -> ua.script(s -> s
-                            .inline(i -> i
-                                    .source("ctx._source.score += params.increment")
-                                    .lang(ScriptLanguage.Painless)
-                                    .params("increment", JsonData.of(entry.getValue()))
-                            )
+                            .source("ctx._source.score += params.increment")
+                            .lang(ScriptLanguage.Painless)
+                            .params("increment", JsonData.of(entry.getValue()))
                     ))
             );
             bulkOperations.add(BulkOperation.of(bo -> bo.update(updateOperation)));

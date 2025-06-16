@@ -7,7 +7,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.JsonData;
 import com.atcumt.common.utils.UserInfoUtil;
 import com.atcumt.model.post.entity.Tag;
 import com.atcumt.model.search.dto.PostSearchDTO;
@@ -62,8 +61,10 @@ public class SearchServiceImpl implements SearchService {
                              .query(formatText)
                              .fuzziness("AUTO")))
                      .filter(f -> f.range(r -> r
-                             .field("score")
-                             .gte(JsonData.of(10.0))))))
+                             .number(n -> n
+                                     .field("score")
+                                     .gte(10.0)
+                             )))))
                     .size(10).index("suggestion")
                     .source(sc -> sc.filter(sf -> sf
                             .includes("suggestion", "type")))
@@ -107,8 +108,10 @@ public class SearchServiceImpl implements SearchService {
 
         if (!SearchTimeLimit.ALL.getValue().equalsIgnoreCase(postSearchDTO.getSearchTimeLimit())) {
             boolQueryBuilder.filter(f -> f.range(r -> r
-                    .field("createTime")
-                    .gte(getTimeRange(postSearchDTO.getSearchTimeLimit()))));
+                    .date(d -> d
+                            .field("createTime")
+                            .gte(getTimeRange(postSearchDTO.getSearchTimeLimit()))
+                    )));
         }
 
         // 构建搜索请求
@@ -256,7 +259,7 @@ public class SearchServiceImpl implements SearchService {
                 .source(sc -> sc.filter(sf -> sf.includes(List.of(
                         "userId", "nickname", "bio", "level", "followersCount"
                 ))))
-                .query(q -> q.bool(boolQueryBuilder.build()));;
+                .query(q -> q.bool(boolQueryBuilder.build()));
 
         // 设置排序
         if (!UserSearchSortType.DEFAULT.getValue().equalsIgnoreCase(userSearchDTO.getSearchSortType())) {
@@ -335,16 +338,16 @@ public class SearchServiceImpl implements SearchService {
     }
 
     // 获取时间范围的方法
-    private JsonData getTimeRange(String timeLimit) {
+    private String getTimeRange(String timeLimit) {
         return switch (SearchTimeLimit.fromValue(timeLimit)) {
-            case ONE_DAY -> JsonData.of("now-1d/d");
-            case THREE_DAYS -> JsonData.of("now-3d/d");
-            case ONE_WEEK -> JsonData.of("now-1w/w");
-            case ONE_MONTH -> JsonData.of("now-1M/M");
-            case THREE_MONTHS -> JsonData.of("now-3M/M");
-            case HALF_YEAR -> JsonData.of("now-6M/M");
-            case ONE_YEAR -> JsonData.of("now-1y/y");
-            default -> JsonData.of("1970-01-01T00:00:00Z");  // 默认是全部
+            case ONE_DAY -> "now-1d/d";
+            case THREE_DAYS -> "now-3d/d";
+            case ONE_WEEK -> "now-1w/w";
+            case ONE_MONTH -> "now-1M/M";
+            case THREE_MONTHS -> "now-3M/M";
+            case HALF_YEAR -> "now-6M/M";
+            case ONE_YEAR -> "now-1y/y";
+            default -> "1970-01-01T00:00:00Z";  // 默认是全部
         };
     }
 
