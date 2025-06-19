@@ -78,7 +78,7 @@
         <redisson.version>3.47.0</redisson.version>
         <rocketmq-spring.version>2.3.3</rocketmq-spring.version>
         <rocketmq.version>5.3.3</rocketmq.version>
-        <sa-token.version>1.43.0</sa-token.version>
+        <sa-token.version>1.44.0</sa-token.version>
         <thumbnailator.version>0.4.20</thumbnailator.version>
         <tika.version>3.1.0</tika.version>
         <webp-imageio.version>0.1.6</webp-imageio.version>
@@ -92,7 +92,10 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
         <dependency>
             <groupId>com.alibaba.nacos</groupId>

@@ -1,12 +1,16 @@
 package com.atcumt.common.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 
 @Configuration
 public class JacksonConfiguration {
@@ -36,6 +40,54 @@ public class JacksonConfiguration {
         // 在序列化时，忽略值为默认值的属性（如 0，空字符串等）
         objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_DEFAULT);
 
+        // 自定义 LocalDateTime 和 LocalDate 的序列化/反序列化
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
+        module.addSerializer(LocalDate.class, new LocalDateSerializer());
+        module.addDeserializer(LocalDate.class, new LocalDateDeserializer());
+
         return objectMapper;
+    }
+
+    // LocalDateTime -> UTC String (2025-02-11T12:00:00.000Z)
+    static class LocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
+        private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                .withZone(ZoneOffset.UTC);
+
+        @Override
+        public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            ZonedDateTime utcDateTime = value.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC);
+            gen.writeString(formatter.format(utcDateTime));
+        }
+    }
+
+    // UTC String -> LocalDateTime (本地时区)
+    static class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+        @Override
+        public LocalDateTime deserialize(com.fasterxml.jackson.core.JsonParser p, DeserializationContext ctxt) throws IOException {
+            ZonedDateTime utcDateTime = ZonedDateTime.parse(p.getText());
+            return utcDateTime.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+        }
+    }
+
+    // LocalDate -> String (2025-02-11)
+    static class LocalDateSerializer extends JsonSerializer<LocalDate> {
+        private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        @Override
+        public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(formatter.format(value));
+        }
+    }
+
+    // String (2025-02-11) -> LocalDate
+    static class LocalDateDeserializer extends JsonDeserializer<LocalDate> {
+        private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        @Override
+        public LocalDate deserialize(com.fasterxml.jackson.core.JsonParser p, DeserializationContext ctxt) throws IOException {
+            return LocalDate.parse(p.getText(), formatter);
+        }
     }
 }

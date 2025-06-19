@@ -9,6 +9,7 @@ public enum RoleType {
     USER("user", "用户"),            // 普通用户
     EXAMINER("examiner", "审查员"),  // 审查员
     NEWS_PUBLISHER("news_publisher", "新闻发布者"),  // 新闻发布者
+    KNOWLEDGE_BASE_MANAGER("knowledge_base_manager", "知识库管理员"),  // 知识库管理员
     GUEST("guest", "访客");         // 访客
 
     private final String code;

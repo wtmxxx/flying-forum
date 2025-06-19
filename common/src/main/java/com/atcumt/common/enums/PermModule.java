@@ -22,6 +22,7 @@ public enum PermModule {
     FILE("file", "文件"),                            // 文件模块
     SENSITIVE_WORD("sensitive_word", "敏感词"),      // 敏感词模块
     SEARCH("search", "搜索"),                        // 搜索模块
+    KNOWLEDGE_BASE("knowledge_base", "知识库"),      // 知识库模块
     ;
 
     private final String value;

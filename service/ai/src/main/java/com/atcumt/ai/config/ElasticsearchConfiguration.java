@@ -1,4 +1,4 @@
-package com.atcumt.search.config;
+package com.atcumt.ai.config;
 
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;

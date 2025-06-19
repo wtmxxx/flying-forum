@@ -2,8 +2,6 @@ package com.atcumt.ai.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.atcumt.ai.ai.FlyingChatHistory;
 import com.atcumt.ai.ai.FlyingChatMemory;
@@ -22,7 +20,6 @@ import com.atcumt.model.ai.vo.*;
 import com.atcumt.model.common.dto.PageQueryDTO;
 import com.atcumt.model.common.vo.MediaFileVO;
 import com.atcumt.model.common.vo.SimplePageQueryVO;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
@@ -77,48 +74,19 @@ public class AiServiceImpl implements AiService {
     private final WebSearchTool webSearchTool;
     private final ElasticsearchVectorStore vectorStore;
     private final TokenCountEstimator tokenizer;
-    private ChatModel dashScopeChatModel;
+    private final ChatModel dashScopeChatModel;
 
     private static final int MAX_TOKENS = 20000;
     private static final int MAX_MESSAGE_SIZE = 100;
     private static final int MAX_MEMORY_SIZE = (MAX_MESSAGE_SIZE / 3) / 2 * 2;
     private static final int MAX_LEASE_TIME = 15;
 
-    @Value("${spring-ai.dashscope.base-url}")
-    private String dashScopeBaseUrl;
-    @Value("${spring-ai.dashscope.api-key}")
-    private String dashScopeApiKey;
-    @Value("${spring-ai.dashscope.base-model:qwen2.5-1.5b-instruct}")
-    private String baseModel;
     @Value("${spring-ai.dashscope.title-model:qwen2.5-1.5b-instruct}")
     private String titleModel;
     @Value("${spring-ai.dashscope.chat-model:qwen2.5-1.5b-instruct}")
     private String chatModel;
     @Value("${spring-ai.dashscope.reasoning-model:deepseek-r1-distill-llama-70b}")
     private String reasoningModel;
-
-
-    @PostConstruct
-    void init() {
-        dashScopeChatModel = DashScopeChatModel
-                .builder()
-                .dashScopeApi(
-                        DashScopeApi
-                                .builder()
-                                .baseUrl(dashScopeBaseUrl)
-                                .apiKey(dashScopeApiKey)
-                                .build()
-                )
-                .defaultOptions(
-                        DashScopeChatOptions
-                                .builder()
-                                .withModel(baseModel)
-                                .withStream(true)
-//                        .withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build())
-                                .build()
-                )
-                .build();
-    }
 
     private String getSystemMessage() {
         return "你是中国矿业大学的AI助手，你的名字叫圈圈，现在是北京时间：" + LocalDateTime.now();
@@ -281,7 +249,7 @@ public class AiServiceImpl implements AiService {
                         .q(transformedText)
                         .build();
 
-                webSearches = webSearchTool.search(webSearchParameter, 10);
+                webSearches = webSearchTool.search(webSearchParameter, 5);
 
                 webSearchFlux = Mono.just(WebSearchResultsVO
                         .builder()
@@ -304,7 +272,7 @@ public class AiServiceImpl implements AiService {
                     } catch (Exception ignored) {}
                 }
 
-                searchText.append("如需引用以上内容，请在回答中注明对应序号，例如：中国矿业大学位于徐州<ref>[1]</ref>，拥有两个校区<ref>[1]</ref><ref>[2]</ref>。\n\n");
+                searchText.append("如需引用以上内容，请在回答中注明对应序号，例如：中国矿业大学位于徐州，拥有两个校区。<ref>[1]</ref>\n\n");
 
                 chatMemory.add(new UserMessage(searchText.toString()));
             } else {
@@ -318,7 +286,6 @@ public class AiServiceImpl implements AiService {
                         .vectorStore(vectorStore)
                         .similarityThreshold(0.5)    // 设置相似度阈值
                         .topK(5)                     // 返回前3个最相关的文档
-//                    .filterExpression()
                         .build();
 
                 List<Document> documents = retriever.retrieve(transformedQuery);
@@ -345,7 +312,7 @@ public class AiServiceImpl implements AiService {
                         knowledgeBases.add(knowledgeBase);
                     }
 
-                    knowledgeBaseText.append("如需引用以上内容，请在回答中注明对应序号，例如：中国矿业大学位于徐州<ref>[1]</ref>，拥有两个校区<ref>[1]</ref><ref>[2]</ref>。\n\n");
+                    knowledgeBaseText.append("如需引用以上内容，请在回答中注明对应序号，例如：中国矿业大学位于徐州，拥有两个校区。<ref>[1]</ref>\n\n");
 
                     chatMemory.add(new UserMessage(knowledgeBaseText.toString()));
 

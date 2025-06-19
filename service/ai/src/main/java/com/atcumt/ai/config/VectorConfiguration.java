@@ -1,8 +1,6 @@
 package com.atcumt.ai.config;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import org.elasticsearch.client.RestClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -18,14 +16,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.lang.reflect.Field;
+
 @Configuration
 public class VectorConfiguration {
-    @Value("${spring-ai.dashscope.base-url}")
-    private String dashScopeBaseUrl;
-    @Value("${spring-ai.dashscope.api-key}")
-    private String dashScopeApiKey;
-    @Value("${spring-ai.dashscope.embedding-model:text-embedding-v4}")
-    private String embeddingModel;
     @Value("${spring.ai.vectorstore.elasticsearch.index-name:knowledge-base}")
     private String indexName;
     @Value("${spring.ai.vectorstore.elasticsearch.dimensions:1024}")
@@ -34,39 +28,6 @@ public class VectorConfiguration {
     private String embeddingFieldName;
     @Value("${spring.ai.vectorstore.elasticsearch.similarity:cosine}")
     private SimilarityFunction similarity;
-
-    @Bean
-    public DashScopeEmbeddingModel embeddingModel() {
-        return new DashScopeEmbeddingModel(
-                DashScopeApi
-                        .builder()
-                        .baseUrl(dashScopeBaseUrl)
-                        .apiKey(dashScopeApiKey)
-                        .build(),
-                MetadataMode.ALL,
-                DashScopeEmbeddingOptions
-                        .builder()
-                        .withModel(embeddingModel)
-                        .withDimensions(dimensions)
-                        .build()
-        );
-    }
-
-    @Bean
-    public ElasticsearchVectorStore vectorStore(RestClient elasticsearchRestClient, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
-        ElasticsearchVectorStoreOptions vectorStoreOptions = new ElasticsearchVectorStoreOptions();
-        vectorStoreOptions.setIndexName(indexName);
-        vectorStoreOptions.setDimensions(dimensions);
-        vectorStoreOptions.setEmbeddingFieldName(embeddingFieldName);
-        vectorStoreOptions.setSimilarity(similarity);
-
-        return ElasticsearchVectorStore
-                .builder(elasticsearchRestClient, embeddingModel)
-                .initializeSchema(true)
-                .options(vectorStoreOptions)
-                .batchingStrategy(batchingStrategy)
-                .build();
-    }
 
     @Bean
     public TokenCountEstimator tokenCountEstimator() {
@@ -82,5 +43,34 @@ public class VectorConfiguration {
                 Document.DEFAULT_CONTENT_FORMATTER,
                 MetadataMode.ALL
         );
+    }
+
+    @Bean
+    public ElasticsearchVectorStore vectorStore(RestClient elasticsearchRestClient, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy, ElasticsearchClient elasticsearchClient) {
+        ElasticsearchVectorStoreOptions vectorStoreOptions = new ElasticsearchVectorStoreOptions();
+        vectorStoreOptions.setIndexName(indexName);
+        vectorStoreOptions.setDimensions(dimensions);
+        vectorStoreOptions.setEmbeddingFieldName(embeddingFieldName);
+        vectorStoreOptions.setSimilarity(similarity);
+
+        System.out.println("密切关注 ElasticsearchVectorStore 是否会在后续 Spring AI 版本中修改ElasticsearchClient 的创建方式！！！");
+        // 使用反射注入替换 final 字段
+
+        return new ElasticsearchVectorStore(ElasticsearchVectorStore
+                .builder(elasticsearchRestClient, embeddingModel)
+                .initializeSchema(true)
+                .options(vectorStoreOptions)
+                .batchingStrategy(batchingStrategy)) {
+            {
+                try {
+                    // 使用反射注入替换 final 字段
+                    Field field = ElasticsearchVectorStore.class.getDeclaredField("elasticsearchClient");
+                    field.setAccessible(true);
+                    field.set(this, elasticsearchClient);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to override elasticsearchClient", e);
+                }
+            }
+        };
     }
 }
