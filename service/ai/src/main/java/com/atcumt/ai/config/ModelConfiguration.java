@@ -5,6 +5,9 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
+import com.alibaba.cloud.ai.model.RerankModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +61,23 @@ public class ModelConfiguration {
                         .builder()
                         .withModel(embeddingModel)
                         .withDimensions(dimensions)
+                        .build()
+        );
+    }
+
+    @Bean
+    public RerankModel rerankModel() {
+        return new DashScopeRerankModel(
+                DashScopeApi
+                        .builder()
+                        .baseUrl(dashScopeBaseUrl)
+                        .apiKey(dashScopeApiKey)
+                        .build(),
+                DashScopeRerankOptions
+                        .builder()
+                        .withModel("gte-rerank-v2")
+                        .withReturnDocuments(false)
+                        .withTopN(5)
                         .build()
         );
     }

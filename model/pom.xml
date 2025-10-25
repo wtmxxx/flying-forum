@@ -64,11 +64,6 @@
             <version>${hutool.version}</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-spring-boot-starter</artifactId>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 
     <build>

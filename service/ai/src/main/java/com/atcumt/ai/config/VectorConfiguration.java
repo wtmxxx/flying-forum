@@ -53,6 +53,7 @@ public class VectorConfiguration {
         vectorStoreOptions.setEmbeddingFieldName(embeddingFieldName);
         vectorStoreOptions.setSimilarity(similarity);
 
+        // TODO: 更改为正规的方式注入 ElasticsearchClient
         System.out.println("密切关注 ElasticsearchVectorStore 是否会在后续 Spring AI 版本中修改ElasticsearchClient 的创建方式！！！");
         // 使用反射注入替换 final 字段
 

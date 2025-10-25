@@ -198,7 +198,7 @@ public class AiServiceImpl implements AiService {
 
                 System.out.println(searchHistoryMessages);
 
-                String promptTemplate = """
+                String queryPromptTemplate = """
                                         你是一名智能助手，任务是根据对话历史和用户提出的跟进问题，综合上下文信息，生成一个清晰、独立、具体的查询语句。
                                         
                                         - 查询必须保留用户原意；
@@ -232,7 +232,7 @@ public class AiServiceImpl implements AiService {
                                         """;
 
                 QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
-                        .promptTemplate(new PromptTemplate(promptTemplate))
+                        .promptTemplate(new PromptTemplate(queryPromptTemplate))
                         .chatClientBuilder(ChatClient.builder(dashScopeChatModel))
                         .build();
 
@@ -284,8 +284,8 @@ public class AiServiceImpl implements AiService {
             if (conversationDTO.getKnowledgeBaseEnabled()) {
                 DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
                         .vectorStore(vectorStore)
-                        .similarityThreshold(0.5)    // 设置相似度阈值
-                        .topK(5)                     // 返回前3个最相关的文档
+                        .similarityThreshold(0.55)    // 设置相似度阈值
+                        .topK(5)                     // 返回前5个最相关的文档
                         .build();
 
                 List<Document> documents = retriever.retrieve(transformedQuery);
@@ -335,8 +335,7 @@ public class AiServiceImpl implements AiService {
                     .model(modelName)
                     .build());
 
-            ChatClient chatClient = ChatClient.builder(dashScopeChatModel)
-                    .build();
+            ChatClient chatClient = ChatClient.builder(dashScopeChatModel).build();
 
             StringBuilder finalTextContent = new StringBuilder();
             StringBuilder finalReasoningContent = new StringBuilder();
@@ -412,7 +411,7 @@ public class AiServiceImpl implements AiService {
                         conversationLock.forceUnlockAsync();
                         chatMemory.clear();
                     })
-                    .takeUntilOther(conversationManager.cancelFlux(userId, conversationId));
+                    .takeUntilOther(conversationManager.getCancelFlux(userId, conversationId));
 
             streamingMessageFlux = chatResponseFlux.map(chatResponse -> {
                 String textContent = chatResponse.getResult().getOutput().getText();
@@ -440,7 +439,13 @@ public class AiServiceImpl implements AiService {
                 return textMessageVO;
             });
 
-            return Flux.merge(newConversationFlux, titleFlux, webSearchFlux, knowledgeBaseFlux, streamingMessageFlux);
+            return Flux.merge(
+                    newConversationFlux,
+                    titleFlux,
+                    webSearchFlux,
+                    knowledgeBaseFlux,
+                    streamingMessageFlux
+            );
         } catch (RuntimeException e) {
             conversationLock.forceUnlockAsync();
             throw new RuntimeException(e);
@@ -554,6 +559,7 @@ public class AiServiceImpl implements AiService {
                                     DashScopeChatOptions.builder()
                                             .withModel(titleModel)
                                             .withTemperature(0.3)
+                                            .withMaxToken(15)
                                             .withTopK(50)
                                             .withTopP(0.9)
                                             .build()
@@ -569,6 +575,7 @@ public class AiServiceImpl implements AiService {
                             title = "新对话";
                         }
                     }
+                    title = title.trim();
 
                     TitleVO titleVO = TitleVO
                             .builder()

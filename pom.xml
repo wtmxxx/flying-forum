@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
+        <version>3.5.3</version>
     </parent>
     <modules>
         <module>apidoc</module>
@@ -25,8 +25,8 @@
     <url>https://github.com/wtmxxx/flying-forum</url>
     <licenses>
         <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <name>CC BY-NC 4.0</name>
+            <url>https://creativecommons.org/licenses/by-nc/4.0/</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -62,7 +62,7 @@
         <auth0.java-jwt.version>4.5.0</auth0.java-jwt.version>
         <caffeine.version>3.2.0</caffeine.version>
         <druid.version>1.2.24</druid.version>
-        <dubbo.version>3.3.4</dubbo.version>
+        <dubbo.version>3.3.5</dubbo.version>
         <elasticsearch.version>8.17.2</elasticsearch.version>
         <houbb.sensitive-word.version>0.26.0</houbb.sensitive-word.version>
         <hutool.version>5.8.38</hutool.version>
@@ -70,17 +70,16 @@
         <jackson.version>2.19.0</jackson.version>
         <jsoup.version>1.20.1</jsoup.version>
         <knife4j.version>4.5.0</knife4j.version>
-        <langchain4j.version>1.0.0</langchain4j.version>
         <minio.version>8.5.17</minio.version>
         <mybatis-plus.version>3.5.12</mybatis-plus.version>
         <nacos.client.version>3.0.1</nacos.client.version>
-        <protobuf-java.version>3.25.6</protobuf-java.version>
-        <redisson.version>3.47.0</redisson.version>
+        <protobuf-java.version>3.25.7</protobuf-java.version>
+        <redisson.version>3.50.0</redisson.version>
         <rocketmq-spring.version>2.3.3</rocketmq-spring.version>
         <rocketmq.version>5.3.3</rocketmq.version>
         <sa-token.version>1.44.0</sa-token.version>
         <thumbnailator.version>0.4.20</thumbnailator.version>
-        <tika.version>3.1.0</tika.version>
+        <tika.version>3.2.0</tika.version>
         <webp-imageio.version>0.1.6</webp-imageio.version>
     </properties>
     <dependencies>
@@ -158,14 +157,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- LangChain4j 版本管理器 -->
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-bom</artifactId>
-                <version>${langchain4j.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!-- Mybatis Plus 版本管理器 -->
             <dependency>
                 <groupId>com.baomidou</groupId>
@@ -174,6 +165,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Jackson 版本管理器 -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>

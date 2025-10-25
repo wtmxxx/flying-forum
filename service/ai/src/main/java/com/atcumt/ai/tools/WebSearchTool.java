@@ -85,7 +85,7 @@ public class WebSearchTool {
 
         if (resultsNode != null && resultsNode.isArray()) {
             for (JsonNode result : resultsNode) {
-                String url = result.path("searxngUrl").asText("");
+                String url = result.path("url").asText("");
                 String title = result.path("title").asText("");
                 String content = result.path("content").asText("");
 

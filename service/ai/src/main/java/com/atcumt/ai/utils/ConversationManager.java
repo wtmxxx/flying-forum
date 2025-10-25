@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 public class ConversationManager {
 
     private static final int MAX_SIZE = 10_000;
-    private static final int EXPIRE_MINUTES = 10;
+    private static final int EXPIRE_MINUTES = 15;
 
     // userId_conversationId -> cancel signal sink
     private static final Cache<String, Sinks.Many<Object>> cancelSignals = Caffeine.newBuilder()
@@ -36,7 +36,7 @@ public class ConversationManager {
         remove(userId, conversationId);
     }
 
-    public Flux<Object> cancelFlux(String userId, String conversationId) {
+    public Flux<Object> getCancelFlux(String userId, String conversationId) {
         Sinks.Many<Object> sink = cancelSignals.getIfPresent(getKey(userId, conversationId));
         return sink != null ? sink.asFlux() : Flux.never();
     }
